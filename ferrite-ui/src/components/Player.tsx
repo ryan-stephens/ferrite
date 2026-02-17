@@ -406,15 +406,20 @@ export default function Player(props: PlayerProps) {
 
     destroyHlsLocal();
     hlsSessionId = null;
+    // Fully reset the video element so HLS.js gets a clean slate
+    videoRef.removeAttribute('src');
+    videoRef.load();
 
     try {
       perf.startSpan('seek/hls-api', 'network');
       const audioIdx = selectedAudioTrack();
+      console.log('[seek] calling hlsSeek API, target:', targetTime);
       const seekRes = await api.hlsSeek(item().id, targetTime, audioIdx > 0 ? audioIdx : undefined);
 
       // If another seek was initiated while we were waiting, abandon this one
       if (gen !== seekGeneration) return;
 
+      console.log('[seek] API returned:', JSON.stringify(seekRes));
       perf.endSpan('seek/hls-api');
       if (seekRes.timing_ms) perf.ingestBackendTiming('seek/hls', seekRes.timing_ms);
 
@@ -425,15 +430,35 @@ export default function Player(props: PlayerProps) {
       hlsSessionId = seekRes.session_id;
       isHls = true;
 
+      const sourceUrl = authUrl(seekRes.master_url);
+      console.log('[seek] creating new HLS instance, source:', sourceUrl);
+
       perf.startSpan('seek/hls-manifest', 'network');
       const hls = createHls();
       hlsInstance = hls;
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+        console.log('[seek] MEDIA_ATTACHED fired');
+      });
+
+      hls.on(Hls.Events.MANIFEST_LOADING, () => {
+        console.log('[seek] MANIFEST_LOADING fired');
+      });
+
+      hls.on(Hls.Events.MANIFEST_LOADED, () => {
+        console.log('[seek] MANIFEST_LOADED fired');
+      });
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (_e: any, data: any) => {
         // Stale seek — a newer one has taken over
         if (gen !== seekGeneration) { hls.destroy(); return; }
+        console.log('[seek] MANIFEST_PARSED fired, levels:', data.levels?.length);
         perf.endSpan('seek/hls-manifest');
-        videoRef.play();
+        videoRef.play().then(() => {
+          console.log('[seek] play() resolved');
+        }).catch((err: any) => {
+          console.error('[seek] play() rejected:', err);
+        });
         setTimeout(() => {
           if (gen !== seekGeneration) return;
           isSeeking = false;
@@ -445,22 +470,22 @@ export default function Player(props: PlayerProps) {
       });
 
       hls.on(Hls.Events.ERROR, (_e: any, d: any) => {
+        console.error('[seek] HLS error:', d.type, d.details, 'fatal:', d.fatal, d);
         if (d.fatal) {
           if (gen !== seekGeneration) return;
           perf.event('seek/hls-error', 'frontend', { type: d.type, details: d.details });
-          console.error('HLS seek error:', d.type, d.details);
           isSeeking = false;
           setBuffering(false);
           perf.endSpan('seek/hls-total');
         }
       });
 
-      // Match the initial-playback order: loadSource then attachMedia.
-      // HLS.js internally queues the source load and starts fetching once
-      // MEDIA_ATTACHED fires. This avoids a race with the video element's
-      // prior abort cycle from destroying the old HLS instance.
-      hls.loadSource(authUrl(seekRes.master_url));
+      // Attach first so HLS.js has a media element, then load source.
+      // HLS.js starts fetching the manifest after MEDIA_ATTACHED fires internally.
+      console.log('[seek] calling attachMedia + loadSource');
       hls.attachMedia(videoRef);
+      hls.loadSource(sourceUrl);
+      console.log('[seek] attachMedia + loadSource called');
     } catch (e) {
       if (gen !== seekGeneration) return;
       console.error('HLS seek failed:', e);
