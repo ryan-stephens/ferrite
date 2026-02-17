@@ -1,0 +1,31 @@
+[server]
+host = "0.0.0.0"
+port = 8080
+
+[database]
+path = "ferrite.db"
+
+[scanner]
+concurrent_probes = 4
+watch_debounce_seconds = 2
+
+[transcode]
+ffmpeg_path = "ffmpeg"
+ffprobe_path = "ffprobe"
+cache_dir = "cache/transcode"
+max_concurrent_transcodes = 2
+# hls_segment_duration = 6
+# hls_session_timeout_secs = 1800
+
+[metadata]
+# Get a free API key at https://www.themoviedb.org/settings/api
+tmdb_api_key = "bc6e401e6d0de479ddb41a0f2721e85c"
+image_cache_dir = "cache/images"
+rate_limit_per_second = 4
+
+# [auth]
+# username = "admin"
+# password_hash = "$2b$12$..."  # Generate with: ferrite hash-password "your-password"
+# jwt_secret = "change-me-to-a-long-random-string"
+# token_expiry_days = 30
+# api_keys = ["my-mobile-app-key"]

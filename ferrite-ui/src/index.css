@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-surface text-gray-200 antialiased font-sans;
+    overflow-x: hidden;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-surface-400 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-surface-500; }
+
+  ::selection {
+    @apply bg-ferrite-500/30 text-white;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-surface-100/80 backdrop-blur-xl border border-white/5;
+  }
+  .glass-heavy {
+    @apply bg-surface-200/90 backdrop-blur-2xl border border-white/5;
+  }
+  .shimmer {
+    @apply bg-gradient-to-r from-surface-300/0 via-surface-300/50 to-surface-300/0;
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl
+           bg-ferrite-500 hover:bg-ferrite-600 active:bg-ferrite-700
+           text-white font-medium text-sm
+           transition-all duration-200 ease-out
+           focus:outline-none focus:ring-2 focus:ring-ferrite-500/50 focus:ring-offset-2 focus:ring-offset-surface;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl
+           bg-surface-300 hover:bg-surface-400 active:bg-surface-500
+           text-gray-200 font-medium text-sm
+           transition-all duration-200 ease-out
+           focus:outline-none focus:ring-2 focus:ring-surface-500/50 focus:ring-offset-2 focus:ring-offset-surface;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg
+           bg-transparent hover:bg-white/5 active:bg-white/10
+           text-gray-400 hover:text-gray-200
+           transition-all duration-200 ease-out;
+  }
+  .btn-icon {
+    @apply inline-flex items-center justify-center w-9 h-9 rounded-lg
+           bg-transparent hover:bg-white/5 active:bg-white/10
+           text-gray-400 hover:text-gray-200
+           transition-all duration-200 ease-out;
+  }
+  .input-field {
+    @apply w-full px-4 py-2.5 rounded-xl
+           bg-surface-200 border border-surface-400
+           text-gray-200 placeholder-surface-700
+           focus:border-ferrite-500/50 focus:ring-2 focus:ring-ferrite-500/20 focus:outline-none
+           transition-all duration-200;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-2xs font-semibold uppercase tracking-wider;
+  }
+  .card {
+    @apply bg-surface-100 rounded-xl border border-surface-300/50
+           transition-all duration-250 ease-out;
+  }
+  .card-hover {
+    @apply card hover:border-surface-400 hover:bg-surface-200/80
+           hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+}

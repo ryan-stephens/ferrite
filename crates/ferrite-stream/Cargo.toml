@@ -1,0 +1,19 @@
+[package]
+name = "ferrite-stream"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+ferrite-core = { workspace = true }
+ferrite-transcode = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tracing = { workspace = true }
+axum = { workspace = true }
+uuid = { workspace = true }
+dashmap = { workspace = true }
+mime_guess = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+percent-encoding = { workspace = true }
