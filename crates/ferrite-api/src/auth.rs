@@ -87,11 +87,20 @@ pub async fn require_auth(
         if let Ok(s) = val.to_str() {
             if let Some(token) = s.strip_prefix("Bearer ") {
                 if let Ok(claims) = validate_token(token, &auth_config.jwt_secret) {
-                    request.extensions_mut().insert(AuthUser {
-                        user_id: claims.sub,
-                        username: claims.username,
-                    });
-                    return next.run(request).await;
+                    // Verify the user still exists in the DB (guards against stale
+                    // JWTs after a DB reset where the user_id is gone).
+                    if user_repo::get_user_by_id(&state.db, &claims.sub)
+                        .await
+                        .ok()
+                        .flatten()
+                        .is_some()
+                    {
+                        request.extensions_mut().insert(AuthUser {
+                            user_id: claims.sub,
+                            username: claims.username,
+                        });
+                        return next.run(request).await;
+                    }
                 }
             }
         }
@@ -112,11 +121,18 @@ pub async fn require_auth(
             if let Some(token) = pair.strip_prefix("token=") {
                 let decoded = percent_decode(token);
                 if let Ok(claims) = validate_token(&decoded, &auth_config.jwt_secret) {
-                    request.extensions_mut().insert(AuthUser {
-                        user_id: claims.sub,
-                        username: claims.username,
-                    });
-                    return next.run(request).await;
+                    if user_repo::get_user_by_id(&state.db, &claims.sub)
+                        .await
+                        .ok()
+                        .flatten()
+                        .is_some()
+                    {
+                        request.extensions_mut().insert(AuthUser {
+                            user_id: claims.sub,
+                            username: claims.username,
+                        });
+                        return next.run(request).await;
+                    }
                 }
             }
         }
