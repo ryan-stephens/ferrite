@@ -406,6 +406,9 @@ export default function Player(props: PlayerProps) {
 
     destroyHlsLocal();
     hlsSessionId = null;
+    // Reset the video element so HLS.js can cleanly re-attach
+    videoRef.removeAttribute('src');
+    videoRef.load();
 
     try {
       perf.startSpan('seek/hls-api', 'network');
@@ -455,8 +458,10 @@ export default function Player(props: PlayerProps) {
         }
       });
 
-      hls.loadSource(authUrl(seekRes.master_url));
+      // Attach media first, then load source — HLS.js requires the media
+      // element to be attached before it will start fetching the manifest.
       hls.attachMedia(videoRef);
+      hls.loadSource(authUrl(seekRes.master_url));
     } catch (e) {
       if (gen !== seekGeneration) return;
       console.error('HLS seek failed:', e);

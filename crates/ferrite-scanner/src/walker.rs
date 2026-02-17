@@ -19,7 +19,11 @@ pub async fn walk_directory(root: &Path, extensions: &[&str]) -> Result<Vec<Disc
         let mut entries = fs::read_dir(&dir).await?;
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
-            let metadata = entry.metadata().await?;
+            // Use tokio::fs::metadata (not entry.metadata) to follow symlinks
+            let metadata = match fs::metadata(&path).await {
+                Ok(m) => m,
+                Err(_) => continue, // skip broken symlinks
+            };
 
             if metadata.is_dir() {
                 stack.push(path);
