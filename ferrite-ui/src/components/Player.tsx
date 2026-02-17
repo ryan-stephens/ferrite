@@ -406,9 +406,6 @@ export default function Player(props: PlayerProps) {
 
     destroyHlsLocal();
     hlsSessionId = null;
-    // Reset the video element so HLS.js can cleanly re-attach
-    videoRef.removeAttribute('src');
-    videoRef.load();
 
     try {
       perf.startSpan('seek/hls-api', 'network');
@@ -458,10 +455,12 @@ export default function Player(props: PlayerProps) {
         }
       });
 
-      // Attach media first, then load source — HLS.js requires the media
-      // element to be attached before it will start fetching the manifest.
-      hls.attachMedia(videoRef);
+      // Match the initial-playback order: loadSource then attachMedia.
+      // HLS.js internally queues the source load and starts fetching once
+      // MEDIA_ATTACHED fires. This avoids a race with the video element's
+      // prior abort cycle from destroying the old HLS instance.
       hls.loadSource(authUrl(seekRes.master_url));
+      hls.attachMedia(videoRef);
     } catch (e) {
       if (gen !== seekGeneration) return;
       console.error('HLS seek failed:', e);
