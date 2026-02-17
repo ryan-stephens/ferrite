@@ -130,7 +130,25 @@ export default function Player(props: PlayerProps) {
 
   // ---- HLS management ----
   function destroyHlsLocal() {
-    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+    if (hlsInstance) {
+      hlsInstance.detachMedia();
+      hlsInstance.destroy();
+      hlsInstance = null;
+    }
+  }
+
+  /**
+   * Reset the video element so a fresh HLS.js instance can attach cleanly.
+   * After hls.destroy(), the video element's internal MediaSource binding is
+   * revoked, but the element can still be in a state (e.g. stale src or
+   * pending load) that prevents a new MediaSource from attaching. Clearing
+   * the src and calling load() forces the element back to HAVE_NOTHING,
+   * which is the clean state HLS.js expects for attachMedia().
+   */
+  function resetVideoElement() {
+    videoRef.pause();
+    videoRef.removeAttribute('src');
+    videoRef.load();
   }
 
   function destroyHls() {
@@ -401,14 +419,11 @@ export default function Player(props: PlayerProps) {
     perf.startSpan('seek/hls-total', 'frontend', { target: Math.round(targetTime) });
     isSeeking = true;
     setBuffering(true);
-    videoRef.pause();
     setCurrentTime(targetTime);
 
-    destroyHlsLocal();
-    hlsSessionId = null;
-    // Fully reset the video element so HLS.js gets a clean slate
-    videoRef.removeAttribute('src');
-    videoRef.load();
+    // Don't destroy the old HLS instance or touch the video element yet —
+    // let the old stream keep the video element in a valid state while we
+    // wait for the backend to create the new seek session (~1-4s).
 
     try {
       perf.startSpan('seek/hls-api', 'network');
@@ -422,6 +437,13 @@ export default function Player(props: PlayerProps) {
       console.log('[seek] API returned:', JSON.stringify(seekRes));
       perf.endSpan('seek/hls-api');
       if (seekRes.timing_ms) perf.ingestBackendTiming('seek/hls', seekRes.timing_ms);
+
+      // NOW destroy the old HLS instance — the new session is ready on the backend.
+      // We must detach+destroy, then reset the video element to HAVE_NOTHING so
+      // the new HLS.js instance can cleanly attach a fresh MediaSource.
+      destroyHlsLocal();
+      resetVideoElement();
+      hlsSessionId = null;
 
       // The server returns the actual start_secs (which is the time FFmpeg
       // was told to seek to). HLS segments start at t=0 relative to this offset,
@@ -464,7 +486,6 @@ export default function Player(props: PlayerProps) {
           isSeeking = false;
           setBuffering(false);
           perf.endSpan('seek/hls-total');
-          // Update confirmed time now that we're playing from the new position
           lastConfirmedTime = Math.floor(hlsStartOffset * 1000);
         }, 200);
       });
@@ -480,12 +501,13 @@ export default function Player(props: PlayerProps) {
         }
       });
 
-      // Attach first so HLS.js has a media element, then load source.
-      // HLS.js starts fetching the manifest after MEDIA_ATTACHED fires internally.
-      console.log('[seek] calling attachMedia + loadSource');
-      hls.attachMedia(videoRef);
+      // loadSource first, then attachMedia — matches the working initial-playback
+      // order. HLS.js queues the source URL and starts fetching once MEDIA_ATTACHED
+      // fires internally after attachMedia.
+      console.log('[seek] calling loadSource + attachMedia');
       hls.loadSource(sourceUrl);
-      console.log('[seek] attachMedia + loadSource called');
+      hls.attachMedia(videoRef);
+      console.log('[seek] loadSource + attachMedia called');
     } catch (e) {
       if (gen !== seekGeneration) return;
       console.error('HLS seek failed:', e);
