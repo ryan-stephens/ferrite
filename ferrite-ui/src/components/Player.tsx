@@ -421,9 +421,12 @@ export default function Player(props: PlayerProps) {
     setBuffering(true);
     setCurrentTime(targetTime);
 
-    // Don't destroy the old HLS instance or touch the video element yet —
-    // let the old stream keep the video element in a valid state while we
-    // wait for the backend to create the new seek session (~1-4s).
+    // Destroy the old HLS instance BEFORE the seek API call. The backend's
+    // hls_seek immediately destroys the old FFmpeg session, so if we leave
+    // the old HLS.js running it will flood 404s for the now-gone segments.
+    destroyHlsLocal();
+    resetVideoElement();
+    hlsSessionId = null;
 
     try {
       perf.startSpan('seek/hls-api', 'network');
@@ -438,13 +441,6 @@ export default function Player(props: PlayerProps) {
       perf.endSpan('seek/hls-api');
       if (seekRes.timing_ms) perf.ingestBackendTiming('seek/hls', seekRes.timing_ms);
 
-      // NOW destroy the old HLS instance — the new session is ready on the backend.
-      // We must detach+destroy, then reset the video element to HAVE_NOTHING so
-      // the new HLS.js instance can cleanly attach a fresh MediaSource.
-      destroyHlsLocal();
-      resetVideoElement();
-      hlsSessionId = null;
-
       // The server returns the actual start_secs (which is the time FFmpeg
       // was told to seek to). HLS segments start at t=0 relative to this offset,
       // so we add it to video.currentTime to get absolute media time.
@@ -452,7 +448,10 @@ export default function Player(props: PlayerProps) {
       hlsSessionId = seekRes.session_id;
       isHls = true;
 
-      const sourceUrl = authUrl(seekRes.master_url);
+      // The master_url from the backend already contains the auth token
+      // as a query param — do NOT wrap in authUrl() or it will be doubled,
+      // causing a 400 Bad Request.
+      const sourceUrl = seekRes.master_url;
       console.log('[seek] creating new HLS instance, source:', sourceUrl);
 
       perf.startSpan('seek/hls-manifest', 'network');
