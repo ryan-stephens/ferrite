@@ -1,6 +1,7 @@
-import { createSignal } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { Flame, Eye, EyeOff } from 'lucide-solid';
-import { login } from '../stores/auth';
+import { login, authState } from '../stores/auth';
+import { api } from '../api';
 
 interface LoginPageProps {
   onSuccess: () => void;
@@ -9,20 +10,36 @@ interface LoginPageProps {
 export default function LoginPage(props: LoginPageProps) {
   const [username, setUsername] = createSignal('');
   const [password, setPassword] = createSignal('');
+  const [confirmPassword, setConfirmPassword] = createSignal('');
   const [showPassword, setShowPassword] = createSignal(false);
   const [error, setError] = createSignal('');
   const [loading, setLoading] = createSignal(false);
 
+  const isSetup = () => !authState().hasUsers;
+
   async function handleSubmit(e: Event) {
     e.preventDefault();
     if (!username().trim() || !password().trim()) return;
+
+    if (isSetup() && password() !== confirmPassword()) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (isSetup() && password().length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
+      if (isSetup()) {
+        await api.createUser(username(), password());
+      }
       await login(username(), password());
       props.onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || (isSetup() ? 'Account creation failed' : 'Login failed'));
     }
     setLoading(false);
   }
@@ -36,7 +53,11 @@ export default function LoginPage(props: LoginPageProps) {
             <Flame class="w-7 h-7 text-white" />
           </div>
           <h1 class="text-2xl font-bold text-white">Ferrite</h1>
-          <p class="text-sm text-surface-700 mt-1">Sign in to your media server</p>
+          <Show when={isSetup()} fallback={
+            <p class="text-sm text-surface-700 mt-1">Sign in to your media server</p>
+          }>
+            <p class="text-sm text-ferrite-400 mt-1">Welcome! Create your admin account</p>
+          </Show>
         </div>
 
         {/* Form */}
@@ -73,6 +94,19 @@ export default function LoginPage(props: LoginPageProps) {
             </div>
           </div>
 
+          <Show when={isSetup()}>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1.5">Confirm Password</label>
+              <input
+                type={showPassword() ? 'text' : 'password'}
+                class="input-field"
+                placeholder="Confirm password"
+                value={confirmPassword()}
+                onInput={(e) => setConfirmPassword(e.currentTarget.value)}
+              />
+            </div>
+          </Show>
+
           {error() && (
             <div class="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
               {error()}
@@ -86,7 +120,7 @@ export default function LoginPage(props: LoginPageProps) {
           >
             {loading() ? (
               <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : 'Sign In'}
+            ) : isSetup() ? 'Create Account' : 'Sign In'}
           </button>
         </form>
       </div>

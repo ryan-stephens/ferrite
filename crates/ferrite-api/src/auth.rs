@@ -259,7 +259,9 @@ pub async fn login(
 }
 
 pub async fn auth_status(State(state): State<AppState>) -> impl IntoResponse {
+    let user_count = ferrite_db::user_repo::count_users(&state.db).await.unwrap_or(0);
     Json(serde_json::json!({
         "auth_required": state.config.auth.is_some(),
+        "has_users": user_count > 0,
     }))
 }
