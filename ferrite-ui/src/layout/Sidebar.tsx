@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from 'solid-js';
+import { createSignal, For, Show, onMount } from 'solid-js';
 import { A, useLocation } from '@solidjs/router';
 import {
   Home, Library, PlayCircle, FolderOpen, Settings, ChevronLeft,
@@ -6,10 +6,16 @@ import {
 } from 'lucide-solid';
 import { libraries } from '../stores/media';
 import { authState, logout } from '../stores/auth';
+import { api } from '../api';
 
 const [collapsed, setCollapsed] = createSignal(
   localStorage.getItem('ferrite-sidebar-collapsed') === 'true'
 );
+
+const [version, setVersion] = createSignal<string | null>(null);
+
+// Fetch version once at module load
+api.info().then(info => setVersion(info.version)).catch(() => {});
 
 function toggleCollapsed() {
   const next = !collapsed();
@@ -127,6 +133,12 @@ export default function Sidebar() {
         >
           {collapsed() ? <ChevronRight class="w-4 h-4" /> : <ChevronLeft class="w-4 h-4" />}
         </button>
+
+        <Show when={version()}>
+          <div class={`text-center text-2xs text-surface-600 pt-1 ${collapsed() ? 'px-0' : 'px-2'}`}>
+            {collapsed() ? `v${version()}` : `Ferrite v${version()}`}
+          </div>
+        </Show>
       </div>
     </aside>
   );
