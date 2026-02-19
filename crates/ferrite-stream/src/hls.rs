@@ -583,53 +583,12 @@ impl HlsSessionManager {
             self.encoder.clone()
         };
 
-        let mut args: Vec<String> = vec![
-            "-hide_banner".into(),
-            "-nostdin".into(),
-        ];
-
-        // HW-accelerated decoding args (before -i).
-        // Only use HW decoding when we also have a scale filter, because
-        // `-hwaccel_output_format cuda` keeps frames in GPU memory and the
-        // HLS muxer can't consume them without an explicit hwdownload step.
-        // CPU decode + NVENC encode is still very fast and avoids this issue.
-        if needs_scaling && !needs_software {
-            args.extend(effective_encoder.hw_input_args().iter().cloned());
-        }
-
-        // Seek before input for fast seeking (demuxer-level)
-        if start_secs > 0.5 {
-            args.push("-ss".into());
-            args.push(format!("{:.3}", start_secs));
-        }
-
-        let audio_map = format!("0:a:{}", audio_stream_index.unwrap_or(0));
-        args.extend([
-            "-i".into(),
-            file_path.to_string_lossy().to_string(),
-        ]);
-
-        // Precise seek after input: decode from the keyframe but trim output
-        // to the exact requested time. This gives frame-accurate seeking so the
-        // user lands exactly where they clicked, not at the nearest keyframe.
-        let precise_delta = requested_secs - start_secs;
-        if precise_delta > 0.1 {
-            args.extend(["-ss".into(), format!("{:.3}", precise_delta)]);
-        }
-
-        args.extend([
-            // Map first video + selected audio stream
-            "-map".into(),
-            "0:v:0".into(),
-            "-map".into(),
-            audio_map,
-        ]);
-
-        // Build video filter chain: HDR tone-mapping + subtitle burn-in + scaling
+        // ---------------------------------------------------------------
+        // Pre-compute video filter chain and copy decision BEFORE building
+        // the seek args, because -c:v copy requires different seek flags.
+        // ---------------------------------------------------------------
         let mut vf_parts: Vec<String> = Vec::new();
 
-        // High bit-depth handling: detect whether content is true HDR or just
-        // 10-bit SDR, and apply the appropriate filter.
         let is_high_bit = pixel_format
             .map(ferrite_transcode::tonemap::is_high_bit_depth)
             .unwrap_or(false);
@@ -653,24 +612,67 @@ impl HlsSessionManager {
 
         if needs_scaling {
             if let Some(v) = variant {
-                // Scale to variant resolution, maintaining aspect ratio.
-                // -2 ensures even dimensions (required by H.264).
                 vf_parts.push(format!("scale=-2:{}", v.height));
             }
         }
 
-        if !vf_parts.is_empty() {
-            args.extend(["-vf".into(), vf_parts.join(",")]);
-        }
-
-        // Determine if we can copy the video stream instead of re-encoding.
-        // Video copy is possible when:
-        // 1. Source is already H.264 (browser-compatible in HLS/fMP4)
-        // 2. No video filters are needed (no scaling, subtitles, or tone-mapping)
         let video_is_h264 = video_codec
             .map(|c| c.to_lowercase() == "h264")
             .unwrap_or(false);
         let can_copy_video = video_is_h264 && vf_parts.is_empty();
+
+        // ---------------------------------------------------------------
+        // Build FFmpeg args
+        // ---------------------------------------------------------------
+        let mut args: Vec<String> = vec![
+            "-hide_banner".into(),
+            "-nostdin".into(),
+        ];
+
+        // HW-accelerated decoding args (before -i).
+        if needs_scaling && !needs_software {
+            args.extend(effective_encoder.hw_input_args().iter().cloned());
+        }
+
+        // Seek before input for fast seeking (demuxer-level)
+        if start_secs > 0.5 {
+            args.push("-ss".into());
+            args.push(format!("{:.3}", start_secs));
+        }
+
+        // With -c:v copy, we MUST NOT use the post-input -ss (precise trim)
+        // because it only trims audio precisely while video starts from the
+        // keyframe, causing A/V desync. Instead, use -noaccurate_seek so both
+        // streams start from the same keyframe position.
+        if can_copy_video && start_secs > 0.5 {
+            args.push("-noaccurate_seek".into());
+        }
+
+        let audio_map = format!("0:a:{}", audio_stream_index.unwrap_or(0));
+        args.extend([
+            "-i".into(),
+            file_path.to_string_lossy().to_string(),
+        ]);
+
+        // Precise seek after input (only when re-encoding): decode from the
+        // keyframe but trim output to the exact requested time.
+        if !can_copy_video {
+            let precise_delta = requested_secs - start_secs;
+            if precise_delta > 0.1 {
+                args.extend(["-ss".into(), format!("{:.3}", precise_delta)]);
+            }
+        }
+
+        args.extend([
+            "-map".into(),
+            "0:v:0".into(),
+            "-map".into(),
+            audio_map,
+        ]);
+
+        if !vf_parts.is_empty() {
+            args.extend(["-vf".into(), vf_parts.join(",")]);
+        }
 
         if can_copy_video {
             info!("HLS video passthrough: source is H.264 with no filters, using -c:v copy");
