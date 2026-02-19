@@ -96,12 +96,25 @@ pub fn select_variants(source_width: Option<u32>, source_height: Option<u32>) ->
         return selected;
     }
 
-    // Replace the highest variant's resolution with the source's native resolution
-    // so we don't scale at all for the top quality
-    if let Some(top) = selected.first_mut() {
+    // Ensure the top variant matches the source's native resolution so the
+    // highest quality path has no scaling — this enables -c:v copy for H.264.
+    if let Some(top) = selected.first() {
         if top.height == src_h {
-            // Already matches, use source width for accuracy
-            top.width = src_w;
+            // Already matches a standard tier, just fix the width for accuracy
+            let top_mut = &mut selected[0];
+            top_mut.width = src_w;
+        } else {
+            // Source height (e.g. 960p) doesn't match any standard tier.
+            // Insert a native-resolution variant at the top so we avoid scaling.
+            let native = QualityVariant {
+                label: format!("{}p", src_h),
+                height: src_h,
+                width: src_w,
+                video_bitrate_kbps: top.video_bitrate_kbps,
+                audio_bitrate_kbps: top.audio_bitrate_kbps,
+                bandwidth_bps: top.bandwidth_bps,
+            };
+            selected.insert(0, native);
         }
     }
 
@@ -119,6 +132,18 @@ mod tests {
         assert_eq!(variants[0].label, "2160p");
         assert_eq!(variants[0].width, 3840);
         assert_eq!(variants[4].label, "360p");
+    }
+
+    #[test]
+    fn test_960p_source_gets_native_variant_at_top() {
+        // 1920x960 (2:1 aspect) doesn't match any standard tier.
+        // The top variant should be a native 960p to avoid scaling.
+        let variants = select_variants(Some(1920), Some(960));
+        assert_eq!(variants[0].label, "960p");
+        assert_eq!(variants[0].height, 960);
+        assert_eq!(variants[0].width, 1920);
+        // 720p and below should follow
+        assert_eq!(variants[1].label, "720p");
     }
 
     #[test]
