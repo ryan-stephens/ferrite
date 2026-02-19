@@ -188,6 +188,7 @@ export default function Player(props: PlayerProps) {
   // ---- HLS management ----
   function destroyHlsLocal() {
     if (hlsInstance) {
+      hlsInstance.stopLoad();
       hlsInstance.detachMedia();
       hlsInstance.destroy();
       hlsInstance = null;
@@ -798,6 +799,13 @@ export default function Player(props: PlayerProps) {
     setBuffering(true);
     setCurrentTime(targetTime);
 
+    // Stop the old HLS instance from fetching segments immediately — before
+    // the seek API call. The backend will destroy the old FFmpeg session, so
+    // any requests from the old instance would 404.
+    if (hlsInstance) {
+      hlsInstance.stopLoad();
+    }
+
     try {
       perf.startSpan('seek/hls-api', 'network');
       const audioIdx = selectedAudioTrack();
@@ -834,11 +842,10 @@ export default function Player(props: PlayerProps) {
       resetVideoElement();
       hlsSessionId = null;
 
-      // When video is re-encoded, FFmpeg resets PTS to 0 so we need start_secs
-      // as an offset. When video is copied (-c:v copy), fmp4 segments retain
-      // original file PTS so videoRef.currentTime is already absolute — offset
-      // must be 0 to avoid double-counting in actualTime().
-      hlsStartOffset = seekRes.video_copied ? 0 : (seekRes.start_secs ?? targetTime);
+      // The server returns the actual start_secs (which is the time FFmpeg
+      // was told to seek to). HLS.js normalizes currentTime to 0 relative to
+      // the playlist start, so we add this offset to get absolute media time.
+      hlsStartOffset = seekRes.start_secs ?? targetTime;
       hlsSessionId = seekRes.session_id;
       isHls = true;
 

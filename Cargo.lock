@@ -230,9 +230,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.19.1"
+version = "3.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dd9dc738b7a8311c7ade152424974d8115f2cdad61e8dab8dac9f2362298510"
+checksum = "5c6f81257d10a0f602a294ae4182251151ff97dbb504ef9afcdda4a64b24d9b4"
 
 [[package]]
 name = "byteorder"
@@ -294,9 +294,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.58"
+version = "4.5.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63be97961acde393029492ce0be7a1af7e323e6bae9511ebfac33751be5e6806"
+checksum = "2797f34da339ce31042b27d23607e051786132987f595b02ba4f6a6dffb7030a"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -304,9 +304,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.58"
+version = "4.5.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f13174bda5dfd69d7e947827e5af4b0f2f94a4a3ee92912fba07a66150f21e2"
+checksum = "24a241312cea5059b13574bb9b3861cabf758b879c15190b37b6d6fd63ab6876"
 dependencies = [
  "anstream",
  "anstyle",
@@ -526,7 +526,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-api"
-version = "0.1.14"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "axum",
@@ -557,7 +557,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-core"
-version = "0.1.14"
+version = "0.1.16"
 dependencies = [
  "chrono",
  "serde",
@@ -569,7 +569,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-db"
-version = "0.1.14"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "bcrypt",
@@ -586,7 +586,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-dlna"
-version = "0.1.14"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "axum",
@@ -604,7 +604,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-metadata"
-version = "0.1.14"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -625,7 +625,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-scanner"
-version = "0.1.14"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "chrono",
@@ -644,7 +644,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-server"
-version = "0.1.14"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "axum",
@@ -667,7 +667,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-stream"
-version = "0.1.14"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "axum",
@@ -686,7 +686,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-transcode"
-version = "0.1.14"
+version = "0.1.16"
 dependencies = [
  "anyhow",
  "dashmap",
@@ -1805,7 +1805,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.5.10",
+ "socket2 0.6.2",
  "thiserror",
  "tokio",
  "tracing",
@@ -1842,9 +1842,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -2939,9 +2939,9 @@ checksum = "5c1cb5db39152898a79168971543b1cb5020dff7fe43c8dc468b0885f5e29df5"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.23"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "537dd038a89878be9b64dd4bd1b260315c1bb94f4d784956b81e27a088d9a09e"
+checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
 name = "unicode-normalization"

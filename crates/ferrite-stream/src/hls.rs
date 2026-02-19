@@ -640,7 +640,11 @@ impl HlsSessionManager {
         let video_is_h264 = video_codec
             .map(|c| c.to_lowercase() == "h264")
             .unwrap_or(false);
-        let can_copy_video = video_is_h264 && vf_parts.is_empty();
+        // Video copy is only reliable for initial load (start=0). When seeking,
+        // -c:v copy starts from the nearest keyframe (up to 12s before target),
+        // causing subtitle desync and black screen. Re-encoding with precise
+        // post-input -ss gives exact frame-accurate positioning.
+        let can_copy_video = video_is_h264 && vf_parts.is_empty() && start_secs < 0.5;
 
         // ---------------------------------------------------------------
         // Build FFmpeg args
@@ -661,10 +665,8 @@ impl HlsSessionManager {
             args.push(format!("{:.3}", start_secs));
         }
 
-        // With -c:v copy, we MUST NOT use the post-input -ss (precise trim)
-        // because it only trims audio precisely while video starts from the
-        // keyframe, causing A/V desync. Instead, use -noaccurate_seek so both
-        // streams start from the same keyframe position.
+        // With -c:v copy (only at start=0), use -noaccurate_seek so both
+        // audio and video start from the same keyframe position.
         if can_copy_video && start_secs > 0.5 {
             args.push("-noaccurate_seek".into());
         }
