@@ -272,7 +272,7 @@ impl HlsSessionManager {
         );
 
         // Spawn FFmpeg (with -ss if starting from a non-zero position)
-        let (child, stderr) = self.spawn_ffmpeg(file_path, &output_dir, start_secs, requested_secs, subtitle_path, variant, height, pixel_format, audio_stream_index, frame_rate, audio_codec, video_codec, color_transfer, color_primaries).await?;
+        let (child, stderr, video_copied) = self.spawn_ffmpeg(file_path, &output_dir, start_secs, requested_secs, subtitle_path, variant, height, pixel_format, audio_stream_index, frame_rate, audio_codec, video_codec, color_transfer, color_primaries).await?;
 
         let (session_w, session_h, session_bw) = match variant {
             Some(v) => (Some(v.width), Some(v.height), v.bandwidth_bps),
@@ -282,6 +282,12 @@ impl HlsSessionManager {
                 bitrate_kbps.map(|k| (k as u64) * 1000).unwrap_or(5_000_000),
             ),
         };
+
+        // When video is copied (-c:v copy), there is no post-input -ss trim so
+        // the stream actually starts from the keyframe position, not the precise
+        // requested time. The frontend uses start_secs as hlsStartOffset to
+        // compute actualTime(), so it must match where the video truly begins.
+        let effective_start = if video_copied { start_secs } else { requested_secs };
 
         let session = Arc::new(HlsSession {
             session_id: session_id.clone(),
@@ -297,7 +303,7 @@ impl HlsSessionManager {
             width: session_w,
             height: session_h,
             bitrate_kbps: variant.map(|v| v.video_bitrate_kbps).or(bitrate_kbps),
-            start_secs: requested_secs,
+            start_secs: effective_start,
             variant_label,
             bandwidth_bps: session_bw,
         });
@@ -561,7 +567,7 @@ impl HlsSessionManager {
         video_codec: Option<&str>,
         color_transfer: Option<&str>,
         color_primaries: Option<&str>,
-    ) -> Result<(Child, Option<tokio::process::ChildStderr>)> {
+    ) -> Result<(Child, Option<tokio::process::ChildStderr>, bool)> {
         // Only fall back to software encoding when we actually need CPU-side
         // frame access (subtitle burn-in or resolution scaling).
         // If the variant matches the source resolution, no scale filter is needed
@@ -785,7 +791,7 @@ impl HlsSessionManager {
         // Return stderr to the caller so it can be wired to the session's
         // ffmpeg_failed flag after the session Arc is constructed.
         let stderr = child.stderr.take();
-        Ok((child, stderr))
+        Ok((child, stderr, can_copy_video))
     }
 
     /// Generate master playlist pointing to one or more variants.
