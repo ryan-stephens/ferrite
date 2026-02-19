@@ -94,6 +94,15 @@ pub async fn count_users(pool: &SqlitePool) -> Result<i64> {
     Ok(row.0)
 }
 
+/// Delete a user by ID.
+pub async fn delete_user(pool: &SqlitePool, user_id: &str) -> Result<()> {
+    sqlx::query("DELETE FROM users WHERE id = ?")
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 /// Change a user's password.
 pub async fn change_password(pool: &SqlitePool, user_id: &str, new_password: &str) -> Result<()> {
     let hash = bcrypt::hash(new_password, bcrypt::DEFAULT_COST)?;

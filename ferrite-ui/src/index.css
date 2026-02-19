@@ -8,6 +8,9 @@
   html {
     scroll-behavior: smooth;
   }
+  input, textarea, select, button {
+    outline: none !important;
+  }
   body {
     @apply bg-surface text-gray-200 antialiased font-sans;
     overflow-x: hidden;

@@ -7,6 +7,7 @@ pub mod watcher;
 
 use anyhow::Result;
 use ferrite_core::media::{LibraryType, VIDEO_EXTENSIONS, AUDIO_EXTENSIONS};
+use ferrite_db::chapter_repo::ChapterInsert;
 use ferrite_db::library_repo;
 use ferrite_db::media_repo::{self, MediaProbeData};
 use ferrite_db::movie_repo;
@@ -30,6 +31,8 @@ struct ScannedFile {
     probe_data: Option<MediaProbeData>,
     /// Individual streams (video, audio, subtitle) discovered by ffprobe.
     streams: Vec<StreamInsert>,
+    /// Chapter markers embedded in the container.
+    chapters: Vec<ChapterInsert>,
 }
 
 /// Scan a single library: walk the directory, identify media files, probe them, insert into DB.
@@ -41,6 +44,7 @@ pub async fn scan_library(
     ffprobe_path: &str,
     ffmpeg_path: &str,
     concurrent_probes: usize,
+    subtitle_cache_dir: &Path,
 ) -> Result<u32> {
     let library = library_repo::get_library(pool, library_id).await?;
     let lib_path = Path::new(&library.path);
@@ -103,7 +107,7 @@ pub async fn scan_library(
                 let _permit = sem.acquire().await.expect("semaphore closed unexpectedly");
                 let probe_result = probe::probe_file(&ffprobe, &file.path).await;
 
-                let (probe_data, streams) = match probe_result {
+                let (probe_data, streams, chapters) = match probe_result {
                     Ok(pr) => {
                         let stream_inserts: Vec<StreamInsert> = pr
                             .streams
@@ -133,6 +137,16 @@ pub async fn scan_library(
                             })
                             .collect();
 
+                        let chapter_inserts: Vec<ChapterInsert> = pr.chapters
+                            .iter()
+                            .map(|c| ChapterInsert {
+                                chapter_index: c.chapter_index,
+                                title: c.title.clone(),
+                                start_time_ms: c.start_time_ms,
+                                end_time_ms: c.end_time_ms,
+                            })
+                            .collect();
+
                         let data = MediaProbeData {
                             container_format: pr.container_format,
                             video_codec: pr.video_codec,
@@ -142,11 +156,11 @@ pub async fn scan_library(
                             duration_ms: pr.duration_ms,
                             bitrate_kbps: pr.bitrate_kbps,
                         };
-                        (Some(data), stream_inserts)
+                        (Some(data), stream_inserts, chapter_inserts)
                     }
                     Err(e) => {
                         warn!("ffprobe failed for {}: {}", file.path.display(), e);
-                        (None, Vec::new())
+                        (None, Vec::new(), Vec::new())
                     }
                 };
 
@@ -158,6 +172,7 @@ pub async fn scan_library(
                     parsed,
                     probe_data,
                     streams,
+                    chapters,
                 }
             }
         })
@@ -165,34 +180,133 @@ pub async fn scan_library(
         .collect()
         .await;
 
-    // Insert all results into the database sequentially (SQLite single-writer).
+    // Insert all results into the database inside a single transaction.
+    // Batching all writes into one transaction is 10-50x faster than individual
+    // auto-commit inserts because SQLite only syncs to disk once at commit time.
+    //
+    // Subtitle extraction (ffmpeg subprocesses) must happen outside the transaction
+    // since it is I/O-bound and can take seconds per file and must not hold the
+    // write lock. It runs in Phase 2 after the transaction commits.
     let mut count = 0u32;
 
-    for scanned in &scanned_files {
-        let media_item_id = media_repo::insert_media_item(
-            pool,
-            &library.id,
-            media_type,
-            &scanned.file_path,
-            scanned.file_size,
-            Some(&scanned.title),
-            scanned.year,
-            scanned.probe_data.as_ref(),
-        )
-        .await?;
+    {
+        let mut tx = pool.begin().await?;
 
-        // Store individual stream tracks (video, audio, subtitle) from ffprobe
-        if !scanned.streams.is_empty() {
-            if let Err(e) =
-                ferrite_db::stream_repo::replace_streams(pool, &media_item_id, &scanned.streams)
+        for scanned in &scanned_files {
+            let media_item_id = media_repo::insert_media_item(
+                &mut *tx,
+                &library.id,
+                media_type,
+                &scanned.file_path,
+                scanned.file_size,
+                Some(&scanned.title),
+                scanned.year,
+                scanned.probe_data.as_ref(),
+            )
+            .await?;
+
+            // Store individual stream tracks (video, audio, subtitle) from ffprobe
+            if !scanned.streams.is_empty() {
+                if let Err(e) =
+                    ferrite_db::stream_repo::replace_streams(
+                        &mut *tx,
+                        &media_item_id,
+                        &scanned.streams,
+                    )
                     .await
-            {
-                warn!(
-                    "Failed to store streams for '{}': {}",
-                    scanned.title, e
-                );
+                {
+                    warn!(
+                        "Failed to store streams for '{}': {}",
+                        scanned.title, e
+                    );
+                }
             }
+
+            // Store chapter markers
+            if !scanned.chapters.is_empty() {
+                if let Err(e) =
+                    ferrite_db::chapter_repo::replace_chapters(
+                        &mut *tx,
+                        &media_item_id,
+                        &scanned.chapters,
+                    )
+                    .await
+                {
+                    warn!("Failed to store chapters for '{}': {}", scanned.title, e);
+                }
+            }
+
+            // For movie libraries, create skeleton movie records for later metadata enrichment
+            if is_movie_library {
+                if let Err(e) = movie_repo::upsert_movie_skeleton(
+                    &mut *tx,
+                    &media_item_id,
+                    &scanned.title,
+                    scanned.year.map(|y| y as i64),
+                )
+                .await
+                {
+                    warn!("Failed to create movie skeleton for '{}': {}", scanned.title, e);
+                }
+            }
+
+            // For TV libraries, create show → season → episode hierarchy
+            if is_tv_library {
+                if let ParsedFilename::Episode(ParsedEpisode {
+                    show_name,
+                    season,
+                    episode,
+                }) = &scanned.parsed
+                {
+                    let lib_id_str = library.id.to_string();
+                    match tv_repo::upsert_tv_show(&mut *tx, &lib_id_str, show_name).await {
+                        Ok(show_id) => {
+                            match tv_repo::upsert_season(&mut *tx, &show_id, *season).await {
+                                Ok(season_id) => {
+                                    if let Err(e) = tv_repo::upsert_episode(
+                                        &mut *tx,
+                                        &media_item_id,
+                                        &season_id,
+                                        *episode,
+                                    )
+                                    .await
+                                    {
+                                        warn!(
+                                            "Failed to create episode record for '{}' S{:02}E{:02}: {}",
+                                            show_name, season, episode, e
+                                        );
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        "Failed to create season for '{}' S{:02}: {}",
+                                        show_name, season, e
+                                    );
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            warn!("Failed to create TV show for '{}': {}", show_name, e);
+                        }
+                    }
+                }
+            }
+
+            count += 1;
         }
+
+        tx.commit().await?;
+    }
+
+    // Phase 2 (outside transaction): subtitle extraction and DB writes.
+    // Subtitle ffmpeg extraction is slow (seconds per file) — done after the main
+    // transaction commits so we don't hold the write lock during subprocess I/O.
+    for scanned in &scanned_files {
+        // Re-fetch the media_item_id by file_path (it was just inserted above).
+        let media_item_id = match media_repo::get_media_item_id_by_path(pool, &scanned.file_path).await {
+            Ok(Some(id)) => id,
+            _ => continue,
+        };
 
         // Detect external subtitle files next to the media file
         let mut all_subs =
@@ -236,6 +350,8 @@ pub async fn scan_library(
                 ffmpeg_path,
                 Path::new(&scanned.file_path),
                 &embedded_streams,
+                subtitle_cache_dir,
+                &media_item_id,
             )
             .await;
             if !extracted.is_empty() {
@@ -259,67 +375,22 @@ pub async fn scan_library(
                 );
             }
         }
-
-        // For movie libraries, create skeleton movie records for later metadata enrichment
-        if is_movie_library {
-            if let Err(e) = movie_repo::upsert_movie_skeleton(
-                pool,
-                &media_item_id,
-                &scanned.title,
-                scanned.year.map(|y| y as i64),
-            )
-            .await
-            {
-                warn!("Failed to create movie skeleton for '{}': {}", scanned.title, e);
-            }
-        }
-
-        // For TV libraries, create show → season → episode hierarchy
-        if is_tv_library {
-            if let ParsedFilename::Episode(ParsedEpisode {
-                show_name,
-                season,
-                episode,
-            }) = &scanned.parsed
-            {
-                let lib_id_str = library.id.to_string();
-                match tv_repo::upsert_tv_show(pool, &lib_id_str, show_name).await {
-                    Ok(show_id) => {
-                        match tv_repo::upsert_season(pool, &show_id, *season).await {
-                            Ok(season_id) => {
-                                if let Err(e) = tv_repo::upsert_episode(
-                                    pool,
-                                    &media_item_id,
-                                    &season_id,
-                                    *episode,
-                                )
-                                .await
-                                {
-                                    warn!(
-                                        "Failed to create episode record for '{}' S{:02}E{:02}: {}",
-                                        show_name, season, episode, e
-                                    );
-                                }
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Failed to create season for '{}' S{:02}: {}",
-                                    show_name, season, e
-                                );
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        warn!("Failed to create TV show for '{}': {}", show_name, e);
-                    }
-                }
-            }
-        }
-
-        count += 1;
     }
 
     library_repo::update_last_scanned(pool, library_id).await?;
+
+    // Clean up orphaned seasons/shows left over from title-merge deduplication
+    if is_tv_library {
+        let empty_seasons = tv_repo::delete_empty_seasons(pool).await.unwrap_or(0);
+        let empty_shows = tv_repo::delete_empty_shows(pool).await.unwrap_or(0);
+        if empty_seasons > 0 || empty_shows > 0 {
+            info!(
+                "Cleaned up {} orphaned season(s) and {} orphaned show(s) after scan of '{}'",
+                empty_seasons, empty_shows, library.name
+            );
+        }
+    }
+
     info!("Scan complete for '{}': {} items indexed", library.name, count);
 
     Ok(count)

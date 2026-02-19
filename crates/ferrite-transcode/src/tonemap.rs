@@ -1,10 +1,10 @@
-/// HDR tone-mapping filter generation for FFmpeg.
-///
-/// When transcoding 10-bit HDR content (HEVC Main 10, HDR10, HLG) to 8-bit H.264,
-/// simply using `-pix_fmt yuv420p` strips the extra bit depth and HDR metadata,
-/// resulting in washed-out, flat colors. Proper tone-mapping converts the wide
-/// dynamic range and color gamut (BT.2020) to SDR (BT.709) with perceptually
-/// correct brightness mapping.
+//! HDR tone-mapping filter generation for FFmpeg.
+//!
+//! When transcoding 10-bit HDR content (HEVC Main 10, HDR10, HLG) to 8-bit H.264,
+//! simply using `-pix_fmt yuv420p` strips the extra bit depth and HDR metadata,
+//! resulting in washed-out, flat colors. Proper tone-mapping converts the wide
+//! dynamic range and color gamut (BT.2020) to SDR (BT.709) with perceptually
+//! correct brightness mapping.
 
 /// Pixel formats that indicate 10-bit (or higher) content requiring tone-mapping.
 const HDR_PIXEL_FORMATS: &[&str] = &[

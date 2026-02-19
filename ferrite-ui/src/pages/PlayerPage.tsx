@@ -1,4 +1,4 @@
-import { createSignal, Show, onMount } from 'solid-js';
+import { createSignal, createEffect, Show, Switch, Match } from 'solid-js';
 import { useParams, useNavigate, useSearchParams } from '@solidjs/router';
 import { api } from '../api';
 import type { MediaItem } from '../api';
@@ -9,6 +9,7 @@ export default function PlayerPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [item, setItem] = createSignal<MediaItem | null>(null);
+  const [loadedId, setLoadedId] = createSignal<string | null>(null);
 
   const resumePos = () => {
     const r = searchParams.resume;
@@ -16,13 +17,17 @@ export default function PlayerPage() {
     return null;
   };
 
-  onMount(async () => {
-    try {
-      const data = await api.getMedia(params.id);
+  const isEpisode = () => (item()?.is_episode ?? 0) === 1;
+
+  // Re-fetch whenever the route param changes (handles Up Next navigation)
+  createEffect(() => {
+    const id = params.id;
+    setItem(null);
+    setLoadedId(null);
+    api.getMedia(id).then(data => {
       setItem(data);
-    } catch {
-      navigate('/');
-    }
+      setLoadedId(id);
+    }).catch(() => navigate('/'));
   });
 
   function handleClose() {
@@ -33,17 +38,28 @@ export default function PlayerPage() {
     }
   }
 
+  function handleNextEpisode(mediaItemId: string) {
+    navigate(`/player/${mediaItemId}`);
+  }
+
+  // Use Switch/Match keyed on loadedId so Player fully unmounts+remounts on episode change
   return (
-    <Show when={item()} fallback={
+    <Switch fallback={
       <div class="fixed inset-0 bg-black flex items-center justify-center z-[100]">
         <div class="w-8 h-8 border-2 border-surface-400 border-t-ferrite-500 rounded-full animate-spin" />
       </div>
     }>
-      <Player
-        item={item()!}
-        resumePosition={resumePos()}
-        onClose={handleClose}
-      />
-    </Show>
+      <Match when={item() && loadedId() === params.id && loadedId()}>
+        {(id) => (
+          <Player
+            item={item()!}
+            resumePosition={resumePos()}
+            isEpisode={isEpisode()}
+            onClose={handleClose}
+            onNextEpisode={handleNextEpisode}
+          />
+        )}
+      </Match>
+    </Switch>
   );
 }

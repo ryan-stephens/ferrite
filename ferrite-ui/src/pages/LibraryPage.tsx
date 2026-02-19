@@ -1,6 +1,6 @@
-import { createSignal, createEffect, For, Show, onMount } from 'solid-js';
+import { createSignal, createEffect, createMemo, For, Show, onMount } from 'solid-js';
 import { useParams, useNavigate } from '@solidjs/router';
-import { Play, Star, FolderOpen, RefreshCw, Trash2 } from 'lucide-solid';
+import { Play, Star, FolderOpen, RefreshCw, Trash2, Filter, X } from 'lucide-solid';
 import { allMedia, libraries, loadMedia, loadLibraries, deleteLibrary, refreshAll } from '../stores/media';
 import { authUrl } from '../api';
 import type { MediaItem, Library } from '../api';
@@ -12,20 +12,72 @@ export default function LibraryPage() {
 
   const [sort, setSort] = createSignal<string>(localStorage.getItem('ferrite-lib-sort') || 'title-asc');
   const [items, setItems] = createSignal<MediaItem[]>([]);
+  const [filterGenre, setFilterGenre] = createSignal<string | null>(null);
+  const [filterMinRating, setFilterMinRating] = createSignal<number>(0);
+  const [filterMinYear, setFilterMinYear] = createSignal<number>(0);
+  const [filterMaxYear, setFilterMaxYear] = createSignal<number>(0);
+  const [showFilters, setShowFilters] = createSignal(false);
+
+  const libItems = createMemo(() => allMedia().filter(i => i.library_id === params.id));
+
+  const allGenres = createMemo(() => {
+    const set = new Set<string>();
+    libItems().forEach(item => {
+      if (item.genres) item.genres.split(',').forEach(g => { const t = g.trim(); if (t) set.add(t); });
+    });
+    return [...set].sort();
+  });
+
+  const yearRange = createMemo(() => {
+    const years = libItems().map(i => getDisplayYear(i)).filter(Boolean) as number[];
+    if (years.length === 0) return { min: 1900, max: new Date().getFullYear() };
+    return { min: Math.min(...years), max: Math.max(...years) };
+  });
+
+  const hasActiveFilters = createMemo(() =>
+    filterGenre() !== null || filterMinRating() > 0 || filterMinYear() > 0 || filterMaxYear() > 0
+  );
+
+  function clearFilters() {
+    setFilterGenre(null);
+    setFilterMinRating(0);
+    setFilterMinYear(0);
+    setFilterMaxYear(0);
+  }
 
   const library = (): Library | undefined => libraries().find(l => l.id === params.id);
 
   onMount(async () => {
     if (libraries().length === 0) await loadLibraries();
+    // Redirect TV libraries to the shows page
+    const lib = libraries().find(l => l.id === params.id);
+    if (lib?.library_type === 'tv') {
+      navigate(`/shows/library/${params.id}`, { replace: true });
+      return;
+    }
     if (allMedia().length === 0) await loadMedia();
   });
 
   createEffect(() => {
-    const libId = params.id;
     const s = sort();
     localStorage.setItem('ferrite-lib-sort', s);
 
-    let filtered = allMedia().filter(i => i.library_id === libId);
+    const genre = filterGenre();
+    const minRating = filterMinRating();
+    const minYear = filterMinYear();
+    const maxYear = filterMaxYear();
+
+    let filtered = libItems().filter(item => {
+      if (genre) {
+        const genres = item.genres?.split(',').map(g => g.trim()) ?? [];
+        if (!genres.includes(genre)) return false;
+      }
+      if (minRating > 0 && (item.rating == null || item.rating < minRating)) return false;
+      const y = getDisplayYear(item);
+      if (minYear > 0 && (y == null || y < minYear)) return false;
+      if (maxYear > 0 && (y == null || y > maxYear)) return false;
+      return true;
+    });
     filtered = [...filtered].sort((a, b) => {
       switch (s) {
         case 'title-asc': return getDisplayTitle(a).localeCompare(getDisplayTitle(b));
@@ -76,6 +128,17 @@ export default function LibraryPage() {
             <option value="added-desc">Recently Added</option>
           </select>
 
+          <button
+            class={`btn-ghost ${hasActiveFilters() ? 'text-ferrite-400' : ''}`}
+            onClick={() => setShowFilters(v => !v)}
+            title="Filters"
+          >
+            <Filter class="w-4 h-4" />
+            <Show when={hasActiveFilters()}>
+              <span class="ml-1 text-xs font-semibold">On</span>
+            </Show>
+          </button>
+
           <button class="btn-ghost" onClick={refreshAll} title="Refresh library">
             <RefreshCw class="w-4 h-4" />
           </button>
@@ -84,6 +147,78 @@ export default function LibraryPage() {
           </button>
         </div>
       </div>
+
+      {/* Filter bar */}
+      <Show when={showFilters()}>
+        <div class="mb-5 p-4 rounded-xl bg-surface-100 border border-surface-300/50 space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-surface-700 uppercase tracking-wider">Filters</span>
+            <Show when={hasActiveFilters()}>
+              <button class="flex items-center gap-1 text-xs text-ferrite-400 hover:text-ferrite-300" onClick={clearFilters}>
+                <X class="w-3 h-3" /> Clear all
+              </button>
+            </Show>
+          </div>
+
+          {/* Genre chips */}
+          <Show when={allGenres().length > 0}>
+            <div>
+              <p class="text-xs text-surface-600 mb-2">Genre</p>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  class={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filterGenre() === null ? 'bg-ferrite-500 text-white' : 'bg-surface-200 text-surface-800 hover:bg-surface-300'}`}
+                  onClick={() => setFilterGenre(null)}
+                >All</button>
+                <For each={allGenres()}>{(g) =>
+                  <button
+                    class={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filterGenre() === g ? 'bg-ferrite-500 text-white' : 'bg-surface-200 text-surface-800 hover:bg-surface-300'}`}
+                    onClick={() => setFilterGenre(filterGenre() === g ? null : g)}
+                  >{g}</button>
+                }</For>
+              </div>
+            </div>
+          </Show>
+
+          <div class="flex flex-wrap gap-6">
+            {/* Min rating */}
+            <div>
+              <p class="text-xs text-surface-600 mb-2">Min Rating</p>
+              <div class="flex items-center gap-1.5">
+                <For each={[0, 5, 6, 7, 8]}>{(r) =>
+                  <button
+                    class={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filterMinRating() === r ? 'bg-ferrite-500 text-white' : 'bg-surface-200 text-surface-800 hover:bg-surface-300'}`}
+                    onClick={() => setFilterMinRating(r)}
+                  >{r === 0 ? 'Any' : `${r}+`}</button>
+                }</For>
+              </div>
+            </div>
+
+            {/* Year range */}
+            <Show when={yearRange().min !== yearRange().max}>
+              <div>
+                <p class="text-xs text-surface-600 mb-2">Year</p>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    class="input-field py-1 px-2 text-xs w-20"
+                    placeholder={String(yearRange().min)}
+                    value={filterMinYear() || ''}
+                    onInput={(e) => setFilterMinYear(parseInt(e.currentTarget.value) || 0)}
+                  />
+                  <span class="text-surface-600 text-xs">–</span>
+                  <input
+                    type="number"
+                    class="input-field py-1 px-2 text-xs w-20"
+                    placeholder={String(yearRange().max)}
+                    value={filterMaxYear() || ''}
+                    onInput={(e) => setFilterMaxYear(parseInt(e.currentTarget.value) || 0)}
+                  />
+                </div>
+              </div>
+            </Show>
+          </div>
+        </div>
+      </Show>
 
       {/* Grid */}
       <div class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">

@@ -71,7 +71,7 @@ pub async fn generate_sprite_sheet(
     }
 
     let columns = config.columns.min(thumb_count);
-    let rows = (thumb_count + columns - 1) / columns;
+    let rows = thumb_count.div_ceil(columns);
 
     let sprite_path = output_dir.join(format!("{}_sprites.jpg", media_id));
     let vtt_path = output_dir.join(format!("{}_sprites.vtt", media_id));
@@ -224,10 +224,10 @@ fn generate_vtt(
         let y = row * thumb_height;
 
         vtt.push_str(&format!(
-            "{} --> {}\n{}\n\n",
+            "{} --> {}\n{}#xywh={},{},{},{}\n\n",
             format_vtt_time(start_secs),
             format_vtt_time(end_secs),
-            format!("{}#xywh={},{},{},{}", sprite_filename, x, y, thumb_width, thumb_height),
+            sprite_filename, x, y, thumb_width, thumb_height,
         ));
     }
 

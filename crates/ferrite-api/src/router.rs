@@ -23,6 +23,7 @@ pub fn build_router(state: AppState) -> Router {
     let protected_routes = Router::new()
         .route("/api/system/info", get(system::info))
         .route("/api/system/encoder", get(system::encoder_info))
+        .route("/api/admin/streams", get(system::list_active_streams))
         // Libraries
         .route("/api/libraries", get(library::list_libraries))
         .route("/api/libraries", post(library::create_library))
@@ -32,6 +33,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/media", get(media::list_media))
         .route("/api/media/{id}", get(media::get_media))
         .route("/api/media/{id}/streams", get(media::get_media_streams))
+        .route("/api/media/{id}/chapters", get(media::get_media_chapters))
         // Subtitles
         .route("/api/media/{id}/subtitles", get(subtitle::list_subtitles))
         .route("/api/subtitles/{id}/serve", get(subtitle::serve_subtitle))
@@ -40,6 +42,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/shows/{id}", get(tv::get_show))
         .route("/api/shows/{id}/seasons", get(tv::list_seasons))
         .route("/api/seasons/{id}/episodes", get(tv::list_episodes))
+        .route("/api/episodes/{id}/next", get(tv::next_episode))
         // Images
         .route("/api/images/{filename}", get(image::serve_image))
         // Collections & Playlists
@@ -63,17 +66,22 @@ pub fn build_router(state: AppState) -> Router {
         // HLS Streaming
         .route("/api/stream/{id}/hls/master.m3u8", get(stream::hls_master_playlist))
         .route("/api/stream/{id}/hls/seek", post(stream::hls_seek))
+        .route("/api/stream/{id}/hls", delete(stream::hls_stop_media))
         .route("/api/stream/{id}/hls/{session_id}/playlist.m3u8", get(stream::hls_variant_playlist))
         .route("/api/stream/{id}/hls/{session_id}/{filename}", get(stream::hls_segment))
         .route("/api/stream/{id}/hls/{session_id}", delete(stream::hls_stop))
+        // User Preferences
+        .route("/api/preferences", get(user::get_preferences).put(user::set_preferences))
         // Users
         .route("/api/users", get(user::list_users))
         .route("/api/users/me", get(user::get_current_user))
         .route("/api/users/me/password", put(user::change_password))
+        .route("/api/users/{id}", delete(user::delete_user))
+        .route("/api/users/{id}/password", put(user::admin_reset_password))
         // Playback Progress
         .route(
             "/api/progress/{media_id}",
-            get(progress::get_progress).put(progress::update_progress),
+            get(progress::get_progress).put(progress::update_progress).delete(progress::reset_progress),
         )
         .route(
             "/api/progress/{media_id}/complete",
@@ -161,7 +169,7 @@ pub fn build_router(state: AppState) -> Router {
                     let safe_query = request
                         .uri()
                         .query()
-                        .map(|q| redact_token_param(q))
+                        .map(redact_token_param)
                         .unwrap_or_default();
                     let uri = if safe_query.is_empty() {
                         path.to_string()
@@ -200,12 +208,7 @@ fn resolve_spa_dir() -> Option<std::path::PathBuf> {
     .flatten()
     .collect();
 
-    for dir in candidates {
-        if dir.join("index.html").exists() {
-            return Some(dir);
-        }
-    }
-    None
+    candidates.into_iter().find(|dir| dir.join("index.html").exists())
 }
 
 /// Redact the `token` query parameter from a URL query string so JWT values

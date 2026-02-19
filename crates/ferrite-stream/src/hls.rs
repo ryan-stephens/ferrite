@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::process::Child;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Semaphore};
 use tracing::{debug, info, warn};
 
 // ---------------------------------------------------------------------------
@@ -21,6 +21,12 @@ pub struct HlsSession {
     ffmpeg_handle: Mutex<Option<Child>>,
     pub created_at: Instant,
     last_accessed: Mutex<Instant>,
+    /// Updated only when a segment or init file is actually served (not playlist polls).
+    /// Used to kill FFmpeg promptly when the client stops consuming (e.g. paused).
+    last_segment_request: Mutex<Instant>,
+    /// Set to true when FFmpeg stderr indicates a fatal error (corrupt file, disk full, etc.).
+    /// Causes get_segment() to short-circuit instead of waiting the full 30s timeout.
+    pub ffmpeg_failed: std::sync::atomic::AtomicBool,
     pub duration_secs: Option<f64>,
     pub width: Option<u32>,
     pub height: Option<u32>,
@@ -41,6 +47,48 @@ impl HlsSession {
 
     pub async fn idle_secs(&self) -> u64 {
         self.last_accessed.lock().await.elapsed().as_secs()
+    }
+
+    /// Seconds since a segment or init file was last served to the client.
+    pub async fn segment_idle_secs(&self) -> u64 {
+        self.last_segment_request.lock().await.elapsed().as_secs()
+    }
+
+    /// How many seconds of content have been transcoded so far (based on segment files on disk).
+    /// Used to decide whether a seek target is already within the buffered range.
+    pub fn buffered_secs(&self) -> f64 {
+        let mut count = 0u64;
+        if let Ok(mut rd) = std::fs::read_dir(&self.output_dir) {
+            while let Some(Ok(entry)) = rd.next() {
+                let name = entry.file_name();
+                let s = name.to_string_lossy();
+                if s.starts_with("seg_") && s.ends_with(".m4s") {
+                    count += 1;
+                }
+            }
+        }
+        count as f64 * self.segment_duration as f64
+    }
+
+    /// Kill the FFmpeg process without destroying the session or its files.
+    /// Called when the client stops consuming segments (paused) to free resources.
+    pub async fn kill_ffmpeg(&self) {
+        if let Some(mut child) = self.ffmpeg_handle.lock().await.take() {
+            // On Unix: send SIGTERM first so FFmpeg can flush write buffers and
+            // close the playlist cleanly (prevents truncated final segments),
+            // then wait up to 2s before escalating to SIGKILL.
+            // On Windows: kill immediately (no SIGTERM concept).
+            #[cfg(unix)]
+            {
+                if let Some(pid) = child.id() {
+                    // SAFETY: pid is a valid process ID from a child we own.
+                    unsafe { libc::kill(pid as libc::pid_t, libc::SIGTERM) };
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+            }
+            let _ = child.kill().await;
+            debug!("Killed FFmpeg for session {} (SIGTERM+SIGKILL)", self.session_id);
+        }
     }
 
     /// Check if the FFmpeg process is still running.
@@ -69,16 +117,34 @@ impl HlsSession {
 // Session Manager
 // ---------------------------------------------------------------------------
 
+/// Snapshot of a single active HLS session for the admin dashboard.
+pub struct ActiveSessionInfo {
+    pub session_id: String,
+    pub media_id: String,
+    pub variant_label: Option<String>,
+    pub start_secs: f64,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub bitrate_kbps: Option<u32>,
+    pub idle_secs: u64,
+    pub age_secs: u64,
+}
+
 pub struct HlsSessionManager {
     sessions: DashMap<String, Arc<HlsSession>>,
     /// Map from media_id → session_id for reuse (legacy single-variant)
     media_sessions: DashMap<String, String>,
     /// Map from media_id → list of session_ids for multi-variant ABR
     media_variant_sessions: DashMap<String, Vec<String>>,
+    /// Per-media-id semaphore (capacity 1) to prevent concurrent session creation
+    /// for the same media item, which would orphan FFmpeg processes.
+    creation_locks: DashMap<String, Arc<Semaphore>>,
     cache_dir: PathBuf,
     ffmpeg_path: String,
     segment_duration: u64,
     session_timeout_secs: u64,
+    /// Seconds of no segment requests before FFmpeg is killed (client paused).
+    ffmpeg_idle_secs: u64,
     encoder: EncoderProfile,
 }
 
@@ -88,16 +154,19 @@ impl HlsSessionManager {
         ffmpeg_path: String,
         segment_duration: u64,
         session_timeout_secs: u64,
+        ffmpeg_idle_secs: u64,
         encoder: EncoderProfile,
     ) -> Self {
         Self {
             sessions: DashMap::new(),
             media_sessions: DashMap::new(),
             media_variant_sessions: DashMap::new(),
+            creation_locks: DashMap::new(),
             cache_dir,
             ffmpeg_path,
             segment_duration,
             session_timeout_secs,
+            ffmpeg_idle_secs,
             encoder,
         }
     }
@@ -106,6 +175,7 @@ impl HlsSessionManager {
     /// Returns the session. Creates FFmpeg process if new.
     /// `start_secs` is the time offset to start transcoding from (0.0 = beginning).
     /// If a session already exists for this media with the same start offset, reuse it.
+    #[allow(clippy::too_many_arguments)]
     pub async fn get_or_create_session(
         &self,
         media_id: &str,
@@ -115,6 +185,7 @@ impl HlsSessionManager {
         height: Option<u32>,
         bitrate_kbps: Option<u32>,
         start_secs: f64,
+        requested_secs: f64,
         subtitle_path: Option<&Path>,
         pixel_format: Option<&str>,
         audio_stream_index: Option<u32>,
@@ -124,6 +195,15 @@ impl HlsSessionManager {
         color_transfer: Option<&str>,
         color_primaries: Option<&str>,
     ) -> Result<Arc<HlsSession>> {
+        // Acquire per-media creation lock to prevent concurrent requests for the same
+        // media from each spawning a separate FFmpeg process, where the second would
+        // overwrite the first in media_sessions, orphaning the first FFmpeg process.
+        let lock = self.creation_locks
+            .entry(media_id.to_string())
+            .or_insert_with(|| Arc::new(Semaphore::new(1)))
+            .clone();
+        let _guard = lock.acquire().await.map_err(|e| anyhow!("Lock error: {}", e))?;
+
         // Check for existing session for this media
         if let Some(sid) = self.media_sessions.get(media_id) {
             if let Some(session) = self.sessions.get(sid.value()) {
@@ -140,12 +220,13 @@ impl HlsSessionManager {
             }
         }
 
-        self.create_session(media_id, file_path, duration_secs, width, height, bitrate_kbps, start_secs, subtitle_path, None, pixel_format, audio_stream_index, frame_rate, audio_codec, video_codec, color_transfer, color_primaries).await
+        self.create_session(media_id, file_path, duration_secs, width, height, bitrate_kbps, start_secs, requested_secs, subtitle_path, None, pixel_format, audio_stream_index, frame_rate, audio_codec, video_codec, color_transfer, color_primaries).await
     }
 
     /// Always create a fresh HLS session (destroys any existing session for this media).
     /// Used for seeking to a new position.
     /// If `variant` is provided, FFmpeg will scale and constrain bitrate to that quality level.
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_session(
         &self,
         media_id: &str,
@@ -155,6 +236,7 @@ impl HlsSessionManager {
         height: Option<u32>,
         bitrate_kbps: Option<u32>,
         start_secs: f64,
+        requested_secs: f64,
         subtitle_path: Option<&Path>,
         variant: Option<&QualityVariant>,
         pixel_format: Option<&str>,
@@ -190,7 +272,7 @@ impl HlsSessionManager {
         );
 
         // Spawn FFmpeg (with -ss if starting from a non-zero position)
-        let child = self.spawn_ffmpeg(file_path, &output_dir, start_secs, subtitle_path, variant, height, pixel_format, audio_stream_index, frame_rate, audio_codec, video_codec, color_transfer, color_primaries).await?;
+        let (child, stderr) = self.spawn_ffmpeg(file_path, &output_dir, start_secs, requested_secs, subtitle_path, variant, height, pixel_format, audio_stream_index, frame_rate, audio_codec, video_codec, color_transfer, color_primaries).await?;
 
         let (session_w, session_h, session_bw) = match variant {
             Some(v) => (Some(v.width), Some(v.height), v.bandwidth_bps),
@@ -209,14 +291,35 @@ impl HlsSessionManager {
             ffmpeg_handle: Mutex::new(Some(child)),
             created_at: Instant::now(),
             last_accessed: Mutex::new(Instant::now()),
+            last_segment_request: Mutex::new(Instant::now()),
+            ffmpeg_failed: std::sync::atomic::AtomicBool::new(false),
             duration_secs,
             width: session_w,
             height: session_h,
             bitrate_kbps: variant.map(|v| v.video_bitrate_kbps).or(bitrate_kbps),
-            start_secs,
+            start_secs: requested_secs,
             variant_label,
             bandwidth_bps: session_bw,
         });
+
+        // Wire the stderr reader to the session's ffmpeg_failed flag.
+        // This must happen after session construction so we can clone the Arc.
+        if let Some(stderr) = stderr {
+            let session_id_log = session_id.clone();
+            let session_arc = session.clone();
+            tokio::spawn(async move {
+                use tokio::io::AsyncBufReadExt;
+                let reader = tokio::io::BufReader::new(stderr);
+                let mut lines = reader.lines();
+                while let Ok(Some(line)) = lines.next_line().await {
+                    warn!("ffmpeg HLS [{}]: {}", session_id_log, line);
+                    if is_ffmpeg_fatal_error(&line) {
+                        warn!("ffmpeg HLS [{}]: fatal error detected, marking session failed", session_id_log);
+                        session_arc.ffmpeg_failed.store(true, std::sync::atomic::Ordering::Release);
+                    }
+                }
+            });
+        }
 
         self.sessions.insert(session_id.clone(), session.clone());
         if variant.is_none() {
@@ -257,6 +360,7 @@ impl HlsSessionManager {
 
     /// Create multiple HLS sessions for adaptive bitrate streaming.
     /// Spawns one FFmpeg process per quality variant. Returns all sessions.
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_variant_sessions(
         &self,
         media_id: &str,
@@ -266,6 +370,7 @@ impl HlsSessionManager {
         source_height: Option<u32>,
         source_bitrate_kbps: Option<u32>,
         start_secs: f64,
+        requested_secs: f64,
         subtitle_path: Option<&Path>,
         pixel_format: Option<&str>,
         audio_stream_index: Option<u32>,
@@ -300,6 +405,7 @@ impl HlsSessionManager {
                     source_height,
                     source_bitrate_kbps,
                     start_secs,
+                    requested_secs,
                     subtitle_path,
                     Some(variant),
                     pixel_format,
@@ -324,6 +430,7 @@ impl HlsSessionManager {
     /// Create a single HLS session at the highest quality for fast seeking.
     /// Only spawns ONE FFmpeg process instead of one per variant, dramatically
     /// reducing seek latency. Returns a single-element Vec for API compatibility.
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_single_variant_session(
         &self,
         media_id: &str,
@@ -333,6 +440,7 @@ impl HlsSessionManager {
         source_height: Option<u32>,
         source_bitrate_kbps: Option<u32>,
         start_secs: f64,
+        requested_secs: f64,
         subtitle_path: Option<&Path>,
         pixel_format: Option<&str>,
         audio_stream_index: Option<u32>,
@@ -363,6 +471,7 @@ impl HlsSessionManager {
                 source_height,
                 source_bitrate_kbps,
                 start_secs,
+                requested_secs,
                 subtitle_path,
                 Some(variant),
                 pixel_format,
@@ -384,6 +493,7 @@ impl HlsSessionManager {
 
     /// Destroy all sessions (single + variant) for a media item.
     pub async fn destroy_media_sessions(&self, media_id: &str) {
+
         // Destroy single-variant session
         if let Some(sid) = self.media_sessions.get(media_id) {
             let old_sid = sid.clone();
@@ -396,6 +506,26 @@ impl HlsSessionManager {
                 self.destroy_session(&sid).await;
             }
         }
+    }
+
+    /// Return a snapshot of all currently active HLS sessions.
+    pub async fn list_active_sessions(&self) -> Vec<ActiveSessionInfo> {
+        let mut result = Vec::new();
+        for entry in self.sessions.iter() {
+            let s = entry.value();
+            result.push(ActiveSessionInfo {
+                session_id: s.session_id.clone(),
+                media_id: s.media_id.clone(),
+                variant_label: s.variant_label.clone(),
+                start_secs: s.start_secs,
+                width: s.width,
+                height: s.height,
+                bitrate_kbps: s.bitrate_kbps,
+                idle_secs: s.idle_secs().await,
+                age_secs: s.created_at.elapsed().as_secs(),
+            });
+        }
+        result
     }
 
     /// Get all variant sessions for a media item (for master playlist generation).
@@ -414,11 +544,13 @@ impl HlsSessionManager {
     /// If `subtitle_path` is provided, burns subtitles into the video via `-vf subtitles=`.
     /// If `variant` is provided, scales video and constrains bitrate to that quality level.
     /// `source_height` is used to determine if the variant actually needs scaling.
+    #[allow(clippy::too_many_arguments)]
     async fn spawn_ffmpeg(
         &self,
         file_path: &Path,
         output_dir: &Path,
         start_secs: f64,
+        requested_secs: f64,
         subtitle_path: Option<&Path>,
         variant: Option<&QualityVariant>,
         source_height: Option<u32>,
@@ -429,12 +561,12 @@ impl HlsSessionManager {
         video_codec: Option<&str>,
         color_transfer: Option<&str>,
         color_primaries: Option<&str>,
-    ) -> Result<Child> {
+    ) -> Result<(Child, Option<tokio::process::ChildStderr>)> {
         // Only fall back to software encoding when we actually need CPU-side
         // frame access (subtitle burn-in or resolution scaling).
         // If the variant matches the source resolution, no scale filter is needed
         // and we can keep using the hardware encoder.
-        let needs_scaling = variant.map_or(false, |v| {
+        let needs_scaling = variant.is_some_and(|v| {
             let src_h = source_height.unwrap_or(1080);
             v.height != src_h
         });
@@ -462,7 +594,7 @@ impl HlsSessionManager {
         // HLS muxer can't consume them without an explicit hwdownload step.
         // CPU decode + NVENC encode is still very fast and avoids this issue.
         if needs_scaling && !needs_software {
-            args.extend(effective_encoder.hw_input_args());
+            args.extend(effective_encoder.hw_input_args().iter().cloned());
         }
 
         // Seek before input for fast seeking (demuxer-level)
@@ -475,6 +607,17 @@ impl HlsSessionManager {
         args.extend([
             "-i".into(),
             file_path.to_string_lossy().to_string(),
+        ]);
+
+        // Precise seek after input: decode from the keyframe but trim output
+        // to the exact requested time. This gives frame-accurate seeking so the
+        // user lands exactly where they clicked, not at the nearest keyframe.
+        let precise_delta = requested_secs - start_secs;
+        if precise_delta > 0.1 {
+            args.extend(["-ss".into(), format!("{:.3}", precise_delta)]);
+        }
+
+        args.extend([
             // Map first video + selected audio stream
             "-map".into(),
             "0:v:0".into(),
@@ -488,7 +631,7 @@ impl HlsSessionManager {
         // High bit-depth handling: detect whether content is true HDR or just
         // 10-bit SDR, and apply the appropriate filter.
         let is_high_bit = pixel_format
-            .map(|pf| ferrite_transcode::tonemap::is_high_bit_depth(pf))
+            .map(ferrite_transcode::tonemap::is_high_bit_depth)
             .unwrap_or(false);
         let needs_tonemap = is_high_bit
             && ferrite_transcode::tonemap::is_true_hdr(color_transfer, color_primaries);
@@ -570,7 +713,7 @@ impl HlsSessionManager {
         // With -c:v copy, GOP args are meaningless — the source keyframes are preserved.
         if !can_copy_video {
             let fps = frame_rate
-                .and_then(|fr| parse_frame_rate(fr))
+                .and_then(parse_frame_rate)
                 .unwrap_or(24.0);
             let gop_size = (self.segment_duration as f64 * fps).round() as u32;
             args.extend([
@@ -583,7 +726,7 @@ impl HlsSessionManager {
 
         // Audio: passthrough if the source codec is browser-compatible, otherwise re-encode to AAC stereo
         let can_passthrough = audio_codec
-            .map(|c| ferrite_transcode::audio::can_passthrough(c))
+            .map(ferrite_transcode::audio::can_passthrough)
             .unwrap_or(false);
         if can_passthrough {
             args.extend(["-c:a".into(), "copy".into()]);
@@ -627,25 +770,10 @@ impl HlsSessionManager {
             .spawn()
             .map_err(|e| anyhow!("Failed to spawn ffmpeg for HLS: {}", e))?;
 
-        // Spawn a task to log FFmpeg stderr
-        if let Some(stderr) = child.stderr.take() {
-            let session_id = output_dir
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string();
-            tokio::spawn(async move {
-                use tokio::io::AsyncBufReadExt;
-                let reader = tokio::io::BufReader::new(stderr);
-                let mut lines = reader.lines();
-                while let Ok(Some(line)) = lines.next_line().await {
-                    // Log all FFmpeg output at warn level for debugging
-                    warn!("ffmpeg HLS [{}]: {}", session_id, line);
-                }
-            });
-        }
-
-        Ok(child)
+        // Return stderr to the caller so it can be wired to the session's
+        // ffmpeg_failed flag after the session Arc is constructed.
+        let stderr = child.stderr.take();
+        Ok((child, stderr))
     }
 
     /// Generate master playlist pointing to one or more variants.
@@ -716,18 +844,22 @@ impl HlsSessionManager {
         Ok(rewritten)
     }
 
-    /// Read a segment file from disk.
+    /// Wait for a segment file to be finalized by FFmpeg and return its path.
     ///
-    /// For `init.mp4`, serves immediately once the file exists (it's written once
-    /// before any segments). For `.m4s` segments, waits until the segment filename
-    /// appears in the playlist's `#EXTINF` entries — this means FFmpeg has finished
-    /// writing that segment and moved on to the next one, preventing partial reads.
-    pub async fn get_segment(
+    /// For `init.mp4`, waits until the file exists (written once before any segments).
+    /// For `.m4s` segments, waits until the filename appears in the playlist's `#EXTINF`
+    /// entries — this means FFmpeg has finished writing that segment and moved on,
+    /// preventing partial reads.
+    ///
+    /// Returns `Ok(Some(PathBuf))` when the segment is ready to be read, `Ok(None)` if
+    /// FFmpeg exited or timed out, or `Err` for invalid filenames.
+    pub async fn wait_for_segment(
         &self,
         session: &HlsSession,
         filename: &str,
-    ) -> Result<Option<Vec<u8>>> {
+    ) -> Result<Option<std::path::PathBuf>> {
         session.touch().await;
+        *session.last_segment_request.lock().await = Instant::now();
 
         // Validate filename to prevent path traversal
         if filename.contains("..") || filename.contains('/') || filename.contains('\\') {
@@ -740,8 +872,7 @@ impl HlsSessionManager {
         if filename == "init.mp4" {
             for _ in 0..60 {
                 if path.exists() {
-                    let data = tokio::fs::read(&path).await?;
-                    return Ok(Some(data));
+                    return Ok(Some(path));
                 }
                 // Bail early if FFmpeg has crashed
                 if !session.is_ffmpeg_alive().await {
@@ -762,11 +893,17 @@ impl HlsSessionManager {
         for _ in 0..60 {
             if let Ok(playlist) = tokio::fs::read_to_string(&playlist_path).await {
                 if segment_listed_in_playlist(&playlist, filename) {
-                    // Segment is finalized in the playlist — safe to read
-                    if let Ok(data) = tokio::fs::read(&path).await {
-                        return Ok(Some(data));
-                    }
+                    return Ok(Some(path));
                 }
+            }
+            // Short-circuit if FFmpeg reported a fatal error via stderr
+            // (e.g. corrupt file, permission denied, disk full).
+            if session.ffmpeg_failed.load(std::sync::atomic::Ordering::Acquire) {
+                warn!(
+                    "FFmpeg fatal error detected for session {}, aborting segment wait for '{}'",
+                    session.session_id, filename
+                );
+                return Ok(None);
             }
             // Bail early if FFmpeg has crashed — no point waiting for segments
             // that will never be written.
@@ -774,9 +911,7 @@ impl HlsSessionManager {
                 // One final check: FFmpeg may have written this segment before dying
                 if let Ok(playlist) = tokio::fs::read_to_string(&playlist_path).await {
                     if segment_listed_in_playlist(&playlist, filename) {
-                        if let Ok(data) = tokio::fs::read(&path).await {
-                            return Ok(Some(data));
-                        }
+                        return Ok(Some(path));
                     }
                 }
                 warn!(
@@ -791,8 +926,7 @@ impl HlsSessionManager {
         // Final check after timeout
         if let Ok(playlist) = tokio::fs::read_to_string(&playlist_path).await {
             if segment_listed_in_playlist(&playlist, filename) {
-                let data = tokio::fs::read(&path).await?;
-                return Ok(Some(data));
+                return Ok(Some(path));
             }
         }
 
@@ -804,18 +938,39 @@ impl HlsSessionManager {
         self.sessions.get(session_id).map(|s| s.clone())
     }
 
+    /// Get the current session for a media item (if any).
+    /// Checks variant sessions first (used by create_single_variant_session),
+    /// then falls back to legacy single-variant media_sessions.
+    pub fn get_session_for_media(&self, media_id: &str) -> Option<Arc<HlsSession>> {
+        // Check variant sessions first (create_single_variant_session stores here)
+        if let Some(sids) = self.media_variant_sessions.get(media_id) {
+            if let Some(first_sid) = sids.first() {
+                if let Some(session) = self.sessions.get(first_sid) {
+                    return Some(session.clone());
+                }
+            }
+        }
+        // Fallback to legacy single-variant map
+        let sid = self.media_sessions.get(media_id)?;
+        self.sessions.get(sid.value()).map(|s| s.clone())
+    }
+
     /// Destroy a session: kill FFmpeg, remove files.
     pub async fn destroy_session(&self, session_id: &str) {
         if let Some((_, session)) = self.sessions.remove(session_id) {
-            // Remove media → session mapping
-            self.media_sessions
-                .remove(&session.media_id);
+            // Remove media → session mapping (single-variant)
+            self.media_sessions.remove(&session.media_id);
 
-            // Kill FFmpeg
-            if let Some(mut child) = session.ffmpeg_handle.lock().await.take() {
-                let _ = child.kill().await;
-                debug!("Killed FFmpeg for HLS session {}", session_id);
+            // Remove from variant sessions map if present
+            if let Some(mut sids) = self.media_variant_sessions.get_mut(&session.media_id) {
+                sids.retain(|sid| sid != session_id);
             }
+            // If no variant sessions remain for this media, remove the entry entirely
+            self.media_variant_sessions
+                .remove_if(&session.media_id, |_, sids| sids.is_empty());
+
+            // Kill FFmpeg (SIGTERM → 2s → SIGKILL on Unix, immediate kill on Windows)
+            session.kill_ffmpeg().await;
 
             // Remove output directory
             if session.output_dir.exists() {
@@ -857,19 +1012,34 @@ impl HlsSessionManager {
         info!("All HLS sessions destroyed");
     }
 
-    /// Background cleanup loop — removes expired sessions.
+    /// Background cleanup loop — kills idle FFmpeg processes promptly and removes expired sessions.
     pub async fn cleanup_loop(self: Arc<Self>) {
         let mut interval =
-            tokio::time::interval(std::time::Duration::from_secs(60));
+            tokio::time::interval(std::time::Duration::from_secs(15));
 
         loop {
             interval.tick().await;
 
             let mut expired = Vec::new();
+            let mut ffmpeg_to_kill: Vec<Arc<HlsSession>> = Vec::new();
+
             for entry in self.sessions.iter() {
-                if entry.value().idle_secs().await > self.session_timeout_secs {
+                let session = entry.value();
+                if session.idle_secs().await > self.session_timeout_secs {
                     expired.push(entry.key().clone());
+                } else if session.is_ffmpeg_alive().await
+                    && session.segment_idle_secs().await > self.ffmpeg_idle_secs
+                {
+                    ffmpeg_to_kill.push(session.clone());
                 }
+            }
+
+            for session in ffmpeg_to_kill {
+                info!(
+                    "Killing idle FFmpeg for session {} (no segments requested for {}s)",
+                    session.session_id, self.ffmpeg_idle_secs
+                );
+                session.kill_ffmpeg().await;
             }
 
             for session_id in expired {
@@ -956,6 +1126,21 @@ fn parse_frame_rate(fr: &str) -> Option<f64> {
     } else {
         fr.trim().parse().ok()
     }
+}
+
+/// Detect known fatal FFmpeg error patterns in a stderr line.
+/// Returns true if the error is unrecoverable and the segment will never be written.
+/// Used to short-circuit the 30s segment polling timeout.
+fn is_ffmpeg_fatal_error(line: &str) -> bool {
+    let lower = line.to_lowercase();
+    lower.contains("no such file or directory")
+        || lower.contains("permission denied")
+        || lower.contains("disk quota exceeded")
+        || lower.contains("no space left on device")
+        || lower.contains("invalid data found when processing input")
+        || lower.contains("moov atom not found")
+        || lower.contains("end of file")
+        || (lower.contains("error") && lower.contains("opening") && lower.contains("for reading"))
 }
 
 /// Minimal percent-encoding for token in URL.

@@ -32,6 +32,15 @@ export default function MediaCard(props: MediaCardProps) {
     return 0;
   };
 
+  /** Show a "new" dot for items added in the last 7 days that haven't been played */
+  const isNew = () => {
+    if (item().completed || (item().position_ms && item().position_ms! > 0)) return false;
+    const added = item().added_at;
+    if (!added) return false;
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return new Date(added).getTime() > sevenDaysAgo;
+  };
+
   return (
     <div
       class="bg-surface-100 rounded-xl overflow-hidden cursor-pointer border border-surface-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40 transition-all group"
@@ -51,6 +60,11 @@ export default function MediaCard(props: MediaCardProps) {
           <div class="absolute top-1.5 right-1.5 bg-black/70 text-green-400 w-5 h-5 rounded-full flex items-center justify-center text-xs">
             ✓
           </div>
+        </Show>
+
+        {/* New/unwatched dot */}
+        <Show when={isNew()}>
+          <div class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-ferrite-500 shadow-lg shadow-ferrite-500/50" />
         </Show>
 
         {/* Progress bar */}

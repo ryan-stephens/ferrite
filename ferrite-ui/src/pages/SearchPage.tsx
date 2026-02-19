@@ -1,6 +1,6 @@
 import { createSignal, createEffect, For, Show, onMount } from 'solid-js';
-import { useNavigate } from '@solidjs/router';
-import { Search, X, Play, Star, SlidersHorizontal } from 'lucide-solid';
+import { useNavigate, useSearchParams } from '@solidjs/router';
+import { Search, Play, Star, SlidersHorizontal } from 'lucide-solid';
 import { allMedia, loadMedia, libraries, loadLibraries } from '../stores/media';
 import { authUrl } from '../api';
 import type { MediaItem } from '../api';
@@ -11,9 +11,10 @@ type SortKey = 'title-asc' | 'title-desc' | 'year-desc' | 'year-asc' | 'rating-d
 
 export default function SearchPage() {
   const navigate = useNavigate();
-  let searchRef!: HTMLInputElement;
+  const [searchParams] = useSearchParams();
 
-  const [query, setQuery] = createSignal(localStorage.getItem('ferrite-search') || '');
+  // Derive query directly from the URL param so header-bar typing updates results live
+  const query = () => searchParams.q || '';
   const [sort, setSort] = createSignal<SortKey>((localStorage.getItem('ferrite-sort') as SortKey) || 'title-asc');
   const [viewMode, setViewMode] = createSignal<ViewMode>((localStorage.getItem('ferrite-view') as ViewMode) || 'grid');
   const [showFilters, setShowFilters] = createSignal(false);
@@ -22,13 +23,11 @@ export default function SearchPage() {
   onMount(async () => {
     if (allMedia().length === 0) await loadMedia();
     if (libraries().length === 0) await loadLibraries();
-    searchRef?.focus();
   });
 
   createEffect(() => {
     const q = query().toLowerCase().trim();
     const s = sort();
-    localStorage.setItem('ferrite-search', q);
     localStorage.setItem('ferrite-sort', s);
     localStorage.setItem('ferrite-view', viewMode());
 
@@ -60,32 +59,19 @@ export default function SearchPage() {
 
   return (
     <div class="px-6 py-6 animate-fade-in">
-      {/* Search bar */}
+      {/* Header row */}
       <div class="flex items-center gap-3 mb-6">
-        <div class="flex-1 relative">
-          <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-700" />
-          <input
-            ref={searchRef!}
-            type="text"
-            class="input-field pl-12 pr-10 text-base"
-            placeholder="Search by title, genre, or description..."
-            value={query()}
-            onInput={(e) => setQuery(e.currentTarget.value)}
-          />
-          <Show when={query()}>
-            <button
-              class="absolute right-3 top-1/2 -translate-y-1/2 btn-icon w-7 h-7"
-              onClick={() => setQuery('')}
-            >
-              <X class="w-4 h-4" />
-            </button>
-          </Show>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-xl font-semibold text-white truncate">
+            <Show when={query()} fallback={<span class="text-surface-700">All media</span>}>
+              Results for <span class="text-ferrite-400">&ldquo;{query()}&rdquo;</span>
+            </Show>
+          </h1>
         </div>
-
         <button
-          class={`btn-icon ${showFilters() ? 'bg-ferrite-500/15 text-ferrite-400' : ''}`}
+          class={`btn-icon flex-shrink-0 ${showFilters() ? 'bg-ferrite-500/15 text-ferrite-400' : ''}`}
           onClick={() => setShowFilters(!showFilters())}
-          title="Filters & Sort"
+          title="Sort &amp; View"
         >
           <SlidersHorizontal class="w-4.5 h-4.5" />
         </button>

@@ -62,8 +62,9 @@ pub async fn scan_library(
         let ffprobe_path = &config.transcode.ffprobe_path;
         let ffmpeg_path = &config.transcode.ffmpeg_path;
         let concurrent_probes = config.scanner.concurrent_probes;
+        let subtitle_cache_dir = &config.scanner.subtitle_cache_dir;
 
-        match ferrite_scanner::scan_library(&db, &lib_id, ffprobe_path, ffmpeg_path, concurrent_probes).await {
+        match ferrite_scanner::scan_library(&db, &lib_id, ffprobe_path, ffmpeg_path, concurrent_probes, subtitle_cache_dir).await {
             Ok(count) => {
                 tracing::info!("Background scan complete for library {}: {} items", lib_id, count);
             }

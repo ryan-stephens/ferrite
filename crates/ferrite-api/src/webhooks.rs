@@ -108,7 +108,7 @@ impl WebhookDispatcher {
 
             match result {
                 Ok(status) => {
-                    let success = status >= 200 && status < 300;
+                    let success = (200..300).contains(&status);
                     webhook_repo::record_delivery(
                         &self.db,
                         &webhook.id,

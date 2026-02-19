@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, SqliteConnection};
 
 /// Data for a single media stream to insert into the database.
 #[derive(Debug)]
@@ -29,15 +29,16 @@ pub struct StreamInsert {
 
 /// Replace all streams for a media item (delete old, insert new).
 /// Called during scanning when a file is re-probed.
+/// Accepts `&mut SqliteConnection` so it can run inside a transaction.
 pub async fn replace_streams(
-    pool: &SqlitePool,
+    executor: &mut SqliteConnection,
     media_item_id: &str,
     streams: &[StreamInsert],
 ) -> Result<()> {
     // Delete existing streams for this media item
     sqlx::query("DELETE FROM media_streams WHERE media_item_id = ?")
         .bind(media_item_id)
-        .execute(pool)
+        .execute(&mut *executor)
         .await?;
 
     // Insert all new streams
@@ -73,7 +74,7 @@ pub async fn replace_streams(
         .bind(&s.channel_layout)
         .bind(s.sample_rate.map(|v| v as i64))
         .bind(s.bitrate_bps.map(|v| v as i64))
-        .execute(pool)
+        .execute(&mut *executor)
         .await?;
     }
 
@@ -117,6 +118,39 @@ pub async fn get_streams(pool: &SqlitePool, media_item_id: &str) -> Result<Vec<M
     .fetch_all(pool)
     .await?;
     Ok(rows)
+}
+
+/// All video stream metadata needed for transcoding decisions, fetched in one query.
+#[derive(Debug, Clone)]
+pub struct VideoMeta {
+    pub pixel_format: Option<String>,
+    pub frame_rate: Option<String>,
+    pub color_space: Option<String>,
+    pub color_transfer: Option<String>,
+    pub color_primaries: Option<String>,
+}
+
+/// Fetch all video stream metadata for a media item in a single DB round-trip.
+/// Replaces the three separate `get_video_pixel_format`, `get_video_frame_rate`,
+/// and `get_video_color_metadata` calls that were previously made sequentially.
+pub async fn get_video_meta(pool: &SqlitePool, media_item_id: &str) -> Result<Option<VideoMeta>> {
+    let row: Option<(Option<String>, Option<String>, Option<String>, Option<String>, Option<String>)> =
+        sqlx::query_as(
+            "SELECT pixel_format, frame_rate, color_space, color_transfer, color_primaries \
+             FROM media_streams \
+             WHERE media_item_id = ? AND stream_type = 'video' \
+             ORDER BY stream_index LIMIT 1",
+        )
+        .bind(media_item_id)
+        .fetch_optional(pool)
+        .await?;
+    Ok(row.map(|r| VideoMeta {
+        pixel_format: r.0,
+        frame_rate: r.1,
+        color_space: r.2,
+        color_transfer: r.3,
+        color_primaries: r.4,
+    }))
 }
 
 /// Get the pixel format of the first video stream for a media item.

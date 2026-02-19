@@ -1,6 +1,10 @@
+use crate::auth::AuthUser;
+use crate::error::ApiError;
 use crate::state::AppState;
 use axum::extract::State;
 use axum::response::{Html, IntoResponse, Json};
+use axum::Extension;
+use ferrite_db::user_repo;
 use serde_json::json;
 
 pub async fn health() -> impl IntoResponse {
@@ -24,6 +28,40 @@ pub async fn encoder_info(
         "encoder_name": profile.encoder_name,
         "is_hardware": profile.is_hardware(),
     }))
+}
+
+/// GET /api/admin/streams — list all active HLS transcode sessions (admin only).
+pub async fn list_active_streams(
+    State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
+) -> Result<impl IntoResponse, ApiError> {
+    if let Some(Extension(ref user)) = auth_user {
+        let caller = user_repo::get_user_by_id(&state.db, &user.user_id)
+            .await?
+            .ok_or_else(|| ApiError::unauthorized("User not found"))?;
+        if caller.is_admin == 0 {
+            return Err(ApiError::forbidden("Admin access required"));
+        }
+    }
+    let sessions = state.hls_sessions.list_active_sessions().await;
+    let count = sessions.len();
+    let items: Vec<serde_json::Value> = sessions
+        .into_iter()
+        .map(|s| {
+            json!({
+                "session_id": s.session_id,
+                "media_id": s.media_id,
+                "variant_label": s.variant_label,
+                "start_secs": s.start_secs,
+                "width": s.width,
+                "height": s.height,
+                "bitrate_kbps": s.bitrate_kbps,
+                "idle_secs": s.idle_secs,
+                "age_secs": s.age_secs,
+            })
+        })
+        .collect();
+    Ok(Json(json!({ "sessions": items, "count": count })))
 }
 
 /// Serve the embedded web UI. For M1 this is a simple inline HTML page.

@@ -12,8 +12,6 @@ nul
 .idea
 config/ferrite.toml
 CLAUDE.md
-EVALUATION.md
-PROGRESS.md
 ferrite-perf.log
 ferrite-stderr.log
 ferrite-stdout.log

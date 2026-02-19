@@ -1,8 +1,8 @@
 import { createSignal, For, Show, onMount } from 'solid-js';
 import { A, useLocation } from '@solidjs/router';
 import {
-  Home, Library, PlayCircle, FolderOpen, Settings, ChevronLeft,
-  ChevronRight, Search, LogOut, Flame,
+  Home, Library, FolderOpen, Settings, ChevronLeft,
+  ChevronRight, LogOut, Flame, Activity,
 } from 'lucide-solid';
 import { libraries } from '../stores/media';
 import { authState, logout } from '../stores/auth';
@@ -66,11 +66,6 @@ export default function Sidebar() {
           <Show when={!collapsed()}><span>Home</span></Show>
         </A>
 
-        <A href="/search" class={linkClass('/search')}>
-          <Search class={iconClass('/search')} />
-          <Show when={!collapsed()}><span>Search</span></Show>
-        </A>
-
         <Show when={!collapsed()}>
           <div class="pt-4 pb-2 px-3">
             <span class="text-2xs font-semibold uppercase tracking-widest text-surface-600">Libraries</span>
@@ -91,34 +86,21 @@ export default function Sidebar() {
           )}
         </For>
 
-        <Show when={!collapsed()}>
-          <div class="pt-4 pb-2 px-3">
-            <span class="text-2xs font-semibold uppercase tracking-widest text-surface-600">Activity</span>
-          </div>
-        </Show>
-        <Show when={collapsed()}>
-          <div class="pt-3" />
-        </Show>
-
-        <A href="/continue" class={linkClass('/continue')}>
-          <PlayCircle class={iconClass('/continue')} />
-          <Show when={!collapsed()}><span>Continue Watching</span></Show>
-        </A>
-
-        <A href="/collections" class={linkClass('/collections')}>
-          <Library class={iconClass('/collections')} />
-          <Show when={!collapsed()}><span>Collections</span></Show>
-        </A>
       </nav>
 
       {/* Bottom section */}
       <div class="px-3 py-3 border-t border-surface-300/30 space-y-1 flex-shrink-0">
+        <A href="/admin" class={linkClass('/admin')}>
+          <Activity class={iconClass('/admin')} />
+          <Show when={!collapsed()}><span>Activity</span></Show>
+        </A>
+
         <A href="/settings" class={linkClass('/settings')}>
           <Settings class={iconClass('/settings')} />
           <Show when={!collapsed()}><span>Settings</span></Show>
         </A>
 
-        <Show when={authState().authRequired}>
+        <Show when={authState().authRequired || authState().authenticated}>
           <button onClick={logout} class={`${linkClass('/logout')} w-full`}>
             <LogOut class="w-5 h-5 flex-shrink-0 text-surface-700 group-hover:text-gray-300" />
             <Show when={!collapsed()}><span>Log Out</span></Show>

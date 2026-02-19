@@ -1,6 +1,6 @@
 import { createSignal, Show, onMount } from 'solid-js';
 import { useParams, useNavigate } from '@solidjs/router';
-import { Play, ArrowLeft, Star, Clock, HardDrive, Film, Music, Monitor, ChevronRight } from 'lucide-solid';
+import { Play, ArrowLeft, Star, Clock, HardDrive, Film, Music, Monitor, ChevronRight, CheckCircle, Circle } from 'lucide-solid';
 import { api, authUrl } from '../api';
 import type { MediaItem } from '../api';
 import { getDisplayTitle, getDisplayYear, formatDuration, formatSize, getResLabel, getStreamType } from '../utils';
@@ -10,6 +10,7 @@ export default function MediaDetailPage() {
   const navigate = useNavigate();
   const [item, setItem] = createSignal<MediaItem | null>(null);
   const [showTechInfo, setShowTechInfo] = createSignal(false);
+  const [togglingWatched, setTogglingWatched] = createSignal(false);
 
   onMount(async () => {
     try {
@@ -53,6 +54,22 @@ export default function MediaDetailPage() {
       case 'full-transcode': return 'bg-red-500/15 text-red-400 border-red-500/20';
     }
   };
+
+  async function handleToggleWatched() {
+    if (!item() || togglingWatched()) return;
+    setTogglingWatched(true);
+    try {
+      if (item()!.completed) {
+        await api.resetProgress(item()!.id);
+        setItem({ ...item()!, completed: false, position_ms: 0 });
+      } else {
+        await api.markCompleted(item()!.id);
+        setItem({ ...item()!, completed: true, position_ms: 0 });
+      }
+    } finally {
+      setTogglingWatched(false);
+    }
+  }
 
   function handlePlay(resumePos: number | null = null) {
     if (!item()) return;
@@ -146,7 +163,7 @@ export default function MediaDetailPage() {
                 <div class="flex items-center gap-3 pt-2">
                   <Show when={hasProgress()} fallback={
                     <button class="btn-primary text-base px-7 py-3" onClick={() => handlePlay()}>
-                      <Play class="w-5 h-5 fill-current" /> Play
+                      <Play class="w-5 h-5 fill-current" /> {item()!.completed ? 'Play Again' : 'Play'}
                     </button>
                   }>
                     <button class="btn-primary text-base px-7 py-3" onClick={() => handlePlay(resumeTime())}>
@@ -156,6 +173,17 @@ export default function MediaDetailPage() {
                       Play from Start
                     </button>
                   </Show>
+                  <button
+                    class={`btn-ghost text-sm flex items-center gap-1.5 ${item()!.completed ? 'text-green-400 hover:text-gray-300' : 'text-surface-800 hover:text-gray-300'}`}
+                    onClick={handleToggleWatched}
+                    disabled={togglingWatched()}
+                    title={item()!.completed ? 'Mark as unwatched' : 'Mark as watched'}
+                  >
+                    <Show when={item()!.completed} fallback={<Circle class="w-4 h-4" />}>
+                      <CheckCircle class="w-4 h-4" />
+                    </Show>
+                    {item()!.completed ? 'Watched' : 'Mark Watched'}
+                  </button>
                 </div>
               </div>
             </div>

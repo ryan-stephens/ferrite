@@ -117,17 +117,23 @@ impl EncoderProfile {
 
     /// Get the FFmpeg args to set the video encoder (placed after -map).
     /// Returns: ["-c:v", "<encoder>", ...encoder_args]
+    /// Builds the vec by iterating encoder_args by reference to avoid a full clone.
     pub fn video_encode_args(&self) -> Vec<String> {
-        let mut args = vec!["-c:v".into(), self.encoder_name.clone()];
-        args.extend(self.encoder_args.clone());
+        let mut args = Vec::with_capacity(2 + self.encoder_args.len());
+        args.push("-c:v".to_string());
+        args.push(self.encoder_name.clone());
+        args.extend(self.encoder_args.iter().cloned());
         args
     }
 
     /// Get the FFmpeg args to set the video encoder, but WITHOUT `-pix_fmt`.
     /// Use this when pixel format conversion is handled by a video filter chain
     /// (e.g. HDR tone-mapping already outputs `format=yuv420p`).
+    /// Pre-allocates the exact capacity needed to avoid reallocation.
     pub fn video_encode_args_no_pix_fmt(&self) -> Vec<String> {
-        let mut args = vec!["-c:v".into(), self.encoder_name.clone()];
+        let mut args = Vec::with_capacity(2 + self.encoder_args.len());
+        args.push("-c:v".to_string());
+        args.push(self.encoder_name.clone());
         let mut skip_next = false;
         for arg in &self.encoder_args {
             if skip_next {
@@ -144,9 +150,9 @@ impl EncoderProfile {
     }
 
     /// Get the FFmpeg args for hardware-accelerated decoding (placed before -i).
-    /// Returns empty vec for software encoding.
-    pub fn hw_input_args(&self) -> Vec<String> {
-        self.hw_decode_args.clone()
+    /// Returns a slice — no allocation.
+    pub fn hw_input_args(&self) -> &[String] {
+        &self.hw_decode_args
     }
 
     /// Whether this profile uses hardware acceleration.

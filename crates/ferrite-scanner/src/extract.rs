@@ -42,25 +42,28 @@ pub fn is_extractable_subtitle(codec_name: &str) -> bool {
 
 /// Extract embedded text-based subtitles from a media file using FFmpeg.
 ///
-/// For each extractable subtitle stream, runs FFmpeg to copy the subtitle track
-/// to an external file next to the media file. The output filename follows the
-/// convention: `MediaFile.embedded.{index}.{lang}.{ext}`
+/// Files are written to `{subtitle_cache_dir}/{media_item_id}/` so they never
+/// appear inside the user's library directory.
 ///
 /// Returns a list of `SubtitleInsert` entries for the extracted files.
 pub async fn extract_embedded_subtitles(
     ffmpeg_path: &str,
     media_file: &Path,
     streams: &[EmbeddedSubtitleStream],
+    subtitle_cache_dir: &Path,
+    media_item_id: &str,
 ) -> Vec<SubtitleInsert> {
-    let parent = match media_file.parent() {
-        Some(p) => p,
-        None => return Vec::new(),
-    };
-
     let media_stem = match media_file.file_stem().and_then(|s| s.to_str()) {
         Some(s) => s,
         None => return Vec::new(),
     };
+
+    // Each media item gets its own subdirectory so files are easy to clean up
+    let output_dir = subtitle_cache_dir.join(media_item_id);
+    if let Err(e) = tokio::fs::create_dir_all(&output_dir).await {
+        warn!("Failed to create subtitle cache dir {}: {}", output_dir.display(), e);
+        return Vec::new();
+    }
 
     let mut extracted = Vec::new();
 
@@ -69,13 +72,13 @@ pub async fn extract_embedded_subtitles(
         let lang_part = stream.language.as_deref().unwrap_or("und");
         let forced_part = if stream.is_forced { ".forced" } else { "" };
 
-        // Output path: Movie.embedded.0.eng.srt
+        // Output path: {cache}/{media_item_id}/Movie.embedded.0.eng.srt
         let output_name = format!(
             "{}.embedded.{}.{}{}{}",
             media_stem, stream.stream_index, lang_part, forced_part,
             if ext.is_empty() { String::new() } else { format!(".{}", ext) }
         );
-        let output_path = parent.join(&output_name);
+        let output_path = output_dir.join(&output_name);
 
         // Skip if already extracted (idempotent)
         if output_path.exists() {

@@ -1,4 +1,4 @@
-use crate::provider::{MetadataProvider, MovieDetails, MovieSearchResult, TvSearchResult, TvShowDetails};
+use crate::provider::{EpisodeMetadata, MetadataProvider, MovieDetails, MovieSearchResult, TvSearchResult, TvShowDetails};
 use async_trait::async_trait;
 use anyhow::{Context, Result};
 use governor::{Quota, RateLimiter, clock::DefaultClock, state::{InMemoryState, NotKeyed}};
@@ -189,6 +189,44 @@ impl MetadataProvider for TmdbProvider {
             .collect();
 
         Ok(results)
+    }
+
+    async fn get_season_episodes(&self, tmdb_id: i64, season_number: i64) -> Result<Vec<EpisodeMetadata>> {
+        self.rate_limiter.until_ready().await;
+
+        let url = format!(
+            "{}/tv/{}/season/{}?api_key={}&language=en-US",
+            TMDB_BASE_URL, tmdb_id, season_number, self.api_key
+        );
+
+        debug!("TMDB season episodes: show={} season={}", tmdb_id, season_number);
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .context("TMDB season request failed")?;
+
+        let season: TmdbSeasonDetail = response
+            .json()
+            .await
+            .context("Failed to parse TMDB season detail")?;
+
+        let episodes = season
+            .episodes
+            .unwrap_or_default()
+            .into_iter()
+            .map(|e| EpisodeMetadata {
+                episode_number: e.episode_number,
+                title: e.name,
+                overview: e.overview,
+                air_date: e.air_date,
+                still_path: e.still_path,
+            })
+            .collect();
+
+        Ok(episodes)
     }
 
     async fn get_tv_details(&self, tmdb_id: i64) -> Result<TvShowDetails> {
@@ -382,6 +420,20 @@ struct TmdbTvDetail {
     poster_path: Option<String>,
     backdrop_path: Option<String>,
     genres: Option<Vec<TmdbGenre>>,
+}
+
+#[derive(Deserialize)]
+struct TmdbSeasonDetail {
+    episodes: Option<Vec<TmdbEpisodeResult>>,
+}
+
+#[derive(Deserialize)]
+struct TmdbEpisodeResult {
+    episode_number: i32,
+    name: Option<String>,
+    overview: Option<String>,
+    air_date: Option<String>,
+    still_path: Option<String>,
 }
 
 #[derive(Deserialize)]

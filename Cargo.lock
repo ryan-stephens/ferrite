@@ -674,6 +674,7 @@ dependencies = [
  "dashmap",
  "ferrite-core",
  "ferrite-transcode",
+ "libc",
  "mime_guess",
  "percent-encoding",
  "thiserror",

@@ -61,6 +61,28 @@ pub fn clean_title(raw: &str) -> String {
     collapsed.trim().to_string()
 }
 
+/// Strip a trailing 4-digit year (19xx or 20xx) from a show name.
+/// e.g. "Star Trek Lower Decks 2020" → "Star Trek Lower Decks"
+/// Leaves the name unchanged if no trailing year is found.
+pub fn strip_trailing_year(name: &str) -> &str {
+    // Match a trailing year separated by a space
+    if let Some(rest) = name.strip_suffix(|c: char| c.is_ascii_digit()) {
+        // Check if the last token is a 4-digit year (19xx or 20xx)
+        let trimmed = name.trim_end();
+        if trimmed.len() >= 5 {
+            let (prefix, suffix) = trimmed.split_at(trimmed.len() - 4);
+            if (suffix.starts_with("19") || suffix.starts_with("20"))
+                && suffix.chars().all(|c| c.is_ascii_digit())
+                && prefix.ends_with(' ')
+            {
+                return prefix.trim_end();
+            }
+        }
+        let _ = rest;
+    }
+    name
+}
+
 /// Parse a media file stem (filename without extension) into a structured result.
 ///
 /// Detection order:
@@ -71,7 +93,8 @@ pub fn parse_filename(file_stem: &str) -> ParsedFilename {
     // --- TV episodes (checked first) ---
 
     if let Some(caps) = RE_EPISODE_SXXEXX.captures(file_stem) {
-        let show_name = clean_title(&caps[1]);
+        let raw = clean_title(&caps[1]);
+        let show_name = strip_trailing_year(&raw).to_string();
         let season: u32 = caps[2].parse().unwrap_or(0);
         let episode: u32 = caps[3].parse().unwrap_or(0);
         return ParsedFilename::Episode(ParsedEpisode {
@@ -82,7 +105,8 @@ pub fn parse_filename(file_stem: &str) -> ParsedFilename {
     }
 
     if let Some(caps) = RE_EPISODE_NX_NN.captures(file_stem) {
-        let show_name = clean_title(&caps[1]);
+        let raw = clean_title(&caps[1]);
+        let show_name = strip_trailing_year(&raw).to_string();
         let season: u32 = caps[2].parse().unwrap_or(0);
         let episode: u32 = caps[3].parse().unwrap_or(0);
         return ParsedFilename::Episode(ParsedEpisode {
@@ -182,6 +206,32 @@ mod tests {
                 assert_eq!(e.show_name, "breaking bad");
                 assert_eq!(e.season, 3);
                 assert_eq!(e.episode, 5);
+            }
+            other => panic!("Expected Episode, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn episode_with_trailing_year() {
+        let result = parse_filename("Star.Trek.Lower.Decks.2020.S01E01.Strange.Energies");
+        match result {
+            ParsedFilename::Episode(e) => {
+                assert_eq!(e.show_name, "Star Trek Lower Decks");
+                assert_eq!(e.season, 1);
+                assert_eq!(e.episode, 1);
+            }
+            other => panic!("Expected Episode, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn episode_year_not_stripped_when_part_of_name() {
+        // Year in the middle should not be stripped
+        let result = parse_filename("Show.2020.Name.S01E01");
+        match result {
+            ParsedFilename::Episode(e) => {
+                // The year is not at the end, so name stays as-is after clean_title
+                assert_eq!(e.show_name, "Show 2020 Name");
             }
             other => panic!("Expected Episode, got {:?}", other),
         }

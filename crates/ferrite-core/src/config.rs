@@ -44,6 +44,14 @@ fn default_max_connections() -> u32 {
 pub struct ScannerConfig {
     pub concurrent_probes: usize,
     pub watch_debounce_seconds: u64,
+    /// Directory where extracted embedded subtitles are stored.
+    /// Defaults to `cache/subtitles` under the data directory.
+    #[serde(default = "default_subtitle_cache_dir")]
+    pub subtitle_cache_dir: PathBuf,
+}
+
+fn default_subtitle_cache_dir() -> PathBuf {
+    PathBuf::from("cache/subtitles")
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,6 +66,10 @@ pub struct TranscodeConfig {
     /// HLS session timeout — sessions idle for this many seconds are cleaned up
     #[serde(default = "default_hls_session_timeout")]
     pub hls_session_timeout_secs: u64,
+    /// Seconds of no segment requests before FFmpeg is killed (client paused).
+    /// Increase for slow/satellite connections where segment downloads take longer.
+    #[serde(default = "default_hls_ffmpeg_idle_secs")]
+    pub hls_ffmpeg_idle_secs: u64,
     /// Hardware acceleration preference: "nvenc", "qsv", "vaapi", "software", or null for auto-detect.
     #[serde(default)]
     pub hw_accel: Option<String>,
@@ -68,7 +80,11 @@ fn default_hls_segment_duration() -> u64 {
 }
 
 fn default_hls_session_timeout() -> u64 {
-    1800
+    30
+}
+
+fn default_hls_ffmpeg_idle_secs() -> u64 {
+    30
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -169,8 +185,13 @@ impl AppConfig {
             self.metadata.image_cache_dir = data_dir.join(&self.metadata.image_cache_dir);
         }
 
+        // Resolve subtitle cache dir
+        if self.scanner.subtitle_cache_dir.is_relative() {
+            self.scanner.subtitle_cache_dir = data_dir.join(&self.scanner.subtitle_cache_dir);
+        }
+
         // Ensure cache directories exist
-        for dir in [&self.transcode.cache_dir, &self.metadata.image_cache_dir] {
+        for dir in [&self.transcode.cache_dir, &self.metadata.image_cache_dir, &self.scanner.subtitle_cache_dir] {
             if let Err(e) = std::fs::create_dir_all(dir) {
                 tracing::warn!("Failed to create cache directory {}: {}", dir.display(), e);
             }
@@ -215,6 +236,7 @@ impl Default for AppConfig {
             scanner: ScannerConfig {
                 concurrent_probes: 4,
                 watch_debounce_seconds: 2,
+                subtitle_cache_dir: default_subtitle_cache_dir(),
             },
             transcode: TranscodeConfig {
                 ffmpeg_path: "ffmpeg".to_string(),
@@ -223,6 +245,7 @@ impl Default for AppConfig {
                 max_concurrent_transcodes: 2,
                 hls_segment_duration: default_hls_segment_duration(),
                 hls_session_timeout_secs: default_hls_session_timeout(),
+                hls_ffmpeg_idle_secs: default_hls_ffmpeg_idle_secs(),
                 hw_accel: None,
             },
             metadata: MetadataConfig::default(),

@@ -58,8 +58,21 @@ export function getStreamType(
 }
 
 /** Get display title for a media item */
-export function getDisplayTitle(item: { movie_title?: string | null; title: string; file_path: string }): string {
+export function getDisplayTitle(item: {
+  movie_title?: string | null;
+  show_title?: string | null;
+  is_episode?: number;
+  title: string;
+  file_path: string;
+}): string {
+  if (item.is_episode) return item.show_title || item.title || item.file_path.split(/[/\\]/).pop() || 'Unknown';
   return item.movie_title || item.title || item.file_path.split(/[/\\]/).pop() || 'Unknown';
+}
+
+/** Get episode label e.g. "S01E04" */
+export function getEpisodeLabel(item: { season_number?: number | null; episode_number?: number | null }): string | null {
+  if (item.season_number == null || item.episode_number == null) return null;
+  return `S${String(item.season_number).padStart(2, '0')}E${String(item.episode_number).padStart(2, '0')}`;
 }
 
 /** Get display year for a media item */

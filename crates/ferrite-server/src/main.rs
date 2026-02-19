@@ -169,6 +169,7 @@ async fn main() -> Result<()> {
         config.transcode.ffmpeg_path.clone(),
         config.transcode.hls_segment_duration,
         config.transcode.hls_session_timeout_secs,
+        config.transcode.hls_ffmpeg_idle_secs,
         hw_caps.selected_profile,
     ));
 
@@ -238,6 +239,7 @@ async fn main() -> Result<()> {
         config.transcode.ffmpeg_path.clone(),
         config.scanner.watch_debounce_seconds,
         config.scanner.concurrent_probes,
+        config.scanner.subtitle_cache_dir.clone(),
     );
     match watcher.start().await {
         Ok(_handle) => info!("Filesystem watcher started"),
@@ -309,7 +311,7 @@ ffprobe_path = "ffprobe"
 cache_dir = "cache/transcode"
 max_concurrent_transcodes = 2
 hls_segment_duration = 6
-hls_session_timeout_secs = 1800
+hls_session_timeout_secs = 30
 # Hardware acceleration: "nvenc", "qsv", "vaapi", "software", or omit for auto-detect
 # hw_accel = "software"
 

@@ -3,9 +3,9 @@ import Hls from 'hls.js';
 import {
   Play, Pause, Volume2, VolumeX, Volume1,
   Maximize, Minimize, ArrowLeft, SkipBack, SkipForward,
-  Settings, Loader2, PictureInPicture2, Languages,
+  Settings, Loader2, PictureInPicture2, Languages, Captions, SlidersHorizontal,
 } from 'lucide-solid';
-import type { MediaItem, MediaStream } from '../api';
+import type { MediaItem, MediaStream, ExternalSubtitle, NextEpisode, Chapter } from '../api';
 import { api, authUrl, getToken } from '../api';
 import { getDisplayTitle, getStreamType, fmtTime } from '../utils';
 import { perf } from '../lib/perf';
@@ -14,21 +14,50 @@ import PerfOverlay from './PerfOverlay';
 interface PlayerProps {
   item: MediaItem;
   resumePosition: number | null;
+  isEpisode?: boolean;
   onClose: () => void;
+  onNextEpisode?: (mediaItemId: string) => void;
 }
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
+// ---- Playback preference persistence (sessionStorage, scoped to library) ----
+interface PlaybackPrefs {
+  audioTrackIndex?: number;
+  subtitleTrackId?: number | null;
+  qualityHeight?: number;
+}
+
+function prefsKey(libraryId: string): string {
+  return `ferrite-prefs-${libraryId}`;
+}
+
+function loadPrefs(libraryId: string): PlaybackPrefs {
+  try {
+    const raw = sessionStorage.getItem(prefsKey(libraryId));
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function savePrefs(libraryId: string, prefs: PlaybackPrefs): void {
+  try {
+    const existing = loadPrefs(libraryId);
+    sessionStorage.setItem(prefsKey(libraryId), JSON.stringify({ ...existing, ...prefs }));
+  } catch {}
+}
+
 /** HLS.js config tuned for low-latency live-like playback from a local server */
 const HLS_CONFIG = {
-  maxBufferLength: 30,
-  maxMaxBufferLength: 60,
-  maxBufferSize: 60 * 1000 * 1000,
+  maxBufferLength: 60,
+  maxMaxBufferLength: 120,
+  maxBufferSize: 120 * 1000 * 1000,
+  backBufferLength: 30,
   maxBufferHole: 0.5,
   lowLatencyMode: false,
   startFragPrefetch: true,
   testBandwidth: false,
   abrEwmaDefaultEstimate: 10_000_000,
+  enableWorker: true,
 };
 
 function createHls(): Hls {
@@ -69,6 +98,21 @@ export default function Player(props: PlayerProps) {
   const [audioTracks, setAudioTracks] = createSignal<MediaStream[]>([]);
   const [selectedAudioTrack, setSelectedAudioTrack] = createSignal(0);
   const [showAudioMenu, setShowAudioMenu] = createSignal(false);
+  const [subtitleTracks, setSubtitleTracks] = createSignal<ExternalSubtitle[]>([]);
+  const [selectedSubtitle, setSelectedSubtitle] = createSignal<number | null>(null); // null = off
+  const [showSubtitleMenu, setShowSubtitleMenu] = createSignal(false);
+  const [qualityLevels, setQualityLevels] = createSignal<{ index: number; height: number; bitrate: number; label: string }[]>([]);
+  const [selectedQuality, setSelectedQuality] = createSignal(-1); // -1 = auto
+  const [showQualityMenu, setShowQualityMenu] = createSignal(false);
+  const [currentQualityLabel, setCurrentQualityLabel] = createSignal('Auto');
+  const [activeCue, setActiveCue] = createSignal<string | null>(null);
+  const [chapters, setChapters] = createSignal<Chapter[]>([]);
+  const [nextEpisode, setNextEpisode] = createSignal<NextEpisode | null>(null);
+  const [upNextVisible, setUpNextVisible] = createSignal(false);
+  const [upNextCountdown, setUpNextCountdown] = createSignal(15);
+  let upNextTimer: ReturnType<typeof setInterval> | null = null;
+  let upNextStarted = false; // plain flag — safe to read in non-reactive contexts
+  let upNextNavigating = false; // set when navigation to next episode is in flight
 
   const item = () => props.item;
   const stream = () => getStreamType(item().container_format, item().video_codec, item().audio_codec);
@@ -84,11 +128,24 @@ export default function Player(props: PlayerProps) {
   let lastProgressReport = 0;
   let isHls = false;
   let seekIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
+  interface SubtitleCue { start: number; end: number; text: string; }
+  let subtitleCues: SubtitleCue[] = [];
   // The last confirmed media-time position (survives seeks)
   let lastConfirmedTime = 0;
   // Monotonically increasing counter to detect stale seek callbacks
   let seekGeneration = 0;
-
+  // Debounce timer for single-click play/pause to avoid conflict with double-click
+  let clickDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  // Debounce rapid seek-relative presses (e.g. +10s spam) so we only spawn one
+  // FFmpeg session for the final destination, not one per button press.
+  let seekDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingSeekTarget: number | null = null;
+  // AbortController for in-flight subtitle fetch — aborted on each new applySubtitle() call
+  let subtitleFetchController: AbortController | null = null;
+  // Session-expired recovery: shared across initial playback and post-seek HLS instances
+  // so that the attempt counter persists across recovery cycles.
+  let sessionExpiredRecoveryAttempts = 0;
+  const MAX_SESSION_RECOVERY_ATTEMPTS = 3;
   // ---- Core helpers ----
   function actualTime(): number {
     if (!videoRef) return 0;
@@ -116,14 +173,14 @@ export default function Player(props: PlayerProps) {
   function showControls() {
     setControlsVisible(true);
     if (controlsTimeout) clearTimeout(controlsTimeout);
-    if (playing() && !showSettings() && !showAudioMenu()) {
+    if (playing() && !showSettings() && !showAudioMenu() && !showQualityMenu() && !showSubtitleMenu()) {
       controlsTimeout = setTimeout(() => setControlsVisible(false), 3000);
     }
   }
 
   function hideControlsDelayed() {
     if (controlsTimeout) clearTimeout(controlsTimeout);
-    if (playing() && !showSettings() && !showAudioMenu()) {
+    if (playing() && !showSettings() && !showAudioMenu() && !showQualityMenu() && !showSubtitleMenu()) {
       controlsTimeout = setTimeout(() => setControlsVisible(false), 3000);
     }
   }
@@ -160,13 +217,20 @@ export default function Player(props: PlayerProps) {
   }
 
   function handleClose() {
-    // Report the last known-good position (not mid-seek garbage)
+    // Report the best known position: take the max of lastConfirmedTime and
+    // the live actualTime() reading so we never regress to an earlier position.
     if (!isSeeking) {
-      reportProgress();
+      const liveMs = Math.floor(actualTime() * 1000);
+      const bestMs = Math.max(lastConfirmedTime, liveMs);
+      if (bestMs > 0) {
+        lastConfirmedTime = bestMs;
+        api.updateProgress(item().id, bestMs);
+      }
     } else if (lastConfirmedTime > 0) {
       api.updateProgress(item().id, lastConfirmedTime);
     }
     destroyHls();
+    subtitleCues = [];
     if (videoRef) { videoRef.pause(); videoRef.removeAttribute('src'); videoRef.load(); }
     props.onClose();
   }
@@ -179,7 +243,7 @@ export default function Player(props: PlayerProps) {
   }
 
   // ---- Playback initialization ----
-  onMount(() => {
+  onMount(async () => {
     perf.reset();
     perf.startSpan('init/total', 'frontend', { stream: stream() });
 
@@ -188,14 +252,63 @@ export default function Player(props: PlayerProps) {
 
     video.volume = volume() / 100;
 
+    const prefs = loadPrefs(item().library_id);
+
+    // Fetch server-side user preferences (language defaults) — used as fallback
+    let serverPrefs: { default_subtitle_language?: string; default_audio_language?: string } = {};
+    try { serverPrefs = await api.getPreferences(); } catch { /* ignore */ }
+
     // Fetch audio tracks for multi-audio selection
     api.getStreams(id).then(streams => {
       const audio = streams.filter(s => s.stream_type === 'audio');
       setAudioTracks(audio);
-      // Default to the stream marked as default, or first
-      const defaultIdx = audio.findIndex(s => s.is_default === 1);
-      if (defaultIdx > 0) setSelectedAudioTrack(defaultIdx);
+      if (prefs.audioTrackIndex != null && prefs.audioTrackIndex < audio.length) {
+        setSelectedAudioTrack(prefs.audioTrackIndex);
+      } else if (serverPrefs.default_audio_language) {
+        const lang = serverPrefs.default_audio_language;
+        const langIdx = audio.findIndex(s => s.language?.toLowerCase().startsWith(lang));
+        if (langIdx >= 0) {
+          setSelectedAudioTrack(langIdx);
+        } else {
+          const defaultIdx = audio.findIndex(s => s.is_default === 1);
+          if (defaultIdx > 0) setSelectedAudioTrack(defaultIdx);
+        }
+      } else {
+        const defaultIdx = audio.findIndex(s => s.is_default === 1);
+        if (defaultIdx > 0) setSelectedAudioTrack(defaultIdx);
+      }
     }).catch(() => {});
+
+    // Fetch external subtitle tracks, then restore saved preference
+    api.listSubtitles(id).then(subs => {
+      setSubtitleTracks(subs);
+      if (prefs.subtitleTrackId != null) {
+        const match = subs.find(s => s.id === prefs.subtitleTrackId);
+        if (match) {
+          setSelectedSubtitle(match.id);
+          setTimeout(() => applySubtitle(match.id, currentSubtitleOffset()), 500);
+        }
+      } else if (serverPrefs.default_subtitle_language) {
+        const lang = serverPrefs.default_subtitle_language;
+        const match = subs.find(s => s.language?.toLowerCase().startsWith(lang));
+        if (match) {
+          setSelectedSubtitle(match.id);
+          setTimeout(() => applySubtitle(match.id, currentSubtitleOffset()), 500);
+        }
+      }
+    }).catch(() => {});
+
+    // Fetch chapter markers
+    api.listChapters(id).then(ch => {
+      setChapters(ch);
+    }).catch(() => {});
+
+    // Fetch next episode if this is a TV episode
+    if (props.isEpisode) {
+      api.nextEpisode(id).then(res => {
+        setNextEpisode(res.next);
+      }).catch(() => {});
+    }
 
     let startAt: number;
     if (props.resumePosition != null) {
@@ -234,19 +347,91 @@ export default function Player(props: PlayerProps) {
       const hls = createHls();
       hlsInstance = hls;
 
+      // Read x-hls-session-ids and x-hls-start-secs from the XHR that HLS.js
+      // already performed — no redundant fetch() needed.
+      hls.on(Hls.Events.MANIFEST_LOADED, (_e: any, data: any) => {
+        const xhr: XMLHttpRequest | undefined = data.networkDetails;
+        if (xhr) {
+          const ids = xhr.getResponseHeader('x-hls-session-ids');
+          if (ids) hlsSessionId = ids.split(',')[0];
+          const startHdr = xhr.getResponseHeader('x-hls-start-secs');
+          if (startHdr) hlsStartOffset = parseFloat(startHdr);
+        }
+      });
+
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         perf.endSpan('init/hls-setup');
         if (hls.levels && hls.levels.length > 0) {
-          const lvlUrl = (hls.levels[0] as any).url;
-          const match = lvlUrl?.match(/\/hls\/([^/]+)\/playlist\.m3u8/);
-          if (match) hlsSessionId = match[1];
+          // Fallback: extract session ID from variant playlist URL if
+          // MANIFEST_LOADED didn't fire or networkDetails was unavailable.
+          if (!hlsSessionId) {
+            const lvlUrl = (hls.levels[0] as any).url;
+            const match = lvlUrl?.match(/\/hls\/([^/]+)\/playlist\.m3u8/);
+            if (match) hlsSessionId = match[1];
+          }
+
+          // Populate quality levels for the quality picker
+          const levels = hls.levels.map((lvl: any, i: number) => ({
+            index: i,
+            height: lvl.height || 0,
+            bitrate: lvl.bitrate || 0,
+            label: lvl.height ? `${lvl.height}p` : `Level ${i + 1}`,
+          }));
+          // Sort by height descending so highest quality is first in menu
+          levels.sort((a: any, b: any) => b.height - a.height);
+          setQualityLevels(levels);
+
+          // Restore saved quality preference
+          const savedQuality = prefs.qualityHeight;
+          if (savedQuality != null && savedQuality !== -1) {
+            const idx = hls.levels.findIndex((lvl: any) => lvl.height === savedQuality);
+            if (idx >= 0) {
+              hls.currentLevel = idx;
+              setSelectedQuality(savedQuality);
+              setCurrentQualityLabel(`${savedQuality}p`);
+            }
+          }
         }
         video.play();
       });
 
+      // Track quality level switches (from ABR auto-switching or manual selection)
+      hls.on(Hls.Events.LEVEL_SWITCHED, (_e: any, data: any) => {
+        const lvl = hls.levels[data.level];
+        if (lvl) {
+          const label = selectedQuality() === -1
+            ? `Auto (${lvl.height}p)`
+            : `${lvl.height}p`;
+          setCurrentQualityLabel(label);
+        }
+      });
+
       hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
+        if (hlsInstance !== hls) return;
+
+        // Detect session-expired: 404 on a fragment or playlist load means the
+        // backend cleaned up the HLS session while we were paused. Restart the
+        // session at the current playback position.
+        const is404 = data.response?.code === 404;
+        const isFragOrPlaylist =
+          data.details === Hls.ErrorDetails.FRAG_LOAD_ERROR ||
+          data.details === Hls.ErrorDetails.LEVEL_LOAD_ERROR ||
+          data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR;
+        if (is404 && isFragOrPlaylist && !isSeeking && sessionExpiredRecoveryAttempts < MAX_SESSION_RECOVERY_ATTEMPTS) {
+          sessionExpiredRecoveryAttempts++;
+          // Use the display time signal, not actualTime() — when the buffer is
+          // exhausted, video.currentTime stalls at the buffer edge which may be
+          // earlier than where the user paused. currentTime() reflects the last
+          // known good position from onTimeUpdate.
+          const resumeAt = currentTime();
+          console.warn(`[hls] Session expired (404), recovery attempt ${sessionExpiredRecoveryAttempts}/${MAX_SESSION_RECOVERY_ATTEMPTS} at position:`, resumeAt);
+          hlsSeekTo(resumeAt).then(() => {
+            sessionExpiredRecoveryAttempts = 0;
+          }).catch(() => {});
+          return;
+        }
+
         if (data.fatal) {
-          if (hlsInstance !== hls) return;
           perf.event('init/hls-error', 'frontend', { type: data.type, details: data.details });
           console.error('HLS fatal error:', data.type, data.details);
           hls.destroy();
@@ -297,7 +482,8 @@ export default function Player(props: PlayerProps) {
           perf.endSpan('init/keyframe-lookup');
         }
         perf.startSpan('init/stream-load', 'network');
-        video.src = authUrl(`/api/stream/${id}?start=${seekOffset.toFixed(3)}`);
+        const audioParam = selectedAudioTrack() > 0 ? `&audio_stream=${selectedAudioTrack()}` : '';
+        video.src = authUrl(`/api/stream/${id}?start=${seekOffset.toFixed(3)}${audioParam}`);
         video.addEventListener('canplay', function onCan() {
           perf.endSpan('init/stream-load');
           video.removeEventListener('canplay', onCan);
@@ -306,7 +492,8 @@ export default function Player(props: PlayerProps) {
       })();
     } else {
       perf.startSpan('init/stream-load', 'network');
-      video.src = authUrl(`/api/stream/${id}`);
+      const audioParam = selectedAudioTrack() > 0 ? `?audio_stream=${selectedAudioTrack()}` : '';
+      video.src = authUrl(`/api/stream/${id}${audioParam}`);
       video.addEventListener('canplay', function onCan() {
         perf.endSpan('init/stream-load');
         video.removeEventListener('canplay', onCan);
@@ -327,13 +514,41 @@ export default function Player(props: PlayerProps) {
   function onTimeUpdate() {
     if (isSeeking) return;
     const t = actualTime();
-    setCurrentTime(t);
+    const dur = knownDuration();
+    setCurrentTime(dur > 0 ? Math.min(t, dur) : t);
     setPlaying(!videoRef.paused);
 
+    // Custom subtitle renderer: binary-search for the cue whose [start, end]
+    // brackets actualTime(). Cues are sorted by start time after parsing.
+    if (subtitleCues.length > 0) {
+      let lo = 0, hi = subtitleCues.length - 1, found: string | null = null;
+      while (lo <= hi) {
+        const mid = (lo + hi) >>> 1;
+        const c = subtitleCues[mid];
+        if (t < c.start) {
+          hi = mid - 1;
+        } else if (t >= c.end) {
+          lo = mid + 1;
+        } else {
+          found = c.text;
+          break;
+        }
+      }
+      setActiveCue(found);
+    }
+
     const now = Date.now();
-    if (now - lastProgressReport > 10000) {
+    if (now - lastProgressReport > 30000) {
       lastProgressReport = now;
       reportProgress();
+    }
+
+    // Show Up Next overlay in the final 30 seconds
+    if (dur > 0 && nextEpisode() && props.onNextEpisode && !upNextStarted && !upNextNavigating) {
+      const remaining = dur - t;
+      if (remaining > 0 && remaining <= 30) {
+        startUpNextCountdown();
+      }
     }
   }
 
@@ -344,7 +559,51 @@ export default function Player(props: PlayerProps) {
     setBufferedPct(Math.min(100, (total / knownDuration()) * 100));
   }
 
-  function onEnded() { api.markCompleted(item().id); }
+  function startUpNextCountdown() {
+    if (!nextEpisode() || !props.onNextEpisode) return;
+    if (upNextStarted) return;
+    upNextStarted = true;
+    if (upNextTimer) clearInterval(upNextTimer);
+    let remaining = 15;
+    setUpNextCountdown(remaining);
+    setUpNextVisible(true);
+    upNextTimer = setInterval(() => {
+      remaining -= 1;
+      setUpNextCountdown(remaining);
+      if (remaining <= 0) {
+        clearInterval(upNextTimer!);
+        upNextTimer = null;
+        setTimeout(() => playNextEpisode(), 0);
+      }
+    }, 1000);
+  }
+
+  function cancelUpNext() {
+    if (upNextTimer) { clearInterval(upNextTimer); upNextTimer = null; }
+    upNextStarted = false;
+    upNextNavigating = false;
+    setUpNextVisible(false);
+  }
+
+  function playNextEpisode() {
+    if (upNextNavigating) return;
+    upNextNavigating = true;
+    if (upNextTimer) { clearInterval(upNextTimer); upNextTimer = null; }
+    setUpNextVisible(false);
+    const next = nextEpisode();
+    if (next && props.onNextEpisode) {
+      api.markCompleted(item().id);
+      props.onNextEpisode(next.media_item_id);
+    }
+  }
+
+  function onEnded() {
+    if (nextEpisode() && props.onNextEpisode) {
+      startUpNextCountdown();
+    } else {
+      api.markCompleted(item().id);
+    }
+  }
   function onPlay() { setPlaying(true); setBuffering(false); hideControlsDelayed(); }
   function onPause() { setPlaying(false); showControls(); }
   function onWaiting() { setBuffering(true); }
@@ -389,18 +648,125 @@ export default function Player(props: PlayerProps) {
     setShowSettings(false);
   }
 
+  /**
+   * Parse a VTT timestamp string (hh:mm:ss.mmm or mm:ss.mmm) into seconds.
+   */
+  function vttTimeToSecs(ts: string): number {
+    const parts = ts.trim().split(':');
+    if (parts.length === 3) {
+      return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+    } else if (parts.length === 2) {
+      return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+    }
+    return 0;
+  }
+
+  /**
+   * Parse a VTT string into an array of cue objects with absolute timestamps.
+   * No shifting — cues retain their original times so we can compare against actualTime().
+   */
+  function parseVttCues(vtt: string): SubtitleCue[] {
+    const cues: SubtitleCue[] = [];
+    const blocks = vtt.split(/\n\n+/);
+    const timingRe = /^(\d{1,2}:\d{2}:\d{2}\.\d{1,3}|\d{2}:\d{2}\.\d{1,3})\s+-->\s+(\d{1,2}:\d{2}:\d{2}\.\d{1,3}|\d{2}:\d{2}\.\d{1,3})/;
+    for (const block of blocks) {
+      const lines = block.trim().split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const m = lines[i].match(timingRe);
+        if (m) {
+          const text = lines.slice(i + 1).join('\n').trim();
+          if (text) cues.push({ start: vttTimeToSecs(m[1]), end: vttTimeToSecs(m[2]), text });
+          break;
+        }
+      }
+    }
+    cues.sort((a, b) => a.start - b.start);
+    return cues;
+  }
+
+  /**
+   * Fetch a subtitle track and parse its cues into subtitleCues[].
+   * Active cue selection is driven by onTimeUpdate() using actualTime(),
+   * so there is no native <track> element and no browser cue accumulation.
+   * The offsetSecs parameter is kept for API compatibility but is no longer used.
+   */
+  async function applySubtitle(subtitleId: number, _offsetSecs: number) {
+    // Abort any in-flight subtitle fetch from a previous call (rapid seeks)
+    if (subtitleFetchController) {
+      subtitleFetchController.abort();
+    }
+    subtitleFetchController = new AbortController();
+    const signal = subtitleFetchController.signal;
+
+    subtitleCues = [];
+    setActiveCue(null);
+    try {
+      const res = await fetch(authUrl(`/api/subtitles/${subtitleId}/serve`), { signal });
+      if (!res.ok) return;
+      const vttText = await res.text();
+      subtitleCues = parseVttCues(vttText);
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
+      // Subtitle fetch failed — silently ignore
+    }
+  }
+
+  function currentSubtitleOffset(): number {
+    return isHls ? hlsStartOffset : seekOffset;
+  }
+
+  function changeSubtitle(subtitleId: number | null) {
+    setSelectedSubtitle(subtitleId);
+    setShowSubtitleMenu(false);
+    savePrefs(item().library_id, { subtitleTrackId: subtitleId });
+    if (subtitleId === null) {
+      subtitleCues = [];
+      setActiveCue(null);
+      return;
+    }
+    applySubtitle(subtitleId, currentSubtitleOffset());
+  }
+
   function changeAudioTrack(trackIndex: number) {
     if (trackIndex === selectedAudioTrack()) { setShowAudioMenu(false); return; }
     setSelectedAudioTrack(trackIndex);
     setShowAudioMenu(false);
-    // For HLS streams, trigger a seek to the current position with the new audio track.
-    // The audio_stream param will be picked up by the backend on the next HLS session.
+    savePrefs(item().library_id, { audioTrackIndex: trackIndex });
+    const pos = currentTime();
     if (isHls) {
-      const pos = currentTime();
+      // For HLS: trigger a seek at the current position — the new audio_stream
+      // index is picked up by the backend when it creates the new HLS session.
       hlsSeekTo(pos);
+    } else if (isTranscoded()) {
+      // For progressive transcode: reload the stream URL with the new audio_stream
+      // param at the current playback position.
+      seekOffset = pos;
+      setCurrentTime(pos);
+      const audioParam = trackIndex > 0 ? `&audio_stream=${trackIndex}` : '';
+      videoRef.src = authUrl(`/api/stream/${item().id}?start=${pos.toFixed(3)}${audioParam}`);
+      videoRef.play();
     }
-    // For non-HLS transcoded streams, the audio_stream param would need to be
-    // added to the stream URL. For now, HLS is the primary use case.
+  }
+
+  function changeQuality(levelHeight: number) {
+    // levelHeight: -1 for auto, or the height (e.g. 1080, 720) for a specific level
+    setSelectedQuality(levelHeight);
+    setShowQualityMenu(false);
+    savePrefs(item().library_id, { qualityHeight: levelHeight });
+    if (!hlsInstance) return;
+
+    if (levelHeight === -1) {
+      // Auto mode — let HLS.js ABR decide
+      hlsInstance.currentLevel = -1;
+      setCurrentQualityLabel('Auto');
+    } else {
+      // Find the HLS.js level index matching this height
+      const idx = hlsInstance.levels.findIndex((lvl: any) => lvl.height === levelHeight);
+      if (idx >= 0) {
+        hlsInstance.currentLevel = idx;
+        setCurrentQualityLabel(`${levelHeight}p`);
+      }
+    }
   }
 
   function togglePiP() {
@@ -413,6 +779,12 @@ export default function Player(props: PlayerProps) {
 
   // ---- Seeking ----
   async function hlsSeekTo(targetTime: number) {
+    // Cancel Up Next if seeking backward out of the final 30s window
+    const dur = knownDuration();
+    if (upNextStarted && dur > 0 && (dur - targetTime) > 30) {
+      cancelUpNext();
+    }
+
     // Bump generation so any in-flight seek callbacks become stale
     const gen = ++seekGeneration;
 
@@ -420,13 +792,6 @@ export default function Player(props: PlayerProps) {
     isSeeking = true;
     setBuffering(true);
     setCurrentTime(targetTime);
-
-    // Destroy the old HLS instance BEFORE the seek API call. The backend's
-    // hls_seek immediately destroys the old FFmpeg session, so if we leave
-    // the old HLS.js running it will flood 404s for the now-gone segments.
-    destroyHlsLocal();
-    resetVideoElement();
-    hlsSessionId = null;
 
     try {
       perf.startSpan('seek/hls-api', 'network');
@@ -441,12 +806,37 @@ export default function Player(props: PlayerProps) {
       perf.endSpan('seek/hls-api');
       if (seekRes.timing_ms) perf.ingestBackendTiming('seek/hls', seekRes.timing_ms);
 
+      // Fast path: backend confirmed the target is within the already-buffered range.
+      // Skip destroying/recreating the HLS instance — just seek within the existing stream.
+      if (seekRes.reused && hlsInstance && hlsSessionId === seekRes.session_id) {
+        const seekPos = targetTime - hlsStartOffset;
+        console.log('[seek] reusing session, seeking to videoRef.currentTime =', seekPos);
+        videoRef.currentTime = seekPos;
+        videoRef.play().catch(() => {});
+        setTimeout(() => {
+          if (gen !== seekGeneration) return;
+          isSeeking = false;
+          setBuffering(false);
+          perf.endSpan('seek/hls-total');
+          lastConfirmedTime = Math.floor(targetTime * 1000);
+        }, 100);
+        return;
+      }
+
+      // Slow path: new session — destroy the old HLS instance now that we know
+      // the backend has already destroyed the old FFmpeg session.
+      destroyHlsLocal();
+      resetVideoElement();
+      hlsSessionId = null;
+
       // The server returns the actual start_secs (which is the time FFmpeg
       // was told to seek to). HLS segments start at t=0 relative to this offset,
       // so we add it to video.currentTime to get absolute media time.
       hlsStartOffset = seekRes.start_secs ?? targetTime;
       hlsSessionId = seekRes.session_id;
       isHls = true;
+
+      const activeSub = selectedSubtitle();
 
       // The master_url from the backend already contains the auth token
       // as a query param — do NOT wrap in authUrl() or it will be doubled,
@@ -475,6 +865,34 @@ export default function Player(props: PlayerProps) {
         if (gen !== seekGeneration) { hls.destroy(); return; }
         console.log('[seek] MANIFEST_PARSED fired, levels:', data.levels?.length);
         perf.endSpan('seek/hls-manifest');
+
+        // Re-apply subtitle now that HLS.js has finished resetting the video element.
+        // Doing this earlier (before attachMedia) causes stale cues to flash because
+        // HLS.js calls videoRef.load() internally during attachment.
+        if (activeSub !== null) applySubtitle(activeSub, hlsStartOffset);
+
+        // Re-populate quality levels and re-apply user's quality preference
+        if (hls.levels && hls.levels.length > 0) {
+          const levels = hls.levels.map((lvl: any, i: number) => ({
+            index: i,
+            height: lvl.height || 0,
+            bitrate: lvl.bitrate || 0,
+            label: lvl.height ? `${lvl.height}p` : `Level ${i + 1}`,
+          }));
+          levels.sort((a: any, b: any) => b.height - a.height);
+          setQualityLevels(levels);
+
+          // Re-apply selected quality after seek
+          const userQuality = selectedQuality();
+          if (userQuality !== -1) {
+            // Find matching height in new levels
+            const match = hls.levels.findIndex((lvl: any) => lvl.height === userQuality);
+            if (match >= 0) {
+              hls.currentLevel = match;
+            }
+          }
+        }
+
         videoRef.play().then(() => {
           console.log('[seek] play() resolved');
         }).catch((err: any) => {
@@ -485,14 +903,47 @@ export default function Player(props: PlayerProps) {
           isSeeking = false;
           setBuffering(false);
           perf.endSpan('seek/hls-total');
-          lastConfirmedTime = Math.floor(hlsStartOffset * 1000);
+          // Use targetTime (the user's requested position), not hlsStartOffset
+          // (the keyframe-snapped start). The keyframe can be 10-12s earlier,
+          // which would cause the resume position to regress on close.
+          lastConfirmedTime = Math.floor(targetTime * 1000);
         }, 200);
       });
 
+      // Track quality level switches after seek
+      hls.on(Hls.Events.LEVEL_SWITCHED, (_e: any, data: any) => {
+        if (gen !== seekGeneration) return;
+        const lvl = hls.levels[data.level];
+        if (lvl) {
+          const label = selectedQuality() === -1
+            ? `Auto (${lvl.height}p)`
+            : `${lvl.height}p`;
+          setCurrentQualityLabel(label);
+        }
+      });
+
       hls.on(Hls.Events.ERROR, (_e: any, d: any) => {
+        if (gen !== seekGeneration) return;
         console.error('[seek] HLS error:', d.type, d.details, 'fatal:', d.fatal, d);
+
+        // Detect session-expired 404 on the post-seek HLS instance — same
+        // recovery logic as the initial playback error handler.
+        const is404 = d.response?.code === 404;
+        const isFragOrPlaylist =
+          d.details === Hls.ErrorDetails.FRAG_LOAD_ERROR ||
+          d.details === Hls.ErrorDetails.LEVEL_LOAD_ERROR ||
+          d.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR;
+        if (is404 && isFragOrPlaylist && !isSeeking && sessionExpiredRecoveryAttempts < MAX_SESSION_RECOVERY_ATTEMPTS) {
+          sessionExpiredRecoveryAttempts++;
+          const resumeAt = currentTime();
+          console.warn(`[seek] Session expired (404), recovery attempt ${sessionExpiredRecoveryAttempts}/${MAX_SESSION_RECOVERY_ATTEMPTS} at position:`, resumeAt);
+          hlsSeekTo(resumeAt).then(() => {
+            sessionExpiredRecoveryAttempts = 0;
+          }).catch(() => {});
+          return;
+        }
+
         if (d.fatal) {
-          if (gen !== seekGeneration) return;
           perf.event('seek/hls-error', 'frontend', { type: d.type, details: d.details });
           isSeeking = false;
           setBuffering(false);
@@ -522,6 +973,11 @@ export default function Player(props: PlayerProps) {
     if (isHls) {
       await hlsSeekTo(targetTime);
     } else if (isTranscoded()) {
+      // Cancel Up Next if seeking backward out of the final 30s window
+      const dur = knownDuration();
+      if (upNextStarted && dur > 0 && (dur - targetTime) > 30) {
+        cancelUpNext();
+      }
       perf.startSpan('seek/transcode-total', 'frontend', { target: Math.round(targetTime) });
       isSeeking = true;
       setBuffering(true);
@@ -549,10 +1005,16 @@ export default function Player(props: PlayerProps) {
       }
 
       seekOffset = actualStart;
-      setCurrentTime(actualStart);
-      lastConfirmedTime = Math.floor(actualStart * 1000);
+      setCurrentTime(targetTime);
+      lastConfirmedTime = Math.floor(targetTime * 1000);
+
+      // Re-apply subtitle with updated offset so cues stay in sync
+      const activeSub = selectedSubtitle();
+      if (activeSub !== null) applySubtitle(activeSub, seekOffset);
+
       perf.startSpan('seek/stream-load', 'network');
-      videoRef.src = authUrl(`/api/stream/${item().id}?start=${actualStart.toFixed(3)}`);
+      const audioParam = selectedAudioTrack() > 0 ? `&audio_stream=${selectedAudioTrack()}` : '';
+      videoRef.src = authUrl(`/api/stream/${item().id}?start=${actualStart.toFixed(3)}${audioParam}`);
       videoRef.addEventListener('canplay', function onCan() {
         perf.endSpan('seek/stream-load');
         perf.endSpan('seek/transcode-total');
@@ -570,15 +1032,30 @@ export default function Player(props: PlayerProps) {
     }
   }
 
-  async function seekRelative(deltaSec: number) {
+  function seekRelative(deltaSec: number) {
     if (!knownDuration()) return;
     // Use the signal-based currentTime() instead of actualTime() because during
     // an active seek, videoRef.currentTime is stale (from the destroyed session).
     // currentTime() is always updated immediately when a seek starts.
-    const base = isSeeking ? currentTime() : actualTime();
+    const base = pendingSeekTarget ?? (isSeeking ? currentTime() : actualTime());
     const target = Math.max(0, Math.min(knownDuration(), base + deltaSec));
     flashSeekIndicator(deltaSec > 0 ? `+${deltaSec}s` : `${deltaSec}s`);
-    await seekToTime(target);
+
+    if (isHls) {
+      // For HLS, debounce: update display immediately but only fire the
+      // expensive FFmpeg seek after the user stops pressing for 400ms.
+      pendingSeekTarget = target;
+      setCurrentTime(target);
+      if (seekDebounceTimer !== null) clearTimeout(seekDebounceTimer);
+      seekDebounceTimer = setTimeout(() => {
+        seekDebounceTimer = null;
+        const finalTarget = pendingSeekTarget!;
+        pendingSeekTarget = null;
+        seekToTime(finalTarget);
+      }, 400);
+    } else {
+      seekToTime(target);
+    }
   }
 
   // ---- Timeline interaction ----
@@ -636,6 +1113,8 @@ export default function Player(props: PlayerProps) {
 
     switch (e.key) {
       case 'Escape':
+        if (showQualityMenu()) { setShowQualityMenu(false); return; }
+        if (showSubtitleMenu()) { setShowSubtitleMenu(false); return; }
         if (showAudioMenu()) { setShowAudioMenu(false); return; }
         if (showSettings()) { setShowSettings(false); return; }
         if (isFullscreen()) { document.exitFullscreen(); return; }
@@ -719,6 +1198,10 @@ export default function Player(props: PlayerProps) {
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     if (controlsTimeout) clearTimeout(controlsTimeout);
     if (seekIndicatorTimer) clearTimeout(seekIndicatorTimer);
+    if (clickDebounceTimer) { clearTimeout(clickDebounceTimer); clickDebounceTimer = null; }
+    if (upNextTimer) { clearInterval(upNextTimer); upNextTimer = null; }
+    if (subtitleFetchController) { subtitleFetchController.abort(); subtitleFetchController = null; }
+    subtitleCues = [];
     destroyHls();
   });
 
@@ -736,7 +1219,7 @@ export default function Player(props: PlayerProps) {
       ref={playerRef!}
       class="fixed inset-0 bg-black z-[100] select-none"
       onMouseMove={showControls}
-      onClick={() => { if (showSettings()) setShowSettings(false); if (showAudioMenu()) setShowAudioMenu(false); }}
+      onClick={() => { if (showSettings()) setShowSettings(false); if (showAudioMenu()) setShowAudioMenu(false); if (showQualityMenu()) setShowQualityMenu(false); if (showSubtitleMenu()) setShowSubtitleMenu(false); }}
       style={{ cursor: controlsVisible() ? 'default' : 'none' }}
     >
       {/* Video element — fills entire viewport */}
@@ -751,8 +1234,23 @@ export default function Player(props: PlayerProps) {
         onPause={onPause}
         onWaiting={onWaiting}
         onCanPlay={onCanPlay}
-        onClick={(e) => { e.stopPropagation(); togglePlay(); showControls(); }}
-        onDblClick={(e) => { e.stopPropagation(); handleDoubleClick(e); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          showControls();
+          // Debounce: wait 250ms before toggling play/pause so a double-click
+          // can cancel it before it fires, preventing play→pause→play flicker.
+          if (clickDebounceTimer) clearTimeout(clickDebounceTimer);
+          clickDebounceTimer = setTimeout(() => {
+            clickDebounceTimer = null;
+            togglePlay();
+          }, 250);
+        }}
+        onDblClick={(e) => {
+          e.stopPropagation();
+          // Cancel the pending single-click play/pause toggle
+          if (clickDebounceTimer) { clearTimeout(clickDebounceTimer); clickDebounceTimer = null; }
+          handleDoubleClick(e);
+        }}
       />
 
       {/* Performance overlay (toggle with P key) */}
@@ -762,6 +1260,17 @@ export default function Player(props: PlayerProps) {
       <Show when={buffering() && !isDragging()}>
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
           <Loader2 class="w-12 h-12 text-white/80 animate-spin" />
+        </div>
+      </Show>
+
+      {/* Custom subtitle overlay — driven by actualTime() in onTimeUpdate, no native <track> */}
+      <Show when={activeCue()}>
+        <div class="absolute bottom-[10%] left-0 right-0 flex justify-center pointer-events-none z-20 px-12">
+          <div
+            class="text-white text-2xl font-medium text-center leading-snug px-3 py-1 rounded"
+            style={{ "background": "rgba(0,0,0,0.55)", "text-shadow": "0 1px 3px rgba(0,0,0,0.8)" }}
+            innerHTML={activeCue()!.replace(/\n/g, '<br>')}
+          />
         </div>
       </Show>
 
@@ -785,6 +1294,67 @@ export default function Player(props: PlayerProps) {
         </div>
       </Show>
 
+      {/* Up Next overlay — shown in final 30 seconds */}
+      <Show when={upNextVisible() && nextEpisode()}>
+        <div
+          class="absolute bottom-28 right-6 z-30 w-80 rounded-2xl bg-surface-100/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/60 overflow-hidden animate-scale-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Countdown progress bar */}
+          <div class="h-1 bg-surface-300">
+            <div
+              class="h-full bg-ferrite-500 transition-all duration-1000 ease-linear"
+              style={{ width: `${(upNextCountdown() / 15) * 100}%` }}
+            />
+          </div>
+          <div class="p-4">
+            <div class="flex items-start gap-3">
+              {/* Thumbnail */}
+              <Show when={nextEpisode()!.still_path}>
+                <img
+                  src={authUrl(`/api/images/${nextEpisode()!.still_path}`)}
+                  alt=""
+                  class="w-24 h-14 object-cover rounded-lg flex-shrink-0 bg-surface-300"
+                />
+              </Show>
+              <Show when={!nextEpisode()!.still_path && nextEpisode()!.show_poster_path}>
+                <img
+                  src={authUrl(`/api/images/${nextEpisode()!.show_poster_path}`)}
+                  alt=""
+                  class="w-24 h-14 object-cover rounded-lg flex-shrink-0 bg-surface-300"
+                />
+              </Show>
+              <div class="flex-1 min-w-0">
+                <p class="text-2xs text-surface-700 uppercase tracking-wider font-medium mb-0.5">Up Next</p>
+                <p class="text-sm font-semibold text-white leading-tight truncate">
+                  {nextEpisode()!.show_title}
+                </p>
+                <p class="text-xs text-surface-800 truncate">
+                  S{String(nextEpisode()!.season_number).padStart(2, '0')}E{String(nextEpisode()!.episode_number).padStart(2, '0')}
+                  <Show when={nextEpisode()!.episode_title}>
+                    {' · '}{nextEpisode()!.episode_title}
+                  </Show>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 mt-3">
+              <button
+                class="flex-1 btn-primary py-2 text-sm justify-center"
+                onClick={() => playNextEpisode()}
+              >
+                <Play class="w-4 h-4 fill-current" /> Play Now
+              </button>
+              <button
+                class="btn-secondary py-2 text-sm"
+                onClick={() => cancelUpNext()}
+              >
+                Cancel ({upNextCountdown()})
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
+
       {/* Top gradient + title bar */}
       <div
         class={`absolute top-0 left-0 right-0 z-20 transition-opacity duration-300
@@ -796,9 +1366,21 @@ export default function Player(props: PlayerProps) {
               <ArrowLeft class="w-5 h-5" />
             </button>
             <div class="flex-1 min-w-0">
-              <h2 class="text-white font-semibold text-lg truncate drop-shadow-lg">
-                {getDisplayTitle(item())}
-              </h2>
+              <Show when={item().is_episode && item().season_number != null} fallback={
+                <h2 class="text-white font-semibold text-lg truncate drop-shadow-lg">
+                  {getDisplayTitle(item())}
+                </h2>
+              }>
+                <h2 class="text-white font-semibold text-lg truncate drop-shadow-lg">
+                  {item().show_title || getDisplayTitle(item())}
+                </h2>
+                <p class="text-white/60 text-sm truncate drop-shadow">
+                  S{String(item().season_number!).padStart(2, '0')}E{String(item().episode_number!).padStart(2, '0')}
+                  <Show when={item().episode_title}>
+                    {' — '}{item().episode_title}
+                  </Show>
+                </p>
+              </Show>
             </div>
           </div>
         </div>
@@ -812,13 +1394,17 @@ export default function Player(props: PlayerProps) {
         <div class="bg-gradient-to-t from-black/90 via-black/60 to-transparent px-6 pb-5 pt-20">
           {/* Timeline scrubber */}
           <div class="mb-3 relative group/timeline">
-            {/* Hover time tooltip */}
+            {/* Hover time tooltip — shows time + chapter name if available */}
             <Show when={hoverTime() !== null}>
               <div
                 class="absolute -top-10 transform -translate-x-1/2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-sm text-white text-xs font-medium whitespace-nowrap pointer-events-none z-30"
                 style={{ left: `${hoverX() - (timelineRef?.getBoundingClientRect().left || 0)}px` }}
               >
-                {fmtTime(hoverTime()!)}
+                {(() => {
+                  const t = hoverTime()! * 1000;
+                  const ch = chapters().find(c => t >= c.start_time_ms && t < c.end_time_ms);
+                  return ch?.title ? `${ch.title}  ·  ${fmtTime(hoverTime()!)}` : fmtTime(hoverTime()!);
+                })()}
               </div>
             </Show>
 
@@ -839,6 +1425,17 @@ export default function Player(props: PlayerProps) {
                 class="absolute top-0 left-0 h-full bg-ferrite-500 rounded-full pointer-events-none transition-[width] duration-75"
                 style={{ width: `${progressPct()}%` }}
               />
+              {/* Chapter markers */}
+              <For each={chapters()}>{(ch) => {
+                const pct = knownDuration() > 0 ? (ch.start_time_ms / 1000 / knownDuration()) * 100 : 0;
+                if (pct <= 0 || pct >= 100) return null;
+                return (
+                  <div
+                    class="absolute top-0 h-full w-0.5 bg-white/40 pointer-events-none z-10"
+                    style={{ left: `${pct}%` }}
+                  />
+                );
+              }}</For>
               {/* Scrub handle */}
               <div
                 class={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-ferrite-500 shadow-lg shadow-ferrite-500/30
@@ -868,10 +1465,10 @@ export default function Player(props: PlayerProps) {
 
               {/* Volume */}
               <div class="flex items-center gap-1 group/vol ml-1">
-                <button class="btn-icon text-white/70 hover:text-white hover:bg-white/10" onClick={toggleMute} title="Mute (M)">
+                <button class="btn-icon text-white/70 hover:text-white hover:bg-white/10" onClick={toggleMute} title="Mute (M)" aria-label={`${volume() === 0 ? 'Unmute' : 'Mute'} (M)`}>
                   <VolumeIcon />
                 </button>
-                <div class="w-0 group-hover/vol:w-24 overflow-hidden transition-all duration-200">
+                <div class="w-0 group-hover/vol:w-24 focus-within:w-24 overflow-hidden transition-all duration-200">
                   <input
                     type="range"
                     min="0"
@@ -879,6 +1476,10 @@ export default function Player(props: PlayerProps) {
                     step="1"
                     value={volume()}
                     onInput={e => handleVolumeChange(parseInt(e.currentTarget.value))}
+                    aria-label={`Volume: ${volume()}%`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={volume()}
                     class="w-24 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-ferrite-500
                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
                            [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow"
@@ -902,12 +1503,72 @@ export default function Player(props: PlayerProps) {
                 <span class="text-xs text-ferrite-400 font-medium mr-1">{playbackSpeed()}x</span>
               </Show>
 
+              {/* Subtitle track selector — only show when external subtitles exist */}
+              <Show when={subtitleTracks().length > 0}>
+                <div class="relative">
+                  <button
+                    class={`btn-icon text-white/70 hover:text-white hover:bg-white/10 ${showSubtitleMenu() ? 'text-white bg-white/10' : ''} ${selectedSubtitle() !== null ? 'text-ferrite-400' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); setShowSubtitleMenu(!showSubtitleMenu()); setShowSettings(false); setShowAudioMenu(false); setShowQualityMenu(false); }}
+                    title="Subtitles"
+                  >
+                    <Captions class="w-5 h-5" />
+                  </button>
+
+                  <Show when={showSubtitleMenu()}>
+                    <div
+                      class="absolute bottom-12 right-0 w-64 rounded-xl bg-surface-100/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden animate-scale-in z-50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div class="px-4 py-3 border-b border-white/5">
+                        <span class="text-xs font-semibold text-surface-800 uppercase tracking-wider">Subtitles</span>
+                      </div>
+                      <div class="p-2 max-h-64 overflow-y-auto">
+                        <button
+                          class={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors
+                                  ${selectedSubtitle() === null
+                                    ? 'bg-ferrite-500/15 text-ferrite-400 font-medium'
+                                    : 'text-gray-300 hover:bg-white/5'}`}
+                          onClick={() => changeSubtitle(null)}
+                        >
+                          Off
+                        </button>
+                        <For each={subtitleTracks()}>
+                          {(sub) => {
+                            const label = () => {
+                              const parts: string[] = [];
+                              if (sub.title) parts.push(sub.title);
+                              else if (sub.language) parts.push(sub.language.toUpperCase());
+                              else parts.push(`Track ${sub.id}`);
+                              if (sub.language && sub.title) parts.push(`(${sub.language.toUpperCase()})`);
+                              if (sub.is_forced) parts.push('Forced');
+                              if (sub.is_sdh) parts.push('SDH');
+                              return parts.join(' · ');
+                            };
+                            return (
+                              <button
+                                class={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors
+                                        ${selectedSubtitle() === sub.id
+                                          ? 'bg-ferrite-500/15 text-ferrite-400 font-medium'
+                                          : 'text-gray-300 hover:bg-white/5'}`}
+                                onClick={() => changeSubtitle(sub.id)}
+                              >
+                                {label()}
+                              </button>
+                            );
+                          }}
+                        </For>
+                      </div>
+                    </div>
+                  </Show>
+                </div>
+              </Show>
+
               {/* Audio track selector — only show when multiple audio tracks exist */}
               <Show when={audioTracks().length > 1}>
                 <div class="relative">
                   <button
                     class={`btn-icon text-white/70 hover:text-white hover:bg-white/10 ${showAudioMenu() ? 'text-white bg-white/10' : ''}`}
-                    onClick={(e) => { e.stopPropagation(); setShowAudioMenu(!showAudioMenu()); setShowSettings(false); }}
+                    onClick={(e) => { e.stopPropagation(); setShowAudioMenu(!showAudioMenu()); setShowSettings(false); setShowQualityMenu(false); }}
                     title="Audio Track"
                   >
                     <Languages class="w-5 h-5" />
@@ -953,11 +1614,78 @@ export default function Player(props: PlayerProps) {
                 </div>
               </Show>
 
+              {/* Quality selector — only show when HLS has multiple quality levels */}
+              <Show when={qualityLevels().length > 1}>
+                <div class="relative">
+                  <button
+                    class={`btn-icon text-white/70 hover:text-white hover:bg-white/10 ${showQualityMenu() ? 'text-white bg-white/10' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); setShowQualityMenu(!showQualityMenu()); setShowSettings(false); setShowAudioMenu(false); }}
+                    title="Quality"
+                  >
+                    <SlidersHorizontal class="w-5 h-5" />
+                  </button>
+
+                  {/* Current quality badge */}
+                  <Show when={isHls && qualityLevels().length > 0}>
+                    <span class="absolute -top-1 -right-1 text-[0.55rem] font-bold bg-ferrite-500/80 text-white px-1 rounded pointer-events-none">
+                      {selectedQuality() === -1 ? 'A' : `${selectedQuality()}p`}
+                    </span>
+                  </Show>
+
+                  <Show when={showQualityMenu()}>
+                    <div
+                      class="absolute bottom-12 right-0 w-64 rounded-xl bg-surface-100/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden animate-scale-in z-50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div class="px-4 py-3 border-b border-white/5">
+                        <span class="text-xs font-semibold text-surface-800 uppercase tracking-wider">Quality</span>
+                        <span class="text-xs text-gray-500 ml-2">{currentQualityLabel()}</span>
+                      </div>
+                      <div class="p-2 max-h-64 overflow-y-auto">
+                        {/* Auto option */}
+                        <button
+                          class={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors
+                                  ${selectedQuality() === -1
+                                    ? 'bg-ferrite-500/15 text-ferrite-400 font-medium'
+                                    : 'text-gray-300 hover:bg-white/5'}`}
+                          onClick={() => changeQuality(-1)}
+                        >
+                          Auto
+                        </button>
+                        <For each={qualityLevels()}>
+                          {(level) => {
+                            const bitrateLabel = () => {
+                              if (level.bitrate > 1_000_000) return `${(level.bitrate / 1_000_000).toFixed(1)} Mbps`;
+                              if (level.bitrate > 1_000) return `${Math.round(level.bitrate / 1_000)} Kbps`;
+                              return '';
+                            };
+                            return (
+                              <button
+                                class={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors
+                                        ${selectedQuality() === level.height
+                                          ? 'bg-ferrite-500/15 text-ferrite-400 font-medium'
+                                          : 'text-gray-300 hover:bg-white/5'}`}
+                                onClick={() => changeQuality(level.height)}
+                              >
+                                {level.label}
+                                <Show when={bitrateLabel()}>
+                                  <span class="text-xs text-gray-500 ml-2">{bitrateLabel()}</span>
+                                </Show>
+                              </button>
+                            );
+                          }}
+                        </For>
+                      </div>
+                    </div>
+                  </Show>
+                </div>
+              </Show>
+
               {/* Settings */}
               <div class="relative">
                 <button
                   class={`btn-icon text-white/70 hover:text-white hover:bg-white/10 ${showSettings() ? 'text-white bg-white/10' : ''}`}
-                  onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings()); setShowAudioMenu(false); }}
+                  onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings()); setShowAudioMenu(false); setShowQualityMenu(false); }}
                   title="Settings"
                 >
                   <Settings class="w-5 h-5" />

@@ -2,236 +2,139 @@
 
 > Last updated: Feb 17, 2026
 > Goal: A performant, self-hosted media server — a faster alternative to Plex
-> Target platforms: Browser (baseline), iOS app, Roku TV app
+> Target platforms: Browser (baseline), iOS app, Smart TV apps
 
 ---
 
-## What's Built (Completed)
-
-### Backend (Rust)
-- **9 crates**: server, core, db, scanner, metadata, stream, transcode, dlna, api
-- **4-tier streaming**: direct play → remux → audio transcode → full transcode (all via HLS)
-- **Video passthrough**: H.264 sources use `-c:v copy` through HLS (near-zero CPU)
-- **Color-aware tone-mapping**: true HDR (BT.2020/PQ/HLG) gets full zscale+tonemap; 10-bit SDR gets simple bit-depth conversion
-- **Adaptive bitrate**: multi-variant HLS with 480p/720p/1080p/2160p tiers
-- **Audio passthrough**: AAC, MP3, Opus, FLAC pass through; DTS/AC3/EAC3/TrueHD transcode to AAC
-- **Multi-audio track selection**: API + frontend picker
-- **Embedded subtitle extraction**: SRT/ASS/SSA from MKV containers
-- **Subtitle burn-in**: for non-extractable formats
-- **HW accel auto-detect**: NVENC → QSV → VAAPI → software fallback
-- **VP9-in-MKV**: remux to WebM
-- **Thumbnail sprite sheets**: for scrubber previews
-- **DLNA/UPnP**: for local network discovery
-- **Multi-user auth**: bcrypt + JWT + API keys + rate limiting
-- **SQLite + WAL**: zero-config, auto-migrations, portable
-- **Library watcher**: filesystem events trigger auto-rescan
-- **Collections/playlists, webhooks**
-- **111 tests passing**
-
-### Frontend (SolidJS SPA)
-- **Routed SPA**: Home, Search, Library, Media Detail, Player, Settings, Login
-- **Video player**: full-viewport, auto-hiding controls, drag-to-seek, keyboard shortcuts, PiP, buffering indicator, volume persistence
-- **HLS.js**: adaptive streaming with quality switching
-- **Design system**: Tailwind + glass-morphism + animations
-- **Responsive layout**: collapsible sidebar, grid/list toggle
-
----
-
-## Phase 1 — Deployment Ready (Browser Baseline)
+## Phase 1 — Deployment Ready ✅ COMPLETE
 
 **Goal:** Deploy Ferrite on a Whatbox seedbox and access it remotely via browser.
 
-> Primary target: [Whatbox.ca](https://whatbox.ca) shared seedbox (no root, no Docker, no systemd).
-> Ferrite must run as a single static binary from `$HOME` with zero system dependencies beyond FFmpeg.
+All Phase 1 items are complete. Ferrite is deployed and streaming on Whatbox seedbox.
 
-### Whatbox Constraints
-| Constraint | Impact |
-|---|---|
-| **No root access** | No Docker, no systemd, no `apt install` |
-| **Shared server** | Must be lightweight — no GPU, software transcode only |
-| **No service manager** | Use `screen`/`tmux` or `cron @reboot` to keep running |
-| **Install to `$HOME`** | All paths under `~/ferrite/` — binary, config, DB, cache |
-| **Pre-built binary** | Must ship a static `x86_64-unknown-linux-musl` binary |
-| **FFmpeg** | Whatbox may have it; otherwise use static build from johnvansickle.com |
-
-### Target Directory Layout on Whatbox
-```
-~/ferrite/
-├── ferrite                  # static Linux binary
-├── config/
-│   └── ferrite.toml         # configuration
-├── data/
-│   ├── ferrite.db           # SQLite database
-│   └── images/              # poster/backdrop cache
-├── cache/
-│   └── transcode/           # HLS segment cache
-└── static/                  # pre-built SPA (ferrite-ui/dist)
-```
-
-### 1.1 — CORS Fix for Remote Access
-- [ ] Add `cors_origins` to `ServerConfig` (empty = allow all origins)
-- [ ] Update CORS middleware in `router.rs`
-- **Why:** Currently blocks all non-localhost browser requests. Whatbox is accessed by IP or domain.
-
-### 1.2 — Embed SPA into Binary (or exe-relative lookup)
-- [ ] Option A (**preferred**): Use `rust-embed` or `include_dir!` to compile `ferrite-ui/dist/` into the binary at build time — true single-binary deployment, no separate `static/` folder needed
-- [ ] Option B (fallback): Check exe-relative `static/` → `$FERRITE_STATIC_DIR` → `ferrite-ui/dist/` → embedded HTML fallback
-- **Why:** On a seedbox, fewer files = simpler. A single binary that serves its own UI is ideal.
-
-### 1.3 — Data Directory Resolution
-- [ ] Add `data_dir` config field — all relative paths resolve against this
-- [ ] Resolution order: `$FERRITE_DATA_DIR` → config file value → exe-relative `data/` → CWD
-- [ ] Default sub-paths: `data_dir/ferrite.db`, `data_dir/images/`, `cache/transcode/`
-- **Why:** On Whatbox, user runs from `~/ferrite/` — paths must resolve correctly without `cd`
-
-### 1.4 — Environment Variable Overrides
-- [ ] `FERRITE_PORT` — listen port (Whatbox assigns available ports)
-- [ ] `FERRITE_HOST` — bind address (default `0.0.0.0`)
-- [ ] `FERRITE_DATA_DIR` — base data directory
-- [ ] `FERRITE_FFMPEG_PATH` / `FERRITE_FFPROBE_PATH` — custom FFmpeg location
-- [ ] `FERRITE_JWT_SECRET` — auth secret (avoid putting in config file)
-- [ ] `FERRITE_CONFIG` — config file path
-- **Why:** Seedbox users often configure via env vars in `.bashrc` or wrapper scripts
-
-### 1.5 — `ferrite init` Subcommand
-- [ ] `ferrite init` creates `config/ferrite.toml` with random JWT secret + sensible defaults
-- [ ] `ferrite init --port 12345` pre-fills the port
-- [ ] Prints the generated config and next steps
-- **Why:** First-run experience on a seedbox should be: download, `./ferrite init`, `./ferrite`
-
-### 1.6 — CI/CD Pipeline (GitHub Actions)
-- [ ] Test: `cargo test --workspace` on Linux, macOS, Windows
-- [ ] Build: **static musl binary** (`x86_64-unknown-linux-musl`) — runs on any Linux without glibc
-- [ ] Build: macOS (x86_64 + aarch64), Windows (x86_64-msvc)
-- [ ] Frontend: `cd ferrite-ui && npm ci && npm run build` before packaging
-- [ ] Release: upload as GitHub Release assets (`.tar.gz` for Linux/Mac, `.zip` for Windows)
-- [ ] Release artifact includes: binary + `static/` (pre-built SPA) + example config
-- **Why:** Whatbox users need a single `wget` + `tar xf` to get everything
-
-### 1.7 — Whatbox Install Script
-- [ ] `install-whatbox.sh`: one-command setup for Whatbox specifically
-  ```bash
-  #!/bin/bash
-  # Usage: curl -sSL https://raw.githubusercontent.com/.../install-whatbox.sh | bash
-  FERRITE_DIR="$HOME/ferrite"
-  mkdir -p "$FERRITE_DIR"/{config,data,cache}
-  cd "$FERRITE_DIR"
-  # Download latest release
-  wget -q "https://github.com/.../releases/latest/download/ferrite-x86_64-linux-musl.tar.gz"
-  tar xf ferrite-x86_64-linux-musl.tar.gz
-  rm ferrite-x86_64-linux-musl.tar.gz
-  # Check for FFmpeg
-  if ! command -v ffmpeg &>/dev/null; then
-    echo "FFmpeg not found. Downloading static build..."
-    wget -q "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
-    tar xf ffmpeg-release-amd64-static.tar.xz --strip-components=1 -C "$HOME/bin" \
-      "*/ffmpeg" "*/ffprobe"
-    rm ffmpeg-release-amd64-static.tar.xz
-  fi
-  # Initialize config
-  ./ferrite init --port ${1:-8080}
-  echo ""
-  echo "Ferrite installed to $FERRITE_DIR"
-  echo "Start with: cd $FERRITE_DIR && screen -S ferrite ./ferrite"
-  echo "Or add to crontab: @reboot cd $FERRITE_DIR && ./ferrite >> ferrite.log 2>&1"
-  ```
-- [ ] Add `@reboot` cron example for auto-start after server reboot
-- **Why:** Whatbox users should go from zero to running in one command
-
-### 1.8 — README + Documentation
-- [ ] README.md: what Ferrite is, quick start, config reference
-- [ ] **Whatbox deployment guide** (primary): step-by-step with screenshots
-- [ ] FFmpeg setup guide (system vs static build)
-- [ ] Building from source guide
-- **Why:** Nobody can use it without docs
-
-### 1.9 — Docker Image (Future)
-- [ ] Multi-stage Dockerfile: Rust + Node build → slim runtime with FFmpeg
-- [ ] `docker-compose.yml` with volume mounts
-- [ ] GPU passthrough docs for NVENC
-- **Priority:** Lower — for VPS/home server users, not Whatbox
-
-**Estimated effort:** ~2 weeks
-**Exit criteria:** A Whatbox user can run `install-whatbox.sh`, add a media library path, and stream to their browser remotely with correct colors, seeking, and subtitle support.
+| Item | Status |
+|------|--------|
+| CORS fix for remote access | ✅ `cors_origins` config field + middleware |
+| SPA lookup (exe-relative `static/`) | ✅ `resolve_spa_dir()` + fallback HTML |
+| Data directory resolution | ✅ `FERRITE_DATA_DIR` → exe-relative → CWD |
+| Environment variable overrides | ✅ 9 env vars (port, host, data dir, ffmpeg, jwt, etc.) |
+| `ferrite init` subcommand | ✅ Generates config with random JWT secret |
+| CI/CD pipeline | ✅ `ci.yml` (test/fmt/clippy) + `release.yml` (musl build + SPA) |
+| Whatbox install script | ✅ `scripts/install-whatbox.sh` with FFmpeg auto-download |
+| README + documentation | ✅ README.md, DEPLOYMENT.md, WHATBOX_TESTING.md |
+| Docker image | ⏭️ Deferred — single binary simpler for seedbox |
 
 ---
 
-## Phase 2 — Browser Experience Polish
+## Phase 2 — Browser Experience Polish ← YOU ARE HERE
 
 **Goal:** Feature parity with Plex's browser experience. This becomes the reference implementation for native apps.
 
-### 2.1 — Watch State & Continue Watching
-- [ ] Track playback position per-user per-media (persist on pause/close/periodic)
-- [ ] Resume from last position on play
-- [ ] "Continue Watching" row on home page (already has UI placeholder)
-- [ ] Mark as watched/unwatched
-- [ ] Watched indicator on cards (progress bar or checkmark)
+Split into **2A** (high-impact, do now) and **2B** (defer until after native app foundation).
 
-### 2.2 — TV Show Organization
-- [ ] Season/episode grouping in UI (show → seasons → episodes)
-- [ ] Episode detail view with next/previous navigation
-- [ ] "Up Next" auto-play (play next episode when current finishes)
-- [ ] Season poster art, episode thumbnails
+### Phase 2A — Core Experience (Do Now)
 
-### 2.3 — Metadata Enhancement
-- [ ] TMDb/OMDb integration for movie/show metadata (synopsis, cast, ratings, genres)
-- [ ] Automatic poster/backdrop/fanart fetching
-- [ ] Manual metadata editing (title, year, genre override)
-- [ ] Genre/year/rating filtering on library pages
+These items have the highest impact on daily usability.
 
-### 2.4 — Multi-User Management (Plex-like)
+#### 2A.1 — Up Next / Auto-Play (TV Shows)
+- [x] Backend: `GET /api/episodes/{media_item_id}/next` endpoint
+- [x] TV library shows grid of shows (not flat episode list) — `ShowsPage` + `ShowDetailPage`
+- [x] Show → Season → Episode hierarchy UI (Plex-style)
+- [x] "Up Next" overlay in final 30 seconds with 15s countdown + auto-play
+- [x] Player remounts correctly on episode change (no stale state)
+- **Known bugs (return to fix):**
+  - [x] Next episode selection is non-deterministic — **Fixed:** rewrote SQL as two separate CTEs (`same_season_next` + `next_season_first`) joined with `UNION ALL LIMIT 1`, eliminating the ambiguous `OR` condition that could return wrong episodes with gaps in episode/season numbers
+  - [x] Player `currentTime` can exceed the displayed max duration — **Fixed:** cap `setCurrentTime` at `knownDuration()` in `onTimeUpdate`; reuse the already-computed `dur` variable to avoid the duplicate declaration
+- **Why:** Essential for TV show binge-watching — the #1 use case for media servers
 
-> The backend already has: `users` table with `is_admin`, JWT auth, admin-only user creation,
-> password change, `playback_progress.user_id` FK. This phase builds the full experience.
+#### 2A.2 — Watched Indicators on Cards ✅
+- [x] Progress bar on cards
+- [x] Checkmark overlay for completed items
+- [x] Unwatched dot for new items (added in last 7 days, unplayed)
+- [x] "Mark as watched/unwatched" button on detail page (optimistic UI)
+- **Why:** At a glance, users can't tell what they've seen vs. what's new
 
-**Admin — User Management UI (Settings page)**
-- [ ] List all users with role, last login, created date
-- [ ] Create user form (username, password, display name, admin toggle)
-- [ ] Delete user (with confirmation — cascades watch history)
-- [ ] Disable/enable user (soft-disable: keep data, block login)
-- [ ] Promote/demote admin role
-- [ ] Reset password for another user (admin action)
+#### 2A.3 — Admin User Management UI ✅
+- [x] Backend: user CRUD, admin flag, password change
+- [x] Settings page: list users with role badge, last login, avatar initial
+- [x] Create user form (username, password, display name, admin toggle)
+- [x] Delete user (with confirmation, cannot delete self)
+- [x] Admin reset password for another user
+- [x] Section hidden from non-admin users
+- **Why:** Can't share Ferrite with friends/family without a way to manage users from the UI
 
-**Invite System**
+#### 2A.4 — External Subtitle Selection in Player ✅
+- [x] Backend: subtitle listing + SRT/ASS → VTT conversion
+- [x] Subtitle track picker in player controls
+- [x] Load selected VTT subtitle via `<track>` element
+- [x] Subtitle preference persists across episodes (sessionStorage per library)
+- **Why:** Many MKV files have multiple subtitle tracks; users need to pick them
+
+#### 2A.5 — Quality Selector in Player ✅
+- [x] Backend: multi-variant HLS with quality tiers
+- [x] Quality badge on button showing current resolution (e.g. `1080p` / `A` for auto)
+- [x] Dropdown to manually select quality (Auto / 1080p / 720p / etc.)
+- [x] Auto mode uses HLS.js ABR; manual pins via `hls.currentLevel`
+- [x] Quality preference persists across episodes (sessionStorage per library)
+- **Why:** Users on limited bandwidth need to manually select lower quality
+
+#### 2A.6 — Audio/Subtitle Track Persistence ✅
+- [x] Audio track preference persists across episodes (sessionStorage per library)
+- [x] Subtitle track preference persists across episodes (sessionStorage per library)
+- [x] Quality preference persists across episodes (sessionStorage per library)
+- **Note:** sessionStorage scope = browser tab session; clears on tab close (intentional — avoids stale prefs across different shows)
+- **Why:** Users who prefer Japanese audio + English subs shouldn't re-select every episode
+
+**Estimated effort:** ~2 weeks
+**Exit criteria:** TV binge-watching works smoothly, subtitles are selectable, quality can be controlled, and the admin can manage users from the UI.
+
+### Phase 2B — Polish & Power Features (Defer)
+
+These are valuable but don't block native app development.
+
+#### 2B.1 — Invite System
 - [ ] Admin generates invite link/code with optional expiry
-- [ ] Invite link opens registration page (no admin needed to complete)
-- [ ] Optional: limit max users (config: `max_users = 10`)
-- [ ] DB: `invites` table (id, code, created_by, expires_at, used_by, used_at)
+- [ ] Invite link opens registration page
+- [ ] `invites` table (id, code, created_by, expires_at, used_by)
 
-**Per-User Library Access**
-- [ ] `user_library_access` table (user_id, library_id, granted_by, granted_at)
+#### 2B.2 — Per-User Library Access
+- [ ] `user_library_access` table (user_id, library_id)
 - [ ] Admin assigns which libraries each user can see
-- [ ] Default: new users see all libraries (configurable)
-- [ ] API filters library/media queries by user access
-- [ ] UI: library access checkboxes on user edit screen
+- [ ] API filters queries by user access
 
-**Per-User Watch State**
-- [ ] Ensure all watch state queries filter by authenticated `user_id`
-- [ ] Each user has independent watch progress, watched status, continue watching
-- [ ] Admin "activity" view: who's watching what, current transcode load
+#### 2B.3 — User Preferences ✅
+- [x] `user_preferences` table (migration 010), `preference_repo` with get/set/upsert
+- [x] `GET /api/preferences` + `PUT /api/preferences` endpoints
+- [x] Default subtitle language — auto-selects matching track on playback
+- [x] Default audio language — auto-selects matching track on playback
+- [x] Max streaming quality cap (stored, UI in Settings)
+- [ ] UI theme preference (deferred — dark-only for now)
 
-**User Preferences**
-- [ ] `user_preferences` table (user_id, key, value) or JSON column
-- [ ] Default audio language (e.g., "English" — auto-select matching track)
-- [ ] Default subtitle language (or "off")
-- [ ] Max streaming quality (cap variant selection for bandwidth-limited users)
-- [ ] UI theme preference (future: light/dark)
-- [ ] Preferences UI on user profile page
+#### 2B.4 — Chapter Support ✅
+- [x] Extract chapter markers from media files (ffprobe + `-show_chapters`)
+- [x] Store in `chapters` table (migration 009), exposed via `GET /api/media/{id}/chapters`
+- [x] Display chapter tick marks on player timeline
+- [x] Show chapter name in timeline hover tooltip
+- [ ] "Skip Intro" / "Skip Credits" buttons (requires intro detection — deferred)
 
-### 2.5 — Playback Improvements
-- [ ] Chapter support (skip intro/credits markers)
-- [ ] Audio/subtitle track persistence per show (remember language preference)
-- [ ] Transcode quality selector in player UI
-- [ ] Bandwidth estimation and auto-quality (HLS ABR is there, but UI feedback needed)
-
-### 2.6 — Library Management
-- [ ] Bulk operations (mark watched, delete, move to collection)
+#### 2B.5 — Library Management
+- [ ] Bulk operations (mark watched, move to collection)
 - [ ] Duplicate detection
 - [ ] Missing episode detection for TV shows
-- [ ] Manual scan trigger per-library from UI
+- [ ] Manual metadata editing (title, year, genre override)
 
-**Estimated effort:** ~4-6 weeks
-**Exit criteria:** A non-technical user can browse, search, play, resume, and manage their media library entirely from the browser with a polished experience comparable to Plex.
+#### 2B.6 — Enhanced Metadata
+- [x] Genre/year/rating filtering UI — filter bar on LibraryPage with genre chips, min rating, year range
+- [ ] Cast & crew information from TMDB
+- [ ] "More like this" recommendations
+
+#### 2B.7 — Admin Activity Dashboard ✅
+- [x] `GET /api/admin/streams` — lists all active HLS sessions (admin-only)
+- [x] `AdminPage.tsx` — live activity view, auto-refreshes every 5s
+- [x] Sidebar "Activity" nav link
+- [ ] Stream history log (deferred — requires persistent storage)
+
+**Estimated effort:** ~3-4 weeks (can be done incrementally)
 
 ---
 
@@ -240,28 +143,27 @@
 **Goal:** A clean, documented, versioned API that native apps can build against.
 
 ### 3.1 — API Versioning & Documentation
-- [ ] Version all endpoints under `/api/v1/`
-- [ ] OpenAPI/Swagger spec auto-generated from route definitions
-- [ ] API documentation site (or embed in settings page)
+- [ ] Version all endpoints under `/api/v1/` (keep `/api/` as alias)
+- [ ] OpenAPI spec via `utoipa` crate (auto-generated from Axum handlers)
+- [ ] Swagger UI embedded at `/api/docs`
 
 ### 3.2 — Streaming Protocol Support
-- [ ] Ensure HLS works cleanly for all clients (browser, iOS AVPlayer, Roku)
-- [ ] Server-side quality selection API (client requests specific variant)
-- [ ] Bandwidth negotiation endpoint (client reports connection speed)
-- [ ] Session management API (list active streams, kill stream)
+- [ ] Ensure HLS works for iOS AVPlayer and Android ExoPlayer (not just hls.js)
+- [ ] Server-side quality selection API (client requests specific variant by name)
+- [ ] Session management API (list active streams, kill stream by admin)
 
-### 3.3 — Device Registration & Sync
-- [ ] Device registration endpoint (name, type, capabilities)
-- [ ] Per-device codec capability reporting (what can this device direct-play?)
-- [ ] Cross-device watch state sync (pause on TV, resume on phone)
+### 3.3 — Device Registration & Capabilities
+- [ ] `POST /api/devices` — register device (name, type, supported codecs)
+- [ ] Per-device codec capability reporting → server adjusts transcode strategy
+- [ ] Cross-device watch state sync (automatic via existing per-user progress)
 
 ### 3.4 — Push Notifications
-- [ ] Webhook system (already exists) extended for device push
+- [ ] Extend webhook system for device push (APNs for iOS, FCM for Android)
 - [ ] "New content added" notifications
 - [ ] "Continue watching" reminders
 
 **Estimated effort:** ~2-3 weeks
-**Exit criteria:** A complete OpenAPI spec that an iOS or Roku developer can build against without reading backend code.
+**Exit criteria:** OpenAPI spec that an iOS developer can build against without reading backend code.
 
 ---
 
@@ -269,72 +171,56 @@
 
 **Goal:** Native iOS app with streaming, offline downloads, and AirPlay.
 
-### 4.1 — Technology Choice
-- **Recommended:** Swift + SwiftUI + AVPlayer
-- AVPlayer natively handles HLS (no hls.js needed)
+### 4.1 — Technology
+- **Swift + SwiftUI + AVPlayer**
+- AVPlayer natively handles HLS (no hls.js)
 - AVPlayer handles HDR passthrough on capable devices
-- SwiftUI for modern, declarative UI
 
 ### 4.2 — Core Features
-- [ ] Server discovery (manual URL entry + mDNS/Bonjour for local)
-- [ ] Authentication (login, token storage in Keychain)
+- [ ] Server discovery (manual URL entry + Bonjour for local)
+- [ ] Authentication (login, token in Keychain)
 - [ ] Library browsing (movies, shows, collections)
 - [ ] Search
 - [ ] Media detail view
-- [ ] HLS playback via AVPlayer (direct play + transcoded)
+- [ ] HLS playback via AVPlayer
 - [ ] Resume playback / continue watching
 - [ ] Audio/subtitle track selection
-- [ ] Background audio (continue playing when app is backgrounded)
+- [ ] Background audio
 
-### 4.3 — iOS-Specific Features
-- [ ] AirPlay support (built into AVPlayer)
+### 4.3 — iOS-Specific
+- [ ] AirPlay (built into AVPlayer)
 - [ ] Picture-in-Picture
-- [ ] Offline downloads (download HLS segments for offline viewing)
-- [ ] CarPlay audio (for music libraries)
+- [ ] Offline downloads (HLS segment caching)
 - [ ] Siri Shortcuts ("Play my show on Ferrite")
-- [ ] Widget (continue watching widget on home screen)
+- [ ] Home screen widget (continue watching)
 
 ### 4.4 — Distribution
-- [ ] TestFlight for beta testing
+- [ ] TestFlight beta
 - [ ] App Store submission
-- [ ] Or: self-signed IPA for sideloading (AltStore compatible)
 
 **Estimated effort:** ~6-8 weeks for MVP
-**Exit criteria:** Browse library, play/resume content, AirPlay to TV, download for offline.
+**Exit criteria:** Browse, play, resume, AirPlay to TV, download for offline.
 
 ---
 
-## Phase 5 — Roku TV App
+## Phase 5 — Smart TV Apps
 
-**Goal:** Native Roku channel for direct TV playback.
+**Goal:** Playback on living room screens.
 
-### 5.1 — Technology
-- **Required:** BrightScript + SceneGraph (Roku's proprietary framework)
-- Roku natively handles HLS via its Video node
-- Limited codec support — transcoding is critical here
+### Option A: Web-Based TV Apps (Recommended First)
+- [ ] **Samsung Tizen** web app (HTML5 + HLS — reuse SolidJS frontend)
+- [ ] **LG webOS** web app (same approach)
+- [ ] **Chromecast / Fire TV** via web receiver
+- **Why:** Reuses existing web frontend with TV-optimized layout. Much less effort than native.
 
-### 5.2 — Core Features
-- [ ] Channel setup (server URL entry, login)
-- [ ] Library browsing (grid layout, poster art)
-- [ ] Media detail screen
-- [ ] HLS playback (Roku Video node handles HLS natively)
-- [ ] Resume playback
-- [ ] Audio/subtitle track selection (Roku supports HLS alternate audio)
-- [ ] Remote control navigation (D-pad, play/pause, back)
+### Option B: Roku Channel (If Needed)
+- [ ] BrightScript + SceneGraph (proprietary — cannot reuse web code)
+- [ ] HLS via Roku Video node
+- [ ] Remote control (D-pad) navigation
+- [ ] Roku Channel Store submission
 
-### 5.3 — Roku-Specific Considerations
-- [ ] Roku supports: H.264, HEVC (some models), AAC, AC3, EAC3
-- [ ] Report device capabilities to server → server decides transcode strategy
-- [ ] Deep linking (launch directly to a specific title)
-- [ ] Roku Search integration (appear in Roku's global search)
-
-### 5.4 — Distribution
-- [ ] Roku Developer account
-- [ ] Private channel (sideloaded via developer mode) for testing
-- [ ] Public channel submission to Roku Channel Store
-
-**Estimated effort:** ~4-6 weeks for MVP
-**Exit criteria:** Browse, play, resume on Roku TV with proper transcoding for device capabilities.
+**Estimated effort:** 2-3 weeks (web TV apps) or 4-6 weeks (Roku native)
+**Exit criteria:** Browse, play, resume on living room TV.
 
 ---
 
@@ -343,41 +229,114 @@
 **Goal:** Production-grade for multi-user households and power users.
 
 ### 6.1 — Performance
-- [ ] Transcode caching (cache popular transcodes to avoid re-encoding)
-- [ ] Segment pre-generation (transcode ahead of playback position)
-- [ ] Connection pooling for SQLite (or migrate to PostgreSQL for multi-server)
+- [ ] Transcode caching (avoid re-encoding popular files)
+- [ ] Segment pre-generation (encode ahead of playback position)
 - [ ] CDN-friendly headers for reverse proxy caching
 
 ### 6.2 — Reliability
 - [ ] Health monitoring dashboard
-- [ ] Automatic FFmpeg crash recovery (restart failed transcodes)
-- [ ] Database backup/restore commands
-- [ ] Graceful handling of disk-full conditions
+- [ ] Automatic FFmpeg crash recovery
+- [ ] Database backup/restore CLI commands
+- [ ] Graceful disk-full handling
 
 ### 6.3 — Multi-Server (Future)
-- [ ] Federated libraries (aggregate media from multiple Ferrite instances)
-- [ ] Distributed transcoding (offload to dedicated transcode nodes)
+- [ ] Federated libraries (aggregate from multiple Ferrite instances)
+- [ ] Distributed transcoding (offload to dedicated nodes)
 
 **Estimated effort:** Ongoing
-**Exit criteria:** Handles 5+ concurrent streams reliably on a mid-range seedbox.
+**Exit criteria:** 5+ concurrent streams reliably on a mid-range seedbox.
+
+---
+
+---
+
+## Phase 7 — Ferrite Account Service (FAS)
+
+**Goal:** Federated user identity — one Ferrite Account works across multiple self-hosted servers, similar to how a Plex account works across Plex servers.
+
+### Vision
+
+Users create a single **Ferrite Account** at a central hosted service (`accounts.ferrite.app` or self-hosted). They use this account to join any Ferrite server instance — no separate registration per server. Server admins invite users by email/username; the server trusts FAS to authenticate them.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Ferrite Account Service (FAS)                      │
+│  - User registration & login                        │
+│  - Issues OAuth2/OIDC tokens                        │
+│  - Tracks which servers a user belongs to           │
+│  - Can be self-hosted or use hosted accounts.ferrite│
+└───────────────────┬─────────────────────────────────┘
+                    │  OAuth2 token validation
+          ┌─────────▼──────────┐     ┌──────────────────┐
+          │  Ferrite Server A  │     │  Ferrite Server B │
+          │  (self-hosted)     │     │  (self-hosted)    │
+          │  - Stores FAS ID   │     │  - Stores FAS ID  │
+          │  - Local roles     │     │  - Local roles    │
+          └────────────────────┘     └──────────────────┘
+```
+
+### Auth modes (both supported simultaneously)
+
+- **FAS mode** — user signs in via FAS OAuth flow, server validates token against FAS public key. No password stored on server.
+- **Local mode** — traditional username/password, JWT signed by server. Fallback for air-gapped/offline deployments. Current implementation.
+
+### Data model changes
+
+| Table | Current | FAS addition |
+|-------|---------|--------------|
+| `users` | `username`, `password_hash`, `is_admin` | Add `fas_user_id` (nullable), `fas_email` — local accounts keep password_hash, FAS accounts leave it null |
+| `servers` | n/a | New table in FAS: `id`, `name`, `url`, `owner_fas_id`, `created_at` |
+| `server_members` | n/a | New table in FAS: `fas_user_id`, `server_id`, `role`, `invited_at` |
+
+### User flows
+
+1. **Join a server (FAS):** User visits server URL → "Sign in with Ferrite Account" → OAuth redirect to FAS → callback with code → server exchanges for session → user is in
+2. **Admin invites user:** Admin enters email in Settings → server calls FAS to look up user → stores `fas_user_id` + role locally → user gets notified
+3. **Multi-server dashboard:** FAS UI shows all servers the user belongs to with one-click access
+4. **Local fallback:** If `fas_url` is absent from config, server falls back to local username/password auth (current behavior)
+
+### Implementation phases
+
+- **FAS-1:** Scaffold FAS as a separate Rust service (Axum + SQLite/Postgres) — user registration, login, OAuth2 token issuance (RFC 6749)
+- **FAS-2:** Add FAS token validation path to `ferrite-api` alongside local auth — config: `[auth] fas_url = "https://accounts.ferrite.app"`
+- **FAS-3:** Server admin UI for inviting FAS users, managing server roles (replaces current local-only user management)
+- **FAS-4:** FAS multi-server dashboard — user can see and switch between all their servers
+- **FAS-5:** Mobile/TV app deep linking — apps authenticate once with FAS, discover user's servers automatically
+
+### Key decisions to revisit
+
+- **Hosted vs. self-hosted FAS:** Should `accounts.ferrite.app` be the default, or should every deployment bring its own FAS? (Plex uses hosted; Jellyfin uses local only)
+- **Token format:** JWT with FAS-signed public key (simpler) vs. opaque tokens with introspection endpoint (more revocable)
+- **Privacy:** FAS knows which servers a user belongs to — acceptable tradeoff for convenience?
+
+**Estimated effort:** FAS-1 through FAS-3 ~6-8 weeks
+**Prerequisite:** Phase 3 (stable API) should be complete first so native apps can also use FAS auth
 
 ---
 
 ## Priority Order Summary
 
 ```
-Phase 1: Deployment Ready          ~2 weeks     ← YOU ARE HERE
-Phase 2: Browser Polish            ~4-6 weeks
-Phase 3: API for Native Apps       ~2-3 weeks
-Phase 4: iOS App                   ~6-8 weeks
-Phase 5: Roku App                  ~4-6 weeks
-Phase 6: Scale & Reliability       Ongoing
+Phase 1:  Deployment Ready          ✅ COMPLETE
+Phase 2A: Core Browser Experience   ~2 weeks       ← YOU ARE HERE
+Phase 2B: Browser Polish            ~3-4 weeks     (incremental, non-blocking)
+Phase 3:  API for Native Apps       ~2-3 weeks
+Phase 4:  iOS App                   ~6-8 weeks
+Phase 5:  Smart TV Apps             ~2-6 weeks
+Phase 6:  Scale & Reliability       Ongoing
+Phase 7:  Ferrite Account Service   ~6-8 weeks     (after Phase 3)
 ```
 
-**Total to MVP (browser + iOS + Roku):** ~20-26 weeks
+**Path to iOS app:** Phase 2A → Phase 3 → Phase 4 (~10-13 weeks)
+**Path to TV apps:** Phase 5 can start in parallel with Phase 4
+**Path to FAS:** Phase 3 → Phase 7 (can overlap with Phase 4)
 
-### Recommended Starting Point
-
-Start Phase 1 immediately — specifically the **Docker image** and **CORS fix**, since those unblock real-world testing on your seedbox. Once you can deploy and stream remotely, you'll discover the real UX gaps that Phase 2 needs to address.
-
-Phase 3 (API standardization) should happen *before* starting native apps, so you design the API once and build both apps against it.
+### Next Up (Phase 2A Priority Order)
+1. **Up Next auto-play** — biggest UX gap for TV show users ✅
+2. **Watched indicators** — can't tell what's new vs. seen at a glance ✅
+3. **Admin user management UI** — will be superseded by FAS; defer deep work ✅ (basic impl done)
+4. **Subtitle picker in player** — many files have subtitles, no way to select them
+5. **Quality selector** — users on limited bandwidth need manual control
+6. **Audio/subtitle persistence** — quality-of-life for binge-watching

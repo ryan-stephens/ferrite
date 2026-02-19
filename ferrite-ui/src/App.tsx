@@ -11,6 +11,9 @@ import LibraryPage from './pages/LibraryPage';
 import MediaDetailPage from './pages/MediaDetailPage';
 import PlayerPage from './pages/PlayerPage';
 import SettingsPage from './pages/SettingsPage';
+import AdminPage from './pages/AdminPage';
+import ShowsPage from './pages/ShowsPage';
+import ShowDetailPage from './pages/ShowDetailPage';
 
 export default function App() {
   onMount(async () => {
@@ -59,10 +62,13 @@ export default function App() {
             <Route path="/" component={HomePage} />
             <Route path="/search" component={SearchPage} />
             <Route path="/library/:id" component={LibraryPage} />
+            <Route path="/shows/library/:id" component={ShowsPage} />
+            <Route path="/shows/:id" component={ShowDetailPage} />
             <Route path="/media/:id" component={MediaDetailPage} />
             <Route path="/continue" component={HomePage} />
             <Route path="/collections" component={HomePage} />
             <Route path="/settings" component={SettingsPage} />
+            <Route path="/admin" component={AdminPage} />
           </Route>
         </Router>
       </Show>

@@ -45,9 +45,11 @@ async function apiFetch<T>(method: string, path: string, body?: unknown): Promis
   return res.json();
 }
 
-/** Fire-and-forget API call (progress reporting) */
+/** Fire-and-forget API call (progress reporting, session cleanup).
+ *  keepalive: true ensures the request completes even if the component
+ *  unmounts or the user navigates away before the response arrives. */
 export function apiQuiet(method: string, path: string, body?: unknown): void {
-  const opts: RequestInit = { method, headers: authHeaders() };
+  const opts: RequestInit = { method, headers: authHeaders(), keepalive: true };
   if (body) opts.body = JSON.stringify(body);
   fetch(path, opts).catch(() => {});
 }
@@ -86,6 +88,12 @@ export interface MediaItem {
   last_played_at: string | null;
   added_at: string | null;
   library_id: string;
+  is_episode: number;
+  episode_number: number | null;
+  episode_title: string | null;
+  season_number: number | null;
+  show_title: string | null;
+  still_path: string | null;
 }
 
 export interface MediaListResponse {
@@ -118,9 +126,118 @@ export interface MediaStream {
   bitrate_bps: number | null;
 }
 
+export interface UserPreferences {
+  default_subtitle_language?: string;
+  default_audio_language?: string;
+  max_quality?: string;
+}
+
+export interface ActiveStream {
+  session_id: string;
+  media_id: string;
+  variant_label: string | null;
+  start_secs: number;
+  width: number | null;
+  height: number | null;
+  bitrate_kbps: number | null;
+  idle_secs: number;
+  age_secs: number;
+}
+
+export interface Chapter {
+  id: number;
+  media_item_id: string;
+  chapter_index: number;
+  title: string | null;
+  start_time_ms: number;
+  end_time_ms: number;
+}
+
+export interface ExternalSubtitle {
+  id: number;
+  media_item_id: string;
+  file_path: string;
+  format: string;
+  language: string | null;
+  title: string | null;
+  is_forced: number;
+  is_sdh: number;
+  file_size: number;
+}
+
+export interface NextEpisode {
+  media_item_id: string;
+  season_id: string;
+  episode_number: number;
+  season_number: number;
+  episode_title: string | null;
+  overview: string | null;
+  still_path: string | null;
+  duration_ms: number | null;
+  show_title: string;
+  show_poster_path: string | null;
+}
+
+export interface TvShow {
+  id: string;
+  library_id: string;
+  title: string;
+  sort_title: string | null;
+  year: number | null;
+  overview: string | null;
+  status: string | null;
+  tmdb_id: number | null;
+  tvdb_id: number | null;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  genres: string | null;
+  fetched_at: string | null;
+  season_count: number;
+  episode_count: number;
+}
+
+export interface Season {
+  id: string;
+  tv_show_id: string;
+  season_number: number;
+  title: string | null;
+  overview: string | null;
+  poster_path: string | null;
+  episode_count: number;
+}
+
+export interface Episode {
+  media_item_id: string;
+  season_id: string;
+  episode_number: number;
+  episode_title: string | null;
+  overview: string | null;
+  air_date: string | null;
+  still_path: string | null;
+  file_path: string;
+  file_size: number;
+  duration_ms: number | null;
+  video_codec: string | null;
+  audio_codec: string | null;
+  width: number | null;
+  height: number | null;
+  position_ms: number | null;
+  completed: number | null;
+  last_played_at: string | null;
+}
+
 export interface AuthStatus {
   auth_required: boolean;
   has_users: boolean;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  display_name: string | null;
+  is_admin: number;
+  created_at: string;
+  last_login_at: string | null;
 }
 
 // ---- API functions ----
@@ -133,6 +250,15 @@ export const api = {
 
   // System
   info: () => apiFetch<{ name: string; version: string }>('GET', '/api/system/info'),
+
+  // Users
+  listUsers: () => apiFetch<User[]>('GET', '/api/users'),
+  createUser: (username: string, password: string, displayName: string | null, isAdmin: boolean) =>
+    apiFetch<User>('POST', '/api/users', { username, password, display_name: displayName, is_admin: isAdmin }),
+  deleteUser: (id: string) => apiFetch<void>('DELETE', `/api/users/${id}`),
+  adminResetPassword: (id: string, newPassword: string) =>
+    apiFetch<void>('PUT', `/api/users/${id}/password`, { new_password: newPassword }),
+  getCurrentUser: () => apiFetch<User>('GET', '/api/users/me'),
 
   // Libraries
   listLibraries: () => apiFetch<Library[]>('GET', '/api/libraries'),
@@ -148,12 +274,22 @@ export const api = {
   },
   getMedia: (id: string) => apiFetch<MediaItem>('GET', `/api/media/${id}`),
   getStreams: (id: string) => apiFetch<MediaStream[]>('GET', `/api/media/${id}/streams`),
+  listSubtitles: (id: string) => apiFetch<ExternalSubtitle[]>('GET', `/api/media/${id}/subtitles`),
+  listChapters: (id: string) => apiFetch<Chapter[]>('GET', `/api/media/${id}/chapters`),
+  listActiveStreams: () => apiFetch<{ sessions: ActiveStream[]; count: number }>('GET', '/api/admin/streams'),
+  getPreferences: () => apiFetch<UserPreferences>('GET', '/api/preferences'),
+  setPreferences: (prefs: Partial<UserPreferences>) =>
+    apiFetch<void>('PUT', '/api/preferences', { preferences: prefs }),
+  nextEpisode: (mediaItemId: string) =>
+    apiFetch<{ next: NextEpisode | null }>('GET', `/api/episodes/${mediaItemId}/next`),
 
   // Progress
   updateProgress: (mediaId: string, positionMs: number) =>
     apiQuiet('PUT', `/api/progress/${mediaId}`, { position_ms: positionMs }),
   markCompleted: (mediaId: string) =>
     apiQuiet('POST', `/api/progress/${mediaId}/complete`),
+  resetProgress: (mediaId: string) =>
+    apiQuiet('DELETE', `/api/progress/${mediaId}`),
 
   // HLS
   hlsSeek: (id: string, start: number, audioStream?: number) => {
@@ -165,6 +301,12 @@ export const api = {
   },
   hlsStop: (id: string, sessionId: string) =>
     apiQuiet('DELETE', `/api/stream/${id}/hls/${sessionId}`),
+
+  // TV Shows
+  listShows: (libraryId: string) => apiFetch<TvShow[]>('GET', `/api/shows?library_id=${libraryId}`),
+  getShow: (id: string) => apiFetch<TvShow>('GET', `/api/shows/${id}`),
+  listSeasons: (showId: string) => apiFetch<Season[]>('GET', `/api/shows/${showId}/seasons`),
+  listEpisodes: (seasonId: string) => apiFetch<Episode[]>('GET', `/api/seasons/${seasonId}/episodes`),
 
   // Users
   createUser: (username: string, password: string) =>

@@ -59,7 +59,13 @@ function logout(): void {
 // Listen for 401 events from API layer
 window.addEventListener('ferrite:unauthorized', () => {
   setAuthState(prev => ({ ...prev, authenticated: false }));
-  setShowLogin(true);
+  // Re-fetch auth status so hasUsers is correct before showing login
+  api.authStatus().then(status => {
+    setAuthState(prev => ({ ...prev, authRequired: status.auth_required, hasUsers: status.has_users }));
+    setShowLogin(true);
+  }).catch(() => {
+    setShowLogin(true);
+  });
 });
 
 export { authState, showLogin, setShowLogin, initAuth, login, logout };

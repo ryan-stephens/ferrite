@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, SqliteConnection};
 
 /// Row for the movies table joined with media_items.
 #[derive(Debug, Clone, sqlx::FromRow, serde::Serialize)]
@@ -40,6 +40,14 @@ pub struct MovieWithMediaRow {
     pub position_ms: Option<i64>,
     pub completed: Option<i64>,
     pub last_played_at: Option<String>,
+    // Computed: 1 if this media item is a TV episode, 0 otherwise
+    pub is_episode: i64,
+    // Episode fields (null for non-episodes)
+    pub episode_number: Option<i64>,
+    pub episode_title: Option<String>,
+    pub season_number: Option<i64>,
+    pub show_title: Option<String>,
+    pub still_path: Option<String>,
 }
 
 /// A movie row that still needs metadata fetched from an external provider.
@@ -52,8 +60,9 @@ pub struct MovieNeedingMetadata {
 
 /// Insert a skeleton movie row (from filename parsing).
 /// Uses INSERT OR IGNORE so it will NOT overwrite existing metadata.
+/// Accepts `&mut SqliteConnection` so it can run inside a transaction.
 pub async fn upsert_movie_skeleton(
-    pool: &SqlitePool,
+    executor: &mut SqliteConnection,
     media_item_id: &str,
     title: &str,
     year: Option<i64>,
@@ -67,7 +76,7 @@ pub async fn upsert_movie_skeleton(
     .bind(media_item_id)
     .bind(title)
     .bind(year)
-    .execute(pool)
+    .execute(executor)
     .await?;
 
     Ok(())
@@ -147,15 +156,24 @@ pub async fn get_movie_with_media(
                m.tagline, m.rating, m.content_rating,
                m.tmdb_id,
                m.imdb_id,
-               m.poster_path,
+               COALESCE(ep.still_path, m.poster_path, ts.poster_path) AS poster_path,
                m.backdrop_path,
-               m.genres,
+               COALESCE(m.genres, ts.genres) AS genres,
                m.fetched_at,
                mi.title, mi.year, mi.added_at, mi.updated_at,
-               pp.position_ms, pp.completed, pp.last_played_at
+               pp.position_ms, pp.completed, pp.last_played_at,
+               CASE WHEN ep.media_item_id IS NOT NULL THEN 1 ELSE 0 END AS is_episode,
+               ep.episode_number,
+               ep.title AS episode_title,
+               s.season_number,
+               ts.title AS show_title,
+               ep.still_path
         FROM media_items mi
         LEFT JOIN movies m ON m.media_item_id = mi.id
         LEFT JOIN playback_progress pp ON pp.media_item_id = mi.id
+        LEFT JOIN episodes ep ON ep.media_item_id = mi.id
+        LEFT JOIN seasons s ON s.id = ep.season_id
+        LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id
         WHERE mi.id = ?
         "#,
     )
@@ -179,13 +197,20 @@ pub struct MediaQuery<'a> {
 }
 
 /// List movies joined with media_items, with search, filter, sort, and pagination.
+///
+/// Uses a fixed SQL template with nullable parameter checks (`? IS NULL OR ...`) so
+/// SQLite can cache the prepared statement regardless of which filters are active.
+/// Previously the query was built dynamically (different SQL per call), which
+/// prevented prepared statement caching and caused repeated parse overhead.
 pub async fn list_movies_with_media(
     pool: &SqlitePool,
     query: &MediaQuery<'_>,
 ) -> Result<Vec<MovieWithMediaRow>> {
     let offset = (query.page - 1) * query.per_page;
+    let order_clause = build_order_clause(query);
 
-    let select = r#"
+    let sql = format!(
+        r#"
         SELECT mi.id, mi.library_id, mi.media_type, mi.file_path, mi.file_size, mi.duration_ms,
                mi.container_format, mi.video_codec, mi.audio_codec, mi.width, mi.height, mi.bitrate_kbps,
                COALESCE(m.title, mi.title) AS movie_title,
@@ -195,78 +220,70 @@ pub async fn list_movies_with_media(
                m.tagline, m.rating, m.content_rating,
                m.tmdb_id,
                m.imdb_id,
-               m.poster_path,
+               COALESCE(ep.still_path, m.poster_path, ts.poster_path) AS poster_path,
                m.backdrop_path,
-               m.genres,
+               COALESCE(m.genres, ts.genres) AS genres,
                m.fetched_at,
                mi.title, mi.year, mi.added_at, mi.updated_at,
-               pp.position_ms, pp.completed, pp.last_played_at
+               pp.position_ms, pp.completed, pp.last_played_at,
+               CASE WHEN ep.media_item_id IS NOT NULL THEN 1 ELSE 0 END AS is_episode,
+               ep.episode_number,
+               ep.title AS episode_title,
+               s.season_number,
+               ts.title AS show_title,
+               ep.still_path
         FROM media_items mi
         LEFT JOIN movies m ON m.media_item_id = mi.id
         LEFT JOIN playback_progress pp ON pp.media_item_id = mi.id
-    "#;
+        LEFT JOIN episodes ep ON ep.media_item_id = mi.id
+        LEFT JOIN seasons s ON s.id = ep.season_id
+        LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id
+        WHERE (? IS NULL OR mi.library_id = ?)
+          AND (? IS NULL OR COALESCE(m.title, mi.title) LIKE '%' || ? || '%')
+          AND (? IS NULL OR m.genres LIKE '%' || ? || '%')
+        {order_clause}
+        LIMIT ? OFFSET ?
+        "#
+    );
 
-    let (where_clause, order_clause) = build_query_clauses(query);
-    let sql = format!("{select} {where_clause} {order_clause} LIMIT ? OFFSET ?");
-
-    let mut qb = sqlx::query_as::<_, MovieWithMediaRow>(&sql);
-    qb = bind_where_params(qb, query);
-    qb = qb.bind(query.per_page).bind(offset);
-
-    let rows = qb.fetch_all(pool).await?;
+    let rows = sqlx::query_as::<_, MovieWithMediaRow>(&sql)
+        .bind(query.library_id).bind(query.library_id)
+        .bind(query.search).bind(query.search)
+        .bind(query.genre).bind(query.genre)
+        .bind(query.per_page)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
     Ok(rows)
 }
 
 /// Count movies (media_items) matching the same filters as list_movies_with_media.
+/// Uses the same fixed-SQL pattern so the prepared statement is shared/cached.
 pub async fn count_movies_with_media(
     pool: &SqlitePool,
     query: &MediaQuery<'_>,
 ) -> Result<i64> {
-    let select = r#"
+    let row: (i64,) = sqlx::query_as(
+        r#"
         SELECT COUNT(*)
         FROM media_items mi
         LEFT JOIN movies m ON m.media_item_id = mi.id
-    "#;
-
-    let (where_clause, _) = build_query_clauses(query);
-    let sql = format!("{select} {where_clause}");
-
-    let mut qb = sqlx::query_as::<_, (i64,)>(&sql);
-    if let Some(lib_id) = query.library_id {
-        qb = qb.bind(lib_id);
-    }
-    if let Some(search) = query.search {
-        qb = qb.bind(search);
-    }
-    if let Some(genre) = query.genre {
-        qb = qb.bind(genre);
-    }
-
-    let row = qb.fetch_one(pool).await?;
+        WHERE (? IS NULL OR mi.library_id = ?)
+          AND (? IS NULL OR COALESCE(m.title, mi.title) LIKE '%' || ? || '%')
+          AND (? IS NULL OR m.genres LIKE '%' || ? || '%')
+        "#,
+    )
+    .bind(query.library_id).bind(query.library_id)
+    .bind(query.search).bind(query.search)
+    .bind(query.genre).bind(query.genre)
+    .fetch_one(pool)
+    .await?;
     Ok(row.0)
 }
 
-/// Build WHERE and ORDER BY clauses from query parameters.
-/// Returns (where_clause, order_clause) as SQL strings.
-fn build_query_clauses(query: &MediaQuery<'_>) -> (String, String) {
-    let mut conditions: Vec<&str> = Vec::new();
-
-    if query.library_id.is_some() {
-        conditions.push("mi.library_id = ?");
-    }
-    if query.search.is_some() {
-        conditions.push("(COALESCE(m.title, mi.title) LIKE '%' || ? || '%')");
-    }
-    if query.genre.is_some() {
-        conditions.push("m.genres LIKE '%' || ? || '%'");
-    }
-
-    let where_clause = if conditions.is_empty() {
-        String::new()
-    } else {
-        format!("WHERE {}", conditions.join(" AND "))
-    };
-
+/// Build ORDER BY clause from query parameters.
+/// Only the sort expression varies; the WHERE clause is now fixed SQL.
+fn build_order_clause(query: &MediaQuery<'_>) -> String {
     let order_expr = match query.sort_by.unwrap_or("title") {
         "year" => "COALESCE(m.year, mi.year)",
         "rating" => "m.rating",
@@ -282,26 +299,7 @@ fn build_query_clauses(query: &MediaQuery<'_>) -> (String, String) {
     };
 
     // NULLS LAST for nullable sort columns
-    let order_clause = format!("ORDER BY {order_expr} IS NULL, {order_expr} {dir}");
-
-    (where_clause, order_clause)
-}
-
-/// Bind WHERE clause parameters in the same order as build_query_clauses.
-fn bind_where_params<'q>(
-    mut qb: sqlx::query::QueryAs<'q, sqlx::Sqlite, MovieWithMediaRow, sqlx::sqlite::SqliteArguments<'q>>,
-    query: &'q MediaQuery<'q>,
-) -> sqlx::query::QueryAs<'q, sqlx::Sqlite, MovieWithMediaRow, sqlx::sqlite::SqliteArguments<'q>> {
-    if let Some(lib_id) = query.library_id {
-        qb = qb.bind(lib_id);
-    }
-    if let Some(search) = query.search {
-        qb = qb.bind(search);
-    }
-    if let Some(genre) = query.genre {
-        qb = qb.bind(genre);
-    }
-    qb
+    format!("ORDER BY {order_expr} IS NULL, {order_expr} {dir}")
 }
 
 /// Get movies that have a skeleton row but no metadata yet (fetched_at IS NULL),

@@ -3,7 +3,7 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
 use axum::Json;
-use ferrite_db::{movie_repo, stream_repo};
+use ferrite_db::{chapter_repo, movie_repo, stream_repo};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -63,4 +63,13 @@ pub async fn get_media_streams(
 ) -> Result<impl IntoResponse, ApiError> {
     let streams = stream_repo::get_streams(&state.db, &id).await?;
     Ok(Json(streams))
+}
+
+/// GET /api/media/{id}/chapters — list all chapter markers for a media item
+pub async fn get_media_chapters(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<impl IntoResponse, ApiError> {
+    let chapters = chapter_repo::get_chapters(&state.db, &id).await?;
+    Ok(Json(chapters))
 }

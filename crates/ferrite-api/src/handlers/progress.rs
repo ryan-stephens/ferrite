@@ -51,6 +51,18 @@ pub async fn get_progress(
     }
 }
 
+/// DELETE /api/progress/{media_id} — reset progress (mark as unwatched)
+pub async fn reset_progress(
+    State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
+    Path(media_id): Path<String>,
+) -> Result<impl IntoResponse, ApiError> {
+    let user = auth_user.map(|e| e.0);
+    let user_id = extract_user_id(&user);
+    progress_repo::reset_progress(&state.db, &media_id, user_id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 /// POST /api/progress/{media_id}/complete — mark as completed
 pub async fn mark_completed(
     State(state): State<AppState>,

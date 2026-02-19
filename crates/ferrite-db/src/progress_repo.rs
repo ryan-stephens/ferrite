@@ -117,6 +117,42 @@ pub async fn mark_completed(
     Ok(())
 }
 
+/// Reset playback progress for a media item — clears position and completed flag.
+pub async fn reset_progress(
+    pool: &SqlitePool,
+    media_item_id: &str,
+    user_id: Option<&str>,
+) -> Result<()> {
+    match user_id {
+        Some(uid) => {
+            sqlx::query(
+                r#"
+                UPDATE playback_progress
+                SET position_ms = 0, completed = 0
+                WHERE media_item_id = ? AND user_id = ?
+                "#,
+            )
+            .bind(media_item_id)
+            .bind(uid)
+            .execute(pool)
+            .await?;
+        }
+        None => {
+            sqlx::query(
+                r#"
+                UPDATE playback_progress
+                SET position_ms = 0, completed = 0
+                WHERE media_item_id = ? AND user_id IS NULL
+                "#,
+            )
+            .bind(media_item_id)
+            .execute(pool)
+            .await?;
+        }
+    }
+    Ok(())
+}
+
 /// Get playback progress for a single media item and user.
 pub async fn get_progress(
     pool: &SqlitePool,

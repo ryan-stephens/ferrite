@@ -1,4 +1,6 @@
+pub mod chapter_repo;
 pub mod collection_repo;
+pub mod preference_repo;
 pub mod media_repo;
 pub mod library_repo;
 pub mod movie_repo;
@@ -34,7 +36,10 @@ pub async fn create_pool(db_path: &Path, max_connections: u32) -> Result<SqliteP
         // Store temp tables in memory for faster intermediate query results
         .pragma("temp_store", "MEMORY")
         // Enable foreign key enforcement
-        .pragma("foreign_keys", "ON");
+        .pragma("foreign_keys", "ON")
+        // 256MB memory-mapped I/O — avoids read() syscalls for repeated page reads,
+        // giving 10-30% faster read throughput on large databases
+        .pragma("mmap_size", "268435456");
 
     let pool = SqlitePoolOptions::new()
         .max_connections(max_connections)

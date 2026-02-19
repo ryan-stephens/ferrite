@@ -27,7 +27,7 @@ pub async fn replace_subtitles(
 
     for s in subtitles {
         sqlx::query(
-            r#"INSERT INTO external_subtitles
+            r#"INSERT OR IGNORE INTO external_subtitles
                 (media_item_id, file_path, format, language, title, is_forced, is_sdh, file_size)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#,
         )

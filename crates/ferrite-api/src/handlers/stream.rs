@@ -1,5 +1,6 @@
 use crate::error::ApiError;
 use crate::state::AppState;
+use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::IntoResponse;
@@ -7,9 +8,11 @@ use axum::Json;
 use ferrite_db::{media_repo, stream_repo, subtitle_repo};
 use ferrite_stream::compat::{self, StreamStrategy};
 use ferrite_stream::{direct, transcode};
+use ferrite_stream::transcode::find_keyframe_before;
 use serde::Deserialize;
 use sqlx::SqlitePool;
 use std::time::Instant;
+use tokio_util::io::ReaderStream;
 use tracing::{info, warn};
 
 #[derive(Deserialize, Default)]
@@ -279,26 +282,30 @@ pub async fn hls_master_playlist(
             .map(|t| t.to_string())
     });
 
-    let start_secs = query.start.unwrap_or(0.0);
+    let requested_start = query.start.unwrap_or(0.0);
+
+    // Snap to the nearest keyframe for fast demuxer-level seeking (-ss before -i).
+    // FFmpeg will also get a precise -ss after -i with the delta so the output
+    // starts at the exact requested_start, not the keyframe.
+    let start_secs = if requested_start > 0.5 {
+        let ffprobe_path = &state.config.transcode.ffprobe_path;
+        find_keyframe_before(ffprobe_path, file_path, requested_start)
+            .await
+            .unwrap_or(requested_start)
+    } else {
+        requested_start
+    };
 
     let sub_path = resolve_subtitle_path(&state.db, query.subtitle_id).await;
 
-    // Fetch video pixel format for HDR tone-mapping detection
-    let pixel_format = stream_repo::get_video_pixel_format(&state.db, &id)
+    // Fetch all video stream metadata in a single DB round-trip
+    let video_meta = stream_repo::get_video_meta(&state.db, &id)
         .await
         .unwrap_or(None);
-
-    // Fetch video frame rate for accurate GOP calculation
-    let frame_rate = stream_repo::get_video_frame_rate(&state.db, &id)
-        .await
-        .unwrap_or(None);
-
-    // Fetch color metadata for HDR vs 10-bit SDR distinction
-    let color_meta = stream_repo::get_video_color_metadata(&state.db, &id)
-        .await
-        .unwrap_or(None);
-    let color_transfer = color_meta.as_ref().and_then(|m| m.color_transfer.clone());
-    let color_primaries = color_meta.as_ref().and_then(|m| m.color_primaries.clone());
+    let pixel_format = video_meta.as_ref().and_then(|m| m.pixel_format.clone());
+    let frame_rate = video_meta.as_ref().and_then(|m| m.frame_rate.clone());
+    let color_transfer = video_meta.as_ref().and_then(|m| m.color_transfer.clone());
+    let color_primaries = video_meta.as_ref().and_then(|m| m.color_primaries.clone());
 
     // Check if we already have variant sessions for this media.
     // After a seek, there will be a single-variant session — reuse it instead
@@ -335,6 +342,7 @@ pub async fn hls_master_playlist(
                 item.height.map(|h| h as u32),
                 item.bitrate_kbps.map(|b| b as u32),
                 start_secs,
+                requested_start,
                 sub_path.as_deref(),
                 pixel_format.as_deref(),
                 query.audio_stream,
@@ -369,11 +377,14 @@ pub async fn hls_master_playlist(
         db_ms, session_ms, if reused { "reused" } else { "created" }, total_ms
     );
 
-    // Build response with custom header for start offset so the frontend
-    // knows the actual media time this HLS stream starts at.
+    // Build response with custom headers so the frontend knows the actual
+    // media time and session IDs immediately (before MANIFEST_PARSED fires).
+    let session_ids: Vec<String> = sessions.iter().map(|s| s.session_id.clone()).collect();
     let mut resp_headers = HeaderMap::new();
     resp_headers.insert(header::CONTENT_TYPE, "application/vnd.apple.mpegurl".parse().unwrap());
+    resp_headers.insert(header::CACHE_CONTROL, "no-store".parse().unwrap());
     resp_headers.insert("x-hls-start-secs", format!("{:.3}", start).parse().unwrap());
+    resp_headers.insert("x-hls-session-ids", session_ids.join(",").parse().unwrap());
     resp_headers.insert("Server-Timing", timing.parse().unwrap());
 
     Ok((StatusCode::OK, resp_headers, playlist))
@@ -407,15 +418,18 @@ pub async fn hls_variant_playlist(
             ApiError::internal(e.to_string())
         })?;
 
-    Ok((
-        StatusCode::OK,
-        [(header::CONTENT_TYPE, "application/vnd.apple.mpegurl")],
-        playlist,
-    ))
+    let mut resp_headers = HeaderMap::new();
+    resp_headers.insert(header::CONTENT_TYPE, "application/vnd.apple.mpegurl".parse().unwrap());
+    resp_headers.insert(header::CACHE_CONTROL, "no-store".parse().unwrap());
+
+    Ok((StatusCode::OK, resp_headers, playlist))
 }
 
 /// GET /api/stream/{id}/hls/{session_id}/{filename}
 /// Serves an HLS segment (init.mp4 or seg_NNN.m4s) from disk.
+/// Segments are streamed directly from disk to the response body without
+/// buffering the entire file in memory, reducing peak memory usage and
+/// improving time-to-first-byte for large segments (2-6MB each).
 pub async fn hls_segment(
     State(state): State<AppState>,
     Path((_id, session_id, filename)): Path<(String, String, String)>,
@@ -425,15 +439,24 @@ pub async fn hls_segment(
     let session = state.hls_sessions.get_session(&session_id)
         .ok_or_else(|| ApiError::not_found(format!("HLS session '{session_id}' not found")))?;
 
-    let data = state.hls_sessions.get_segment(&session, &filename)
+    // Wait for the segment to be ready (polls playlist until FFmpeg finalizes it)
+    let path = state.hls_sessions.wait_for_segment(&session, &filename)
         .await
         .map_err(|e| {
-            warn!("Failed to read HLS segment {} for session {}: {}", filename, session_id, e);
+            warn!("Failed to wait for HLS segment {} for session {}: {}", filename, session_id, e);
             ApiError::internal(e.to_string())
         })?
         .ok_or_else(|| ApiError::not_found(format!("HLS segment '{filename}' not found")))?;
 
     let total_ms = t0.elapsed().as_secs_f64() * 1000.0;
+
+    // Open the file and stream it directly to the response — no full-file buffering.
+    let file = tokio::fs::File::open(&path).await.map_err(|e| {
+        warn!("Failed to open HLS segment file {:?}: {}", path, e);
+        ApiError::internal(e.to_string())
+    })?;
+    let stream = ReaderStream::new(file);
+    let body = Body::from_stream(stream);
 
     // Determine content type from extension
     let content_type = if filename.ends_with(".mp4") {
@@ -450,12 +473,14 @@ pub async fn hls_segment(
     resp_headers.insert(header::CACHE_CONTROL, "max-age=3600".parse().unwrap());
     resp_headers.insert("Server-Timing", timing.parse().unwrap());
 
-    Ok((StatusCode::OK, resp_headers, data))
+    Ok((StatusCode::OK, resp_headers, body))
 }
 
 /// POST /api/stream/{id}/hls/seek?start=123.456
-/// Destroys any existing HLS session for this media and creates a new one
-/// starting from the specified time. Returns the new session info as JSON.
+/// Seeks to the specified time. If the requested time is within the already-buffered
+/// range of the current session, reuses it (returns reused=true) so the frontend can
+/// seek within the existing HLS.js instance without spawning a new FFmpeg process.
+/// Otherwise destroys the old session and creates a new one.
 pub async fn hls_seek(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -463,15 +488,7 @@ pub async fn hls_seek(
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, ApiError> {
     let t0 = Instant::now();
-    let start_secs = query.start.unwrap_or(0.0);
-
-    let item = media_repo::get_media_item(&state.db, &id)
-        .await?
-        .ok_or_else(|| ApiError::not_found(format!("Media item '{id}' not found")))?;
-    let db_ms = t0.elapsed().as_secs_f64() * 1000.0;
-
-    let file_path = std::path::Path::new(&item.file_path);
-    let duration_secs = item.duration_ms.map(|ms| ms as f64 / 1000.0);
+    let requested_start = query.start.unwrap_or(0.0);
 
     let token = query.token.clone().or_else(|| {
         headers
@@ -481,24 +498,74 @@ pub async fn hls_seek(
             .map(|t| t.to_string())
     });
 
+    let token_suffix = token
+        .as_deref()
+        .map(|t| {
+            format!(
+                "?token={}",
+                percent_encoding::utf8_percent_encode(t, percent_encoding::NON_ALPHANUMERIC)
+            )
+        })
+        .unwrap_or_default();
+
+    // Fast path: if the current session already covers the requested time, reuse it.
+    // This avoids destroying and recreating an FFmpeg process for seeks that land
+    // within the already-transcoded buffer (e.g. sequential +10s presses).
+    if let Some(existing) = state.hls_sessions.get_session_for_media(&id) {
+        let buffered_end = existing.start_secs + existing.buffered_secs();
+        // Reuse if the target is within the buffered window and FFmpeg is still alive.
+        if requested_start >= existing.start_secs
+            && requested_start < buffered_end
+            && existing.is_ffmpeg_alive().await
+        {
+            existing.touch().await;
+            let total_ms = t0.elapsed().as_secs_f64() * 1000.0;
+            info!(
+                "HLS seek for {} reused session {} (target={:.1}s buffered=[{:.1}s,{:.1}s)) total={:.0}ms",
+                id, existing.session_id, requested_start, existing.start_secs, buffered_end, total_ms
+            );
+            return Ok(Json(serde_json::json!({
+                "session_id": existing.session_id,
+                "start_secs": existing.start_secs,
+                "reused": true,
+                "variant_count": 1,
+                "master_url": format!("/api/stream/{}/hls/master.m3u8?start={:.3}{}", id, requested_start,
+                    if token_suffix.is_empty() { String::new() } else { format!("&{}", &token_suffix[1..]) }),
+                "timing_ms": { "db": 0, "session": 0, "total": total_ms },
+            })));
+        }
+    }
+
+    let item = media_repo::get_media_item(&state.db, &id)
+        .await?
+        .ok_or_else(|| ApiError::not_found(format!("Media item '{id}' not found")))?;
+    let db_ms = t0.elapsed().as_secs_f64() * 1000.0;
+
+    let file_path = std::path::Path::new(&item.file_path);
+    let duration_secs = item.duration_ms.map(|ms| ms as f64 / 1000.0);
+
+    // Snap to the nearest keyframe for fast demuxer-level seeking (-ss before -i).
+    // FFmpeg will also get a precise -ss after -i with the delta so the output
+    // starts at the exact requested_start, not the keyframe.
+    let start_secs = if requested_start > 0.5 {
+        let ffprobe_path = &state.config.transcode.ffprobe_path;
+        find_keyframe_before(ffprobe_path, file_path, requested_start)
+            .await
+            .unwrap_or(requested_start)
+    } else {
+        requested_start
+    };
+
     let sub_path = resolve_subtitle_path(&state.db, query.subtitle_id).await;
 
-    // Fetch video pixel format for HDR tone-mapping detection
-    let pixel_format = stream_repo::get_video_pixel_format(&state.db, &id)
+    // Fetch all video stream metadata in a single DB round-trip
+    let video_meta = stream_repo::get_video_meta(&state.db, &id)
         .await
         .unwrap_or(None);
-
-    // Fetch video frame rate for accurate GOP calculation
-    let frame_rate = stream_repo::get_video_frame_rate(&state.db, &id)
-        .await
-        .unwrap_or(None);
-
-    // Fetch color metadata for HDR vs 10-bit SDR distinction
-    let color_meta = stream_repo::get_video_color_metadata(&state.db, &id)
-        .await
-        .unwrap_or(None);
-    let color_transfer = color_meta.as_ref().and_then(|m| m.color_transfer.clone());
-    let color_primaries = color_meta.as_ref().and_then(|m| m.color_primaries.clone());
+    let pixel_format = video_meta.as_ref().and_then(|m| m.pixel_format.clone());
+    let frame_rate = video_meta.as_ref().and_then(|m| m.frame_rate.clone());
+    let color_transfer = video_meta.as_ref().and_then(|m| m.color_transfer.clone());
+    let color_primaries = video_meta.as_ref().and_then(|m| m.color_primaries.clone());
 
     // Acquire transcode permit before spawning FFmpeg (enforces max_concurrent_transcodes).
     let _permit = match state.transcode_semaphore.try_acquire() {
@@ -523,6 +590,7 @@ pub async fn hls_seek(
             item.height.map(|h| h as u32),
             item.bitrate_kbps.map(|b| b as u32),
             start_secs,
+            requested_start,
             sub_path.as_deref(),
             pixel_format.as_deref(),
             query.audio_stream,
@@ -540,16 +608,6 @@ pub async fn hls_seek(
     let session_ms = t1.elapsed().as_secs_f64() * 1000.0;
     let total_ms = t0.elapsed().as_secs_f64() * 1000.0;
 
-    let token_suffix = token
-        .as_deref()
-        .map(|t| {
-            format!(
-                "?token={}",
-                percent_encoding::utf8_percent_encode(t, percent_encoding::NON_ALPHANUMERIC)
-            )
-        })
-        .unwrap_or_default();
-
     let first = sessions.first().ok_or_else(|| ApiError::internal("No variant sessions created"))?;
 
     info!(
@@ -561,11 +619,24 @@ pub async fn hls_seek(
     Ok(Json(serde_json::json!({
         "session_id": first.session_id,
         "start_secs": first.start_secs,
+        "reused": false,
         "variant_count": sessions.len(),
-        "master_url": format!("/api/stream/{}/hls/master.m3u8?start={:.3}{}", id, start_secs,
+        "master_url": format!("/api/stream/{}/hls/master.m3u8?start={:.3}{}", id, requested_start,
             if token_suffix.is_empty() { String::new() } else { format!("&{}", &token_suffix[1..]) }),
         "timing_ms": { "db": db_ms, "session": session_ms, "total": total_ms },
     })))
+}
+
+/// DELETE /api/stream/{id}/hls
+/// Destroys ALL HLS sessions for a media item by media ID.
+/// Preferred over the session-ID variant because the frontend always knows
+/// the media ID, even before MANIFEST_PARSED has fired.
+pub async fn hls_stop_media(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> impl IntoResponse {
+    state.hls_sessions.destroy_media_sessions(&id).await;
+    StatusCode::NO_CONTENT
 }
 
 /// DELETE /api/stream/{id}/hls/{session_id}

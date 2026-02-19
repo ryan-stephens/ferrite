@@ -108,6 +108,7 @@ pub async fn find_keyframe_before(
 /// proper duration metadata into the fragmented MP4 header.
 ///
 /// `start_secs` allows seeking — FFmpeg will fast-seek to this position.
+#[allow(clippy::too_many_arguments)]
 pub async fn serve_remux(
     ffmpeg_path: &str,
     ffprobe_path: &str,
@@ -256,6 +257,7 @@ pub async fn serve_remux(
 /// correct timeline/scrubber.
 ///
 /// `start_secs` allows seeking — FFmpeg will fast-seek to this position before encoding.
+#[allow(clippy::too_many_arguments)]
 pub async fn serve_audio_transcode(
     ffmpeg_path: &str,
     ffprobe_path: &str,
@@ -430,6 +432,7 @@ pub async fn serve_audio_transcode(
 ///
 /// This is significantly more CPU-intensive than audio-only transcode since
 /// every video frame must be decoded and re-encoded.
+#[allow(clippy::too_many_arguments)]
 pub async fn serve_full_transcode(
     ffmpeg_path: &str,
     ffprobe_path: &str,
@@ -490,7 +493,7 @@ pub async fn serve_full_transcode(
 
     // HW-accelerated decoding args (before -i)
     if subtitle_path.is_none() {
-        args.extend(effective_encoder.hw_input_args());
+        args.extend(effective_encoder.hw_input_args().iter().cloned());
     }
 
     // Fast-seek before input
@@ -518,7 +521,7 @@ pub async fn serve_full_transcode(
     let mut vf_parts: Vec<String> = Vec::new();
 
     let is_high_bit = pixel_format
-        .map(|pf| ferrite_transcode::tonemap::is_high_bit_depth(pf))
+        .map(ferrite_transcode::tonemap::is_high_bit_depth)
         .unwrap_or(false);
     let needs_tonemap = is_high_bit
         && ferrite_transcode::tonemap::is_true_hdr(color_transfer, color_primaries);

@@ -33,6 +33,15 @@ pub struct StreamInfo {
     pub bitrate_bps: Option<u64>,
 }
 
+/// A single chapter extracted from ffprobe.
+#[derive(Debug, Clone)]
+pub struct ChapterInfo {
+    pub chapter_index: u32,
+    pub title: Option<String>,
+    pub start_time_ms: u64,
+    pub end_time_ms: u64,
+}
+
 /// Media info extracted from ffprobe.
 #[derive(Debug, Clone)]
 pub struct ProbeResult {
@@ -45,6 +54,8 @@ pub struct ProbeResult {
     pub height: Option<u32>,
     /// All individual streams (video, audio, subtitle) discovered in the file.
     pub streams: Vec<StreamInfo>,
+    /// Chapter markers embedded in the container.
+    pub chapters: Vec<ChapterInfo>,
 }
 
 /// Run ffprobe on a file and extract stream/format info.
@@ -55,6 +66,7 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
             "-print_format", "json",
             "-show_format",
             "-show_streams",
+            "-show_chapters",
         ])
         .arg(file_path)
         .output()
@@ -73,6 +85,7 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
             width: None,
             height: None,
             streams: Vec::new(),
+            chapters: Vec::new(),
         });
     }
 
@@ -148,8 +161,30 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
         })
         .collect();
 
+    // Parse chapter markers
+    let chapters: Vec<ChapterInfo> = json
+        .chapters
+        .iter()
+        .enumerate()
+        .filter_map(|(i, c)| {
+            let start_ms = c.start_time.as_deref()
+                .and_then(|s| s.parse::<f64>().ok())
+                .map(|s| (s * 1000.0) as u64)?;
+            let end_ms = c.end_time.as_deref()
+                .and_then(|s| s.parse::<f64>().ok())
+                .map(|s| (s * 1000.0) as u64)
+                .unwrap_or(start_ms);
+            Some(ChapterInfo {
+                chapter_index: i as u32,
+                title: c.tags.as_ref().and_then(|t| t.title.clone()),
+                start_time_ms: start_ms,
+                end_time_ms: end_ms,
+            })
+        })
+        .collect();
+
     debug!(
-        "Probed {}: container={:?} video={:?} audio={:?} {}x{} duration={}ms streams={}",
+        "Probed {}: container={:?} video={:?} audio={:?} {}x{} duration={}ms streams={} chapters={}",
         file_path.display(),
         container_format,
         video_codec,
@@ -158,6 +193,7 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
         height.unwrap_or(0),
         duration_ms.unwrap_or(0),
         streams.len(),
+        chapters.len(),
     );
 
     Ok(ProbeResult {
@@ -169,6 +205,7 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
         width,
         height,
         streams,
+        chapters,
     })
 }
 
@@ -177,6 +214,15 @@ struct FfprobeOutput {
     #[serde(default)]
     streams: Vec<FfprobeStream>,
     format: Option<FfprobeFormat>,
+    #[serde(default)]
+    chapters: Vec<FfprobeChapter>,
+}
+
+#[derive(Deserialize)]
+struct FfprobeChapter {
+    start_time: Option<String>,
+    end_time: Option<String>,
+    tags: Option<FfprobeTags>,
 }
 
 #[derive(Deserialize)]

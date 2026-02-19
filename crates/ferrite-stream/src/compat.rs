@@ -45,13 +45,13 @@ pub fn determine_strategy(
     audio_codec: Option<&str>,
 ) -> StreamStrategy {
     let container_ok = container_format
-        .map(|c| is_container_compatible(c))
+        .map(is_container_compatible)
         .unwrap_or(false);
     let video_ok = video_codec
-        .map(|v| is_video_compatible(v))
+        .map(is_video_compatible)
         .unwrap_or(true); // No video = audio-only, that's fine
     let audio_ok = audio_codec
-        .map(|a| is_audio_compatible(a))
+        .map(is_audio_compatible)
         .unwrap_or(true); // No audio = silent video, serve directly
 
     if container_ok && video_ok && audio_ok {

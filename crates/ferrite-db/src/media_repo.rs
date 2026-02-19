@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, SqliteConnection};
 use uuid::Uuid;
 
 /// Probe data from ffprobe, used during scanning.
@@ -14,8 +14,9 @@ pub struct MediaProbeData {
     pub bitrate_kbps: Option<u32>,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn insert_media_item(
-    pool: &SqlitePool,
+    executor: &mut SqliteConnection,
     library_id: &Uuid,
     media_type: &str,
     file_path: &str,
@@ -63,17 +64,42 @@ pub async fn insert_media_item(
     .bind(p.height.map(|v| v as i64))
     .bind(p.duration_ms.map(|v| v as i64))
     .bind(p.bitrate_kbps.map(|v| v as i64))
-    .fetch_one(pool)
+    .fetch_one(executor)
     .await?;
 
     Ok(actual_id.0)
 }
 
+/// Look up a media item's ID by its file path. Used after a batched insert to
+/// retrieve the ID for subtitle extraction (which runs outside the transaction).
+pub async fn get_media_item_id_by_path(
+    pool: &SqlitePool,
+    file_path: &str,
+) -> Result<Option<String>> {
+    let row: Option<(String,)> =
+        sqlx::query_as("SELECT id FROM media_items WHERE file_path = ?")
+            .bind(file_path)
+            .fetch_optional(pool)
+            .await?;
+    Ok(row.map(|r| r.0))
+}
+
 pub async fn get_media_item(pool: &SqlitePool, id: &str) -> Result<Option<MediaItemRow>> {
-    let row = sqlx::query_as::<_, MediaItemRow>("SELECT * FROM media_items WHERE id = ?")
-        .bind(id)
-        .fetch_optional(pool)
-        .await?;
+    let row = sqlx::query_as::<_, MediaItemRow>(
+        r#"SELECT mi.*,
+                  e.episode_number,
+                  e.title AS episode_title,
+                  s.season_number,
+                  ts.title AS show_title
+           FROM media_items mi
+           LEFT JOIN episodes e ON e.media_item_id = mi.id
+           LEFT JOIN seasons s ON s.id = e.season_id
+           LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id
+           WHERE mi.id = ?"#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
     Ok(row)
 }
 
@@ -87,7 +113,18 @@ pub async fn list_media_items(
 
     let rows = if let Some(lib_id) = library_id {
         sqlx::query_as::<_, MediaItemRow>(
-            "SELECT * FROM media_items WHERE library_id = ? ORDER BY title ASC, file_path ASC LIMIT ? OFFSET ?",
+            r#"SELECT mi.*,
+                      e.episode_number,
+                      e.title AS episode_title,
+                      s.season_number,
+                      ts.title AS show_title
+               FROM media_items mi
+               LEFT JOIN episodes e ON e.media_item_id = mi.id
+               LEFT JOIN seasons s ON s.id = e.season_id
+               LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id
+               WHERE mi.library_id = ?
+               ORDER BY mi.title ASC, mi.file_path ASC
+               LIMIT ? OFFSET ?"#,
         )
         .bind(lib_id)
         .bind(per_page as i64)
@@ -96,7 +133,17 @@ pub async fn list_media_items(
         .await?
     } else {
         sqlx::query_as::<_, MediaItemRow>(
-            "SELECT * FROM media_items ORDER BY title ASC, file_path ASC LIMIT ? OFFSET ?",
+            r#"SELECT mi.*,
+                      e.episode_number,
+                      e.title AS episode_title,
+                      s.season_number,
+                      ts.title AS show_title
+               FROM media_items mi
+               LEFT JOIN episodes e ON e.media_item_id = mi.id
+               LEFT JOIN seasons s ON s.id = e.season_id
+               LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id
+               ORDER BY mi.title ASC, mi.file_path ASC
+               LIMIT ? OFFSET ?"#,
         )
         .bind(per_page as i64)
         .bind(offset as i64)
@@ -148,4 +195,12 @@ pub struct MediaItemRow {
     pub year: Option<i64>,
     pub added_at: String,
     pub updated_at: String,
+    /// Episode number (null for non-episodes)
+    pub episode_number: Option<i64>,
+    /// Episode title from the episodes table (null for non-episodes)
+    pub episode_title: Option<String>,
+    /// Season number (null for non-episodes)
+    pub season_number: Option<i64>,
+    /// Show title (null for non-episodes)
+    pub show_title: Option<String>,
 }

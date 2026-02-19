@@ -1,11 +1,19 @@
 import { createSignal, For, Show, onMount } from 'solid-js';
-import { Settings, FolderPlus, Trash2, RefreshCw, Server, Cpu, HardDrive } from 'lucide-solid';
+import { Settings, FolderPlus, Trash2, RefreshCw, Server, HardDrive, Users, UserPlus, KeyRound, ShieldCheck, Shield, Sliders } from 'lucide-solid';
 import { libraries, loadLibraries, addLibrary, deleteLibrary, refreshAll, scanning, statusMessage } from '../stores/media';
 import { api } from '../api';
+import type { User, UserPreferences } from '../api';
 
 export default function SettingsPage() {
   const [showAddDialog, setShowAddDialog] = createSignal(false);
   const [serverInfo, setServerInfo] = createSignal<{ name: string; version: string } | null>(null);
+  const [users, setUsers] = createSignal<User[]>([]);
+  const [currentUser, setCurrentUser] = createSignal<User | null>(null);
+  const [showCreateUser, setShowCreateUser] = createSignal(false);
+  const [resetTarget, setResetTarget] = createSignal<User | null>(null);
+  const [prefs, setPrefs] = createSignal<UserPreferences>({});
+  const [prefsSaving, setPrefsSaving] = createSignal(false);
+  const [prefsSaved, setPrefsSaved] = createSignal(false);
 
   onMount(async () => {
     if (libraries().length === 0) await loadLibraries();
@@ -13,7 +21,46 @@ export default function SettingsPage() {
       const info = await api.info();
       setServerInfo(info);
     } catch { /* ignore */ }
+    try {
+      const status = await api.authStatus();
+      if (status.auth_required) {
+        const me = await api.getCurrentUser();
+        setCurrentUser(me);
+        if (me.is_admin === 1) {
+          const userList = await api.listUsers();
+          setUsers(userList);
+        }
+      }
+    } catch { /* ignore */ }
+    try {
+      const p = await api.getPreferences();
+      setPrefs(p);
+    } catch { /* ignore */ }
   });
+
+  async function savePrefs(updates: Partial<UserPreferences>) {
+    const next = { ...prefs(), ...updates };
+    setPrefs(next);
+    setPrefsSaving(true);
+    setPrefsSaved(false);
+    try {
+      await api.setPreferences(updates);
+      setPrefsSaved(true);
+      setTimeout(() => setPrefsSaved(false), 2000);
+    } catch { /* ignore */ } finally {
+      setPrefsSaving(false);
+    }
+  }
+
+  async function handleDeleteUser(user: User) {
+    if (!confirm(`Delete user "${user.username}"? This cannot be undone.`)) return;
+    try {
+      await api.deleteUser(user.id);
+      setUsers(users().filter(u => u.id !== user.id));
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete user');
+    }
+  }
 
   return (
     <div class="px-6 py-6 max-w-4xl mx-auto animate-fade-in">
@@ -94,10 +141,311 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* User Management — admin only */}
+      <Show when={currentUser()?.is_admin === 1}>
+        <section class="mb-8">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-surface-800 uppercase tracking-wider">Users</h2>
+            <button class="btn-primary text-xs py-1.5 px-3" onClick={() => setShowCreateUser(true)}>
+              <UserPlus class="w-3.5 h-3.5" /> Add User
+            </button>
+          </div>
+
+          <div class="space-y-2">
+            <For each={users()} fallback={
+              <div class="card p-6 text-center">
+                <Users class="w-8 h-8 text-surface-500 mx-auto mb-2" />
+                <p class="text-sm text-surface-700">No users found</p>
+              </div>
+            }>
+              {(user) => (
+                <div class="card p-4 flex items-center justify-between group">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-surface-200 flex items-center justify-center text-sm font-bold text-surface-700">
+                      {(user.display_name || user.username).charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-gray-300">{user.display_name || user.username}</span>
+                        <Show when={user.display_name}>
+                          <span class="text-xs text-surface-600">@{user.username}</span>
+                        </Show>
+                        <Show when={user.is_admin === 1}>
+                          <span class="flex items-center gap-0.5 text-[0.65rem] font-semibold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                            <ShieldCheck class="w-3 h-3" /> Admin
+                          </span>
+                        </Show>
+                        <Show when={user.id === currentUser()?.id}>
+                          <span class="text-[0.65rem] text-ferrite-400 bg-ferrite-500/10 px-1.5 py-0.5 rounded">You</span>
+                        </Show>
+                      </div>
+                      <div class="text-xs text-surface-600">
+                        {user.last_login_at
+                          ? `Last login: ${new Date(user.last_login_at).toLocaleDateString()}`
+                          : `Joined: ${new Date(user.created_at).toLocaleDateString()}`}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      class="btn-icon text-surface-600 hover:text-blue-400"
+                      onClick={() => setResetTarget(user)}
+                      title="Reset password"
+                    >
+                      <KeyRound class="w-4 h-4" />
+                    </button>
+                    <Show when={user.id !== currentUser()?.id}>
+                      <button
+                        class="btn-icon text-surface-600 hover:text-red-400"
+                        onClick={() => handleDeleteUser(user)}
+                        title="Delete user"
+                      >
+                        <Trash2 class="w-4 h-4" />
+                      </button>
+                    </Show>
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+        </section>
+      </Show>
+
+      {/* Playback Preferences */}
+      <section class="mb-8">
+        <div class="flex items-center gap-2 mb-3">
+          <h2 class="text-sm font-semibold text-surface-800 uppercase tracking-wider">Playback Preferences</h2>
+          <Show when={prefsSaving()}>
+            <span class="text-xs text-surface-600 ml-auto">Saving…</span>
+          </Show>
+          <Show when={prefsSaved()}>
+            <span class="text-xs text-green-400 ml-auto">Saved</span>
+          </Show>
+        </div>
+        <div class="card p-4 space-y-5">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-surface-200 flex items-center justify-center flex-shrink-0">
+              <Sliders class="w-4 h-4 text-surface-700" />
+            </div>
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-400 mb-1.5">Default Subtitle Language</label>
+                <select
+                  class="input-field text-sm"
+                  value={prefs().default_subtitle_language ?? ''}
+                  onChange={(e) => savePrefs({ default_subtitle_language: e.currentTarget.value || undefined })}
+                >
+                  <option value="">None (off by default)</option>
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="ja">Japanese</option>
+                  <option value="ko">Korean</option>
+                  <option value="zh">Chinese</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="it">Italian</option>
+                  <option value="ru">Russian</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-400 mb-1.5">Default Audio Language</label>
+                <select
+                  class="input-field text-sm"
+                  value={prefs().default_audio_language ?? ''}
+                  onChange={(e) => savePrefs({ default_audio_language: e.currentTarget.value || undefined })}
+                >
+                  <option value="">Original (default track)</option>
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="ja">Japanese</option>
+                  <option value="ko">Korean</option>
+                  <option value="zh">Chinese</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="it">Italian</option>
+                  <option value="ru">Russian</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-400 mb-1.5">Max Streaming Quality</label>
+                <select
+                  class="input-field text-sm"
+                  value={prefs().max_quality ?? ''}
+                  onChange={(e) => savePrefs({ max_quality: e.currentTarget.value || undefined })}
+                >
+                  <option value="">No limit (best available)</option>
+                  <option value="480p">480p</option>
+                  <option value="720p">720p</option>
+                  <option value="1080p">1080p</option>
+                  <option value="4k">4K</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Add Library Dialog */}
       <Show when={showAddDialog()}>
         <AddLibraryDialog onClose={() => setShowAddDialog(false)} />
       </Show>
+
+      {/* Create User Dialog */}
+      <Show when={showCreateUser()}>
+        <CreateUserDialog
+          onClose={() => setShowCreateUser(false)}
+          onCreated={(user) => { setUsers([...users(), user]); setShowCreateUser(false); }}
+        />
+      </Show>
+
+      {/* Reset Password Dialog */}
+      <Show when={resetTarget()}>
+        <ResetPasswordDialog
+          user={resetTarget()!}
+          onClose={() => setResetTarget(null)}
+        />
+      </Show>
+    </div>
+  );
+}
+
+function CreateUserDialog(props: { onClose: () => void; onCreated: (user: User) => void }) {
+  const [username, setUsername] = createSignal('');
+  const [displayName, setDisplayName] = createSignal('');
+  const [password, setPassword] = createSignal('');
+  const [isAdmin, setIsAdmin] = createSignal(false);
+  const [loading, setLoading] = createSignal(false);
+  const [error, setError] = createSignal('');
+
+  async function handleSubmit(e: Event) {
+    e.preventDefault();
+    if (!username().trim() || !password().trim()) return;
+    setLoading(true);
+    setError('');
+    try {
+      const user = await api.createUser(
+        username().trim(),
+        password(),
+        displayName().trim() || null,
+        isAdmin(),
+      );
+      props.onCreated(user);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create user');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={props.onClose}>
+      <form
+        class="card p-6 w-full max-w-md space-y-4 animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
+      >
+        <h2 class="text-lg font-semibold text-white">Create User</h2>
+
+        <Show when={error()}>
+          <div class="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{error()}</div>
+        </Show>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-400 mb-1.5">Username</label>
+          <input class="input-field" placeholder="username" value={username()} onInput={(e) => setUsername(e.currentTarget.value)} autofocus required />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-400 mb-1.5">Display Name <span class="text-surface-600">(optional)</span></label>
+          <input class="input-field" placeholder="Full Name" value={displayName()} onInput={(e) => setDisplayName(e.currentTarget.value)} />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-400 mb-1.5">Password</label>
+          <input class="input-field" type="password" placeholder="••••••••" value={password()} onInput={(e) => setPassword(e.currentTarget.value)} required />
+        </div>
+
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" class="w-4 h-4 rounded accent-ferrite-500" checked={isAdmin()} onChange={(e) => setIsAdmin(e.currentTarget.checked)} />
+          <span class="text-sm text-gray-300 flex items-center gap-1.5">
+            <Shield class="w-4 h-4 text-amber-400" /> Admin privileges
+          </span>
+        </label>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" class="btn-secondary" onClick={props.onClose}>Cancel</button>
+          <button type="submit" class="btn-primary" disabled={loading()}>
+            {loading() ? <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Create User'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ResetPasswordDialog(props: { user: User; onClose: () => void }) {
+  const [newPassword, setNewPassword] = createSignal('');
+  const [confirm, setConfirm] = createSignal('');
+  const [loading, setLoading] = createSignal(false);
+  const [error, setError] = createSignal('');
+  const [done, setDone] = createSignal(false);
+
+  async function handleSubmit(e: Event) {
+    e.preventDefault();
+    if (newPassword() !== confirm()) { setError('Passwords do not match'); return; }
+    if (newPassword().length < 4) { setError('Password must be at least 4 characters'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      await api.adminResetPassword(props.user.id, newPassword());
+      setDone(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to reset password');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={props.onClose}>
+      <form
+        class="card p-6 w-full max-w-sm space-y-4 animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
+      >
+        <h2 class="text-lg font-semibold text-white">Reset Password</h2>
+        <p class="text-sm text-surface-700">Set a new password for <span class="text-gray-300 font-medium">{props.user.display_name || props.user.username}</span>.</p>
+
+        <Show when={error()}>
+          <div class="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{error()}</div>
+        </Show>
+
+        <Show when={done()}>
+          <div class="text-sm text-green-400 bg-green-400/10 border border-green-400/20 rounded-lg px-3 py-2">Password reset successfully.</div>
+        </Show>
+
+        <Show when={!done()}>
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1.5">New Password</label>
+            <input class="input-field" type="password" placeholder="••••••••" value={newPassword()} onInput={(e) => setNewPassword(e.currentTarget.value)} autofocus required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1.5">Confirm Password</label>
+            <input class="input-field" type="password" placeholder="••••••••" value={confirm()} onInput={(e) => setConfirm(e.currentTarget.value)} required />
+          </div>
+        </Show>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" class="btn-secondary" onClick={props.onClose}>{done() ? 'Close' : 'Cancel'}</button>
+          <Show when={!done()}>
+            <button type="submit" class="btn-primary" disabled={loading()}>
+              {loading() ? <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Reset Password'}
+            </button>
+          </Show>
+        </div>
+      </form>
     </div>
   );
 }

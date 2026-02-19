@@ -61,4 +61,24 @@ impl ImageCache {
 
         Ok(filename)
     }
+
+    /// Download a TMDB episode still image and cache it locally.
+    /// Uses "w300" size (suitable for episode thumbnails).
+    /// Returns the local filename.
+    pub async fn ensure_still(&self, tmdb_path: &str, tmdb_id: i64, season_number: i64, episode_number: i32) -> Result<String> {
+        let filename = format!("{}_s{}_e{}_still.jpg", tmdb_id, season_number, episode_number);
+        let local_path = self.cache_dir.join(&filename);
+
+        if local_path.exists() {
+            debug!("Still already cached: {}", filename);
+            return Ok(filename);
+        }
+
+        let url = format!("{}w300{}", TMDB_IMAGE_BASE, tmdb_path);
+        let bytes = self.client.get(&url).send().await?.bytes().await?;
+        tokio::fs::write(&local_path, &bytes).await?;
+        info!("Cached still image: {} ({} bytes)", filename, bytes.len());
+
+        Ok(filename)
+    }
 }

@@ -158,7 +158,6 @@ pub async fn enrich_library_shows(
 
     if pending.is_empty() {
         debug!("No TV shows needing metadata in library {}", library_id);
-        return Ok(0);
     }
 
     info!(
@@ -255,6 +254,65 @@ pub async fn enrich_library_shows(
             title, details.tmdb_id, details.title
         );
         enriched += 1;
+
+        // Fetch episode metadata for every season we have on disk
+        let seasons = match tv_repo::get_seasons_for_show(pool, show_id).await {
+            Ok(s) => s,
+            Err(e) => {
+                warn!("Failed to get seasons for show '{}': {}", title, e);
+                continue;
+            }
+        };
+
+        for (season_id, season_number) in &seasons {
+            let episodes = match provider.get_season_episodes(details.tmdb_id, *season_number).await {
+                Ok(eps) => eps,
+                Err(e) => {
+                    warn!(
+                        "TMDB season {} fetch failed for '{}': {}",
+                        season_number, title, e
+                    );
+                    continue;
+                }
+            };
+
+            for ep in &episodes {
+                // Cache still image if present
+                let still_local = if let Some(ref sp) = ep.still_path {
+                    match image_cache.ensure_still(sp, details.tmdb_id, *season_number, ep.episode_number).await {
+                        Ok(f) => Some(f),
+                        Err(e) => {
+                            debug!("Still image download failed for S{}E{}: {}", season_number, ep.episode_number, e);
+                            None
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                if let Err(e) = tv_repo::update_episode_metadata(
+                    pool,
+                    season_id,
+                    ep.episode_number as i64,
+                    ep.title.as_deref(),
+                    ep.overview.as_deref(),
+                    ep.air_date.as_deref(),
+                    still_local.as_deref(),
+                )
+                .await
+                {
+                    warn!(
+                        "Failed to update episode S{}E{} for '{}': {}",
+                        season_number, ep.episode_number, title, e
+                    );
+                }
+            }
+
+            debug!(
+                "Updated {} episode(s) for '{}' season {}",
+                episodes.len(), title, season_number
+            );
+        }
     }
 
     info!(
@@ -262,5 +320,46 @@ pub async fn enrich_library_shows(
         enriched,
         pending.len()
     );
+
+    // Backfill episode metadata for shows that already have show-level metadata
+    // but were enriched before episode fetching was implemented.
+    let backfill = tv_repo::get_shows_needing_episode_metadata(pool, library_id).await?;
+    if !backfill.is_empty() {
+        info!(
+            "Backfilling episode metadata for {} show(s) in library {}",
+            backfill.len(), library_id
+        );
+        for (show_id, title, tmdb_id_opt) in &backfill {
+            let tmdb_id = match tmdb_id_opt {
+                Some(id) => *id,
+                None => continue,
+            };
+            let seasons = match tv_repo::get_seasons_for_show(pool, show_id).await {
+                Ok(s) => s,
+                Err(e) => { warn!("get_seasons_for_show failed for '{}': {}", title, e); continue; }
+            };
+            for (season_id, season_number) in &seasons {
+                let episodes = match provider.get_season_episodes(tmdb_id, *season_number).await {
+                    Ok(eps) => eps,
+                    Err(e) => { warn!("TMDB season {} fetch failed for '{}': {}", season_number, title, e); continue; }
+                };
+                for ep in &episodes {
+                    let still_local = if let Some(ref sp) = ep.still_path {
+                        match image_cache.ensure_still(sp, tmdb_id, *season_number, ep.episode_number).await {
+                            Ok(f) => Some(f),
+                            Err(e) => { debug!("Still download failed S{}E{}: {}", season_number, ep.episode_number, e); None }
+                        }
+                    } else { None };
+                    let _ = tv_repo::update_episode_metadata(
+                        pool, season_id, ep.episode_number as i64,
+                        ep.title.as_deref(), ep.overview.as_deref(),
+                        ep.air_date.as_deref(), still_local.as_deref(),
+                    ).await;
+                }
+                debug!("Backfilled {} episode(s) for '{}' season {}", episodes.len(), title, season_number);
+            }
+        }
+    }
+
     Ok(enriched)
 }

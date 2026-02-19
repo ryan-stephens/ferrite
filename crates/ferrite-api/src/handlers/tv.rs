@@ -52,3 +52,15 @@ pub async fn list_episodes(
     let episodes = tv_repo::list_episodes(&state.db, &id).await?;
     Ok(Json(episodes))
 }
+
+/// GET /api/episodes/{media_item_id}/next — get the next episode after this one
+pub async fn next_episode(
+    State(state): State<AppState>,
+    Path(media_item_id): Path<String>,
+) -> Result<impl IntoResponse, ApiError> {
+    let next = tv_repo::get_next_episode(&state.db, &media_item_id).await?;
+    match next {
+        Some(ep) => Ok(Json(serde_json::json!({ "next": ep }))),
+        None => Ok(Json(serde_json::json!({ "next": null }))),
+    }
+}

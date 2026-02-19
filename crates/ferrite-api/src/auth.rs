@@ -173,10 +173,10 @@ fn api_key_matches(candidate: &str, valid_keys: &[String]) -> bool {
         let key_bytes = key.as_bytes();
         // Only compare if lengths match (length itself leaks, but that's acceptable
         // since API keys should all be the same length in practice)
-        if candidate_bytes.len() == key_bytes.len() {
-            if candidate_bytes.ct_eq(key_bytes).into() {
-                found = true;
-            }
+        if candidate_bytes.len() == key_bytes.len()
+            && candidate_bytes.ct_eq(key_bytes).into()
+        {
+            found = true;
         }
     }
     found

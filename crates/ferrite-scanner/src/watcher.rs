@@ -3,7 +3,7 @@ use ferrite_db::library_repo;
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use sqlx::SqlitePool;
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
@@ -14,16 +14,18 @@ pub struct LibraryWatcher {
     ffmpeg_path: String,
     debounce_seconds: u64,
     concurrent_probes: usize,
+    subtitle_cache_dir: PathBuf,
 }
 
 impl LibraryWatcher {
-    pub fn new(pool: SqlitePool, ffprobe_path: String, ffmpeg_path: String, debounce_seconds: u64, concurrent_probes: usize) -> Self {
+    pub fn new(pool: SqlitePool, ffprobe_path: String, ffmpeg_path: String, debounce_seconds: u64, concurrent_probes: usize, subtitle_cache_dir: PathBuf) -> Self {
         Self {
             pool,
             ffprobe_path,
             ffmpeg_path,
             debounce_seconds,
             concurrent_probes,
+            subtitle_cache_dir,
         }
     }
 
@@ -88,6 +90,7 @@ impl LibraryWatcher {
         let ffmpeg_path = self.ffmpeg_path;
         let debounce = Duration::from_secs(self.debounce_seconds);
         let concurrent_probes = self.concurrent_probes;
+        let subtitle_cache_dir = self.subtitle_cache_dir;
 
         let handle = tokio::spawn(async move {
             // Keep the watcher alive for the lifetime of this task.
@@ -116,7 +119,7 @@ impl LibraryWatcher {
                         for lib_id in libs_to_scan {
                             info!("Re-scanning library '{}' due to filesystem changes", lib_id);
                             if let Err(e) =
-                                crate::scan_library(&pool, &lib_id, &ffprobe_path, &ffmpeg_path, concurrent_probes).await
+                                crate::scan_library(&pool, &lib_id, &ffprobe_path, &ffmpeg_path, concurrent_probes, &subtitle_cache_dir).await
                             {
                                 warn!("Failed to re-scan library '{}': {}", lib_id, e);
                             }
@@ -138,7 +141,7 @@ impl LibraryWatcher {
 
 /// Given a file path that changed, find which library directory contains it and
 /// return the corresponding library ID.
-fn find_library_for_path(path: &PathBuf, lib_paths: &[(PathBuf, String)]) -> Option<String> {
+fn find_library_for_path(path: &Path, lib_paths: &[(PathBuf, String)]) -> Option<String> {
     for (lib_path, lib_id) in lib_paths {
         if path.starts_with(lib_path) {
             return Some(lib_id.clone());
