@@ -606,7 +606,17 @@ impl HlsSessionManager {
 
         if let Some(sub_path) = subtitle_path {
             let sub_path_escaped = crate::transcode::escape_ffmpeg_filter_path(&sub_path.to_string_lossy());
-            vf_parts.push(format!("subtitles={}", sub_path_escaped));
+            if start_secs > 0.5 {
+                // Pre-input -ss resets PTS to 0, but the subtitles filter reads
+                // the external file using absolute timestamps. We must shift PTS
+                // back to the original file time so the filter renders the correct
+                // subtitles, then shift back to 0-based PTS for the encoder.
+                vf_parts.push(format!("setpts=PTS+{:.3}/TB", start_secs));
+                vf_parts.push(format!("subtitles={}", sub_path_escaped));
+                vf_parts.push(format!("setpts=PTS-{:.3}/TB", start_secs));
+            } else {
+                vf_parts.push(format!("subtitles={}", sub_path_escaped));
+            }
             info!("HLS subtitle burn-in enabled: {}", sub_path.display());
         }
 
