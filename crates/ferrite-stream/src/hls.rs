@@ -38,6 +38,10 @@ pub struct HlsSession {
     pub variant_label: Option<String>,
     /// Bandwidth in bps for this variant (for master playlist).
     pub bandwidth_bps: u64,
+    /// True when video was copied (-c:v copy) rather than re-encoded.
+    /// With copy, fmp4 segments retain original file PTS so the frontend
+    /// must NOT add an offset (videoRef.currentTime is already absolute).
+    pub video_copied: bool,
 }
 
 impl HlsSession {
@@ -306,6 +310,7 @@ impl HlsSessionManager {
             start_secs: effective_start,
             variant_label,
             bandwidth_bps: session_bw,
+            video_copied,
         });
 
         // Wire the stderr reader to the session's ffmpeg_failed flag.

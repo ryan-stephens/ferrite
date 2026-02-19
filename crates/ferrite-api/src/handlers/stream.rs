@@ -383,7 +383,9 @@ pub async fn hls_master_playlist(
     let mut resp_headers = HeaderMap::new();
     resp_headers.insert(header::CONTENT_TYPE, "application/vnd.apple.mpegurl".parse().unwrap());
     resp_headers.insert(header::CACHE_CONTROL, "no-store".parse().unwrap());
+    let video_copied = sessions.first().map(|s| s.video_copied).unwrap_or(false);
     resp_headers.insert("x-hls-start-secs", format!("{:.3}", start).parse().unwrap());
+    resp_headers.insert("x-hls-video-copied", if video_copied { "1" } else { "0" }.parse().unwrap());
     resp_headers.insert("x-hls-session-ids", session_ids.join(",").parse().unwrap());
     resp_headers.insert("Server-Timing", timing.parse().unwrap());
 
@@ -527,6 +529,7 @@ pub async fn hls_seek(
             return Ok(Json(serde_json::json!({
                 "session_id": existing.session_id,
                 "start_secs": existing.start_secs,
+                "video_copied": existing.video_copied,
                 "reused": true,
                 "variant_count": 1,
                 "master_url": format!("/api/stream/{}/hls/master.m3u8?start={:.3}{}", id, requested_start,
@@ -619,6 +622,7 @@ pub async fn hls_seek(
     Ok(Json(serde_json::json!({
         "session_id": first.session_id,
         "start_secs": first.start_secs,
+        "video_copied": first.video_copied,
         "reused": false,
         "variant_count": sessions.len(),
         "master_url": format!("/api/stream/{}/hls/master.m3u8?start={:.3}{}", id, requested_start,
