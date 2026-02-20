@@ -331,6 +331,38 @@ pub async fn scan_library(
     scan_state.set_status(ScanStatus::Complete).await;
     info!("Scan complete for '{}': {} new items indexed", library.name, count);
 
+    // ── Enrichment sweep: catch any shows/movies still missing metadata ───────
+    // This covers: (a) items that existed before TMDB was configured, (b) items
+    // whose inline enrichment was skipped due to delta-scan, (c) any that failed
+    // during the inline pass (rate limits, transient errors, etc.).
+    if let (Some(provider), Some(img_cache)) = (tmdb_provider.as_ref(), image_cache.as_ref()) {
+        scan_state.set_status(ScanStatus::Enriching).await;
+        if is_tv_library {
+            match ferrite_metadata::enrichment::enrich_library_shows(
+                pool, library_id, provider.as_ref(), img_cache.as_ref(),
+            ).await {
+                Ok(n) if n > 0 => {
+                    info!("Enrichment sweep: {} show(s) enriched in '{}'", n, library.name);
+                    scan_state.items_enriched.fetch_add(n, std::sync::atomic::Ordering::Relaxed);
+                }
+                Ok(_) => {}
+                Err(e) => warn!("Enrichment sweep failed for '{}': {}", library.name, e),
+            }
+        } else if is_movie_library {
+            match ferrite_metadata::enrichment::enrich_library_movies(
+                pool, library_id, provider.as_ref(), img_cache.as_ref(),
+            ).await {
+                Ok(n) if n > 0 => {
+                    info!("Enrichment sweep: {} movie(s) enriched in '{}'", n, library.name);
+                    scan_state.items_enriched.fetch_add(n, std::sync::atomic::Ordering::Relaxed);
+                }
+                Ok(_) => {}
+                Err(e) => warn!("Enrichment sweep failed for '{}': {}", library.name, e),
+            }
+        }
+        scan_state.set_status(ScanStatus::Complete).await;
+    }
+
     // ── Phase 2: subtitle extraction (runs after library is fully visible) ────
     // Collect items that need subtitle work (new/changed files only).
     let subtitle_items: Vec<(String, String, String, Vec<extract::EmbeddedSubtitleStream>)> = phase1_results
