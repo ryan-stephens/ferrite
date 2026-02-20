@@ -408,6 +408,8 @@ pub async fn delete_empty_shows(pool: &SqlitePool) -> Result<u64> {
 /// Update episode metadata fields (title, overview, air_date, still_path) by
 /// matching on season_id + episode_number. Only updates rows that exist in the
 /// episodes table (i.e. files we actually have on disk).
+/// still_path is only overwritten when the new value is non-NULL, preserving
+/// any previously cached image path if TMDB returns no still for this episode.
 pub async fn update_episode_metadata(
     pool: &SqlitePool,
     season_id: &str,
@@ -419,10 +421,10 @@ pub async fn update_episode_metadata(
 ) -> Result<()> {
     sqlx::query(
         r#"UPDATE episodes
-           SET title     = ?,
-               overview  = ?,
-               air_date  = ?,
-               still_path = ?
+           SET title      = COALESCE(?, title),
+               overview   = COALESCE(?, overview),
+               air_date   = COALESCE(?, air_date),
+               still_path = COALESCE(?, still_path)
            WHERE season_id = ? AND episode_number = ?"#,
     )
     .bind(title)
@@ -438,6 +440,8 @@ pub async fn update_episode_metadata(
 }
 
 /// Update episode metadata within an existing transaction (no pool, no semaphore).
+/// still_path is only overwritten when the new value is non-NULL, preserving
+/// any previously cached image path if TMDB returns no still for this episode.
 pub async fn update_episode_metadata_tx(
     conn: &mut SqliteConnection,
     season_id: &str,
@@ -449,10 +453,10 @@ pub async fn update_episode_metadata_tx(
 ) -> Result<()> {
     sqlx::query(
         r#"UPDATE episodes
-           SET title     = ?,
-               overview  = ?,
-               air_date  = ?,
-               still_path = ?
+           SET title      = COALESCE(?, title),
+               overview   = COALESCE(?, overview),
+               air_date   = COALESCE(?, air_date),
+               still_path = COALESCE(?, still_path)
            WHERE season_id = ? AND episode_number = ?"#,
     )
     .bind(title)
@@ -498,8 +502,9 @@ pub async fn get_shows_needing_metadata(
 }
 
 /// Get TV shows that have show-level metadata (tmdb_id set) but still have
-/// episodes with no title — used to backfill episode metadata for shows that
-/// were enriched before episode fetching was implemented.
+/// episodes missing title, still_path, or overview — used to backfill episode
+/// metadata for shows enriched before episode fetching was implemented, and
+/// for shows that gained new seasons after initial enrichment.
 pub async fn get_shows_needing_episode_metadata(
     pool: &SqlitePool,
     library_id: &str,
@@ -511,7 +516,7 @@ pub async fn get_shows_needing_episode_metadata(
            JOIN episodes e ON e.season_id = s.id
            WHERE ts.library_id = ?
              AND ts.tmdb_id IS NOT NULL
-             AND e.title IS NULL"#,
+             AND (e.title IS NULL OR e.still_path IS NULL OR e.overview IS NULL)"#,
     )
     .bind(library_id)
     .fetch_all(pool)

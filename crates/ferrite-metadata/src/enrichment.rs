@@ -431,12 +431,14 @@ pub async fn enrich_single_show(
 
     let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
 
-    // Fetch seasons from DB (read-only, no write lock needed)
-    let seasons = tv_repo::get_seasons_for_show(pool, show_id).await.unwrap_or_default();
+    // ── Phase 1: fetch seasons + episode HTTP data (no DB write lock held) ──────
 
-    // For each season, fetch all episode metadata + still images via HTTP
+    // Snapshot seasons now for the HTTP fetch phase. We re-fetch inside the
+    // transaction to catch any seasons added between now and the write lock.
+    let seasons_snapshot = tv_repo::get_seasons_for_show(pool, show_id).await.unwrap_or_default();
+
     struct SeasonData {
-        season_id: String,
+        season_number: i64,
         episodes: Vec<EpisodeData>,
     }
     struct EpisodeData {
@@ -447,8 +449,8 @@ pub async fn enrich_single_show(
         still_local: Option<String>,
     }
 
-    let mut season_data: Vec<SeasonData> = Vec::with_capacity(seasons.len());
-    for (season_id, season_number) in &seasons {
+    let mut season_data: Vec<SeasonData> = Vec::with_capacity(seasons_snapshot.len());
+    for (_season_id, season_number) in &seasons_snapshot {
         let episodes = match provider.get_season_episodes(details.tmdb_id, *season_number).await {
             Ok(eps) => eps,
             Err(e) => { warn!("TMDB season {} fetch failed for '{}': {}", season_number, title, e); continue; }
@@ -470,7 +472,7 @@ pub async fn enrich_single_show(
             });
         }
         debug!("Fetched {} episode(s) for '{}' season {}", ep_data.len(), title, season_number);
-        season_data.push(SeasonData { season_id: season_id.clone(), episodes: ep_data });
+        season_data.push(SeasonData { season_number: *season_number, episodes: ep_data });
     }
 
     // ── Phase 2: single write_sem acquisition, all DB writes in one transaction
@@ -506,19 +508,37 @@ pub async fn enrich_single_show(
     .execute(&mut *tx)
     .await?;
 
-    // Update all episode metadata
-    for sd in &season_data {
-        for ep in &sd.episodes {
-            let _ = tv_repo::update_episode_metadata_tx(
-                &mut *tx,
-                &sd.season_id,
-                ep.episode_number,
-                ep.ep_title.as_deref(),
-                ep.overview.as_deref(),
-                ep.air_date.as_deref(),
-                ep.still_local.as_deref(),
-            ).await;
+    // Re-fetch seasons inside the transaction to catch any added since the snapshot.
+    let seasons_current = sqlx::query_as::<_, (String, i64)>(
+        "SELECT id, season_number FROM seasons WHERE tv_show_id = ? ORDER BY season_number ASC",
+    )
+    .bind(show_id)
+    .fetch_all(&mut *tx)
+    .await
+    .unwrap_or_default();
+
+    // Build a lookup from season_number → pre-fetched episode data
+    let season_data_map: std::collections::HashMap<i64, &SeasonData> =
+        season_data.iter().map(|sd| (sd.season_number, sd)).collect();
+
+    // Write episode metadata for all current seasons (including any added after snapshot)
+    for (season_id, season_number) in &seasons_current {
+        if let Some(sd) = season_data_map.get(season_number) {
+            // Season was in the snapshot — use pre-fetched data
+            for ep in &sd.episodes {
+                let _ = tv_repo::update_episode_metadata_tx(
+                    &mut *tx,
+                    season_id,
+                    ep.episode_number,
+                    ep.ep_title.as_deref(),
+                    ep.overview.as_deref(),
+                    ep.air_date.as_deref(),
+                    ep.still_local.as_deref(),
+                ).await;
+            }
         }
+        // Seasons added after the snapshot will be picked up by the next
+        // backfill pass (get_shows_needing_episode_metadata).
     }
 
     tx.commit().await?;
