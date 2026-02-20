@@ -1,31 +1,46 @@
 import { createSignal, For, Show, onMount } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { Play, ChevronLeft, ChevronRight } from 'lucide-solid';
-import { allMedia, libraries, loadMedia, loadLibraries } from '../stores/media';
-import { authUrl } from '../api';
+import { libraries, loadLibraries } from '../stores/media';
+import { api, authUrl } from '../api';
 import type { MediaItem } from '../api';
 import { getDisplayTitle, getDisplayYear, getEpisodeLabel, getResLabel } from '../utils';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [continueWatching, setContinueWatching] = createSignal<MediaItem[]>([]);
+  const [recentlyAdded, setRecentlyAdded] = createSignal<MediaItem[]>([]);
+  const [libRows, setLibRows] = createSignal<Record<string, MediaItem[]>>({});
 
   onMount(async () => {
     if (libraries().length === 0) await loadLibraries();
-    if (allMedia().length === 0) await loadMedia();
+
+    // Continue watching: items sorted by last played, filter to in-progress client-side
+    try {
+      const cw = await api.listMedia({ sort: 'last_played', dir: 'desc', per_page: '40' });
+      setContinueWatching(cw.items.filter(i => i.position_ms && i.position_ms > 0 && !i.completed).slice(0, 20));
+    } catch { /* ignore */ }
+
+    // Recently added
+    try {
+      const ra = await api.listMedia({ sort: 'added', dir: 'desc', per_page: '20' });
+      setRecentlyAdded(ra.items);
+    } catch { /* ignore */ }
+
+    // Per-library rows: recently added per library
+    const rows: Record<string, MediaItem[]> = {};
+    await Promise.all(
+      libraries()
+        .filter(l => l.library_type !== 'tv')
+        .map(async (lib) => {
+          try {
+            const data = await api.listMedia({ library_id: lib.id, sort: 'added', dir: 'desc', per_page: '20' });
+            if (data.items.length > 0) rows[lib.id] = data.items;
+          } catch { /* ignore */ }
+        })
+    );
+    setLibRows(rows);
   });
-
-  // Continue watching: items with progress, not completed
-  const continueWatching = () =>
-    allMedia()
-      .filter(i => i.position_ms && i.position_ms > 0 && !i.completed && i.last_played_at)
-      .sort((a, b) => (b.last_played_at || '').localeCompare(a.last_played_at || ''))
-      .slice(0, 20);
-
-  // Recently added
-  const recentlyAdded = () =>
-    [...allMedia()]
-      .sort((a, b) => (b.added_at || '').localeCompare(a.added_at || ''))
-      .slice(0, 20);
 
   return (
     <div class="animate-fade-in">
@@ -50,28 +65,21 @@ export default function HomePage() {
         </Show>
 
         {/* Per-library rows */}
-        <For each={libraries()}>
-          {(lib) => {
-            const libItems = () =>
-              allMedia()
-                .filter(i => i.library_id === lib.id)
-                .sort((a, b) => (b.added_at || '').localeCompare(a.added_at || ''))
-                .slice(0, 20);
-            return (
-              <Show when={libItems().length > 0}>
-                <MediaRow
-                  title={lib.name}
-                  items={libItems()}
-                  onItemClick={(id) => navigate(`/media/${id}`)}
-                  onSeeAll={() => navigate(`/library/${lib.id}`)}
-                />
-              </Show>
-            );
-          }}
+        <For each={libraries().filter(l => l.library_type !== 'tv')}>
+          {(lib) => (
+            <Show when={(libRows()[lib.id]?.length ?? 0) > 0}>
+              <MediaRow
+                title={lib.name}
+                items={libRows()[lib.id]}
+                onItemClick={(id) => navigate(`/media/${id}`)}
+                onSeeAll={() => navigate(`/library/${lib.id}`)}
+              />
+            </Show>
+          )}
         </For>
 
         {/* Empty state */}
-        <Show when={allMedia().length === 0 && !libraries().length}>
+        <Show when={recentlyAdded().length === 0 && libraries().length === 0}>
           <div class="flex flex-col items-center justify-center py-24 text-center">
             <div class="w-16 h-16 rounded-2xl bg-surface-200 flex items-center justify-center mb-4">
               <Play class="w-7 h-7 text-surface-600" />

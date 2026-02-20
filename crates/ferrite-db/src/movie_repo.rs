@@ -288,6 +288,7 @@ fn build_order_clause(query: &MediaQuery<'_>) -> String {
         "year" => "COALESCE(m.year, mi.year)",
         "rating" => "m.rating",
         "added" | "added_at" => "mi.added_at",
+        "last_played" => "pp.last_played_at",
         "duration" => "mi.duration_ms",
         "size" | "file_size" => "mi.file_size",
         _ => "COALESCE(m.sort_title, m.title, mi.title)",
