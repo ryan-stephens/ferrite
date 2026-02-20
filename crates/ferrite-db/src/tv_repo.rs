@@ -567,3 +567,19 @@ pub async fn update_show_metadata(
 
     Ok(())
 }
+
+/// Look up the media_item_id for a specific episode by season_id and episode_number.
+pub async fn get_episode_media_item_id(
+    pool: &SqlitePool,
+    season_id: &str,
+    episode_number: i64,
+) -> Result<Option<String>> {
+    let row: Option<(String,)> = sqlx::query_as(
+        "SELECT media_item_id FROM episodes WHERE season_id = ? AND episode_number = ? LIMIT 1",
+    )
+    .bind(season_id)
+    .bind(episode_number)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(|(id,)| id))
+}

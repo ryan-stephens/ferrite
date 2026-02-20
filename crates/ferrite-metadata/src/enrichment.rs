@@ -108,24 +108,37 @@ pub async fn enrich_library_movies(
 
         // Save to DB
         let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
-        if let Err(e) = movie_repo::update_movie_metadata(
-            pool,
-            &item.media_item_id,
-            Some(details.tmdb_id),
-            details.imdb_id.as_deref(),
-            &details.title,
-            details.sort_title.as_deref(),
-            details.year.map(|y| y as i64),
-            details.overview.as_deref(),
-            details.tagline.as_deref(),
-            details.rating,
-            details.content_rating.as_deref(),
-            poster_local.as_deref(),
-            backdrop_local.as_deref(),
-            Some(genres_json.as_str()),
-        )
-        .await
-        {
+        let db_result: Result<(), anyhow::Error> = async {
+            movie_repo::update_movie_metadata(
+                pool,
+                &item.media_item_id,
+                Some(details.tmdb_id),
+                details.imdb_id.as_deref(),
+                &details.title,
+                details.sort_title.as_deref(),
+                details.year.map(|y| y as i64),
+                details.overview.as_deref(),
+                details.tagline.as_deref(),
+                details.rating,
+                details.content_rating.as_deref(),
+                poster_local.as_deref(),
+                backdrop_local.as_deref(),
+                Some(genres_json.as_str()),
+            )
+            .await?;
+            let mut conn = pool.acquire().await?;
+            movie_repo::upsert_fts_for_media(
+                &mut conn,
+                &item.media_item_id,
+                &details.title,
+                details.overview.as_deref().unwrap_or(""),
+                &genres_json,
+            )
+            .await?;
+            Ok(())
+        }
+        .await;
+        if let Err(e) = db_result {
             warn!("DB update failed for '{}': {}", item.title, e);
             continue;
         }
@@ -304,6 +317,18 @@ pub async fn enrich_library_shows(
                         "Failed to update episode S{}E{} for '{}': {}",
                         season_number, ep.episode_number, title, e
                     );
+                    continue;
+                }
+
+                // Update FTS index for this episode's media_item
+                if let Ok(media_item_id) = tv_repo::get_episode_media_item_id(pool, season_id, ep.episode_number as i64).await {
+                    if let Some(mid) = media_item_id {
+                        let fts_title = format!("{} {}", details.title, ep.title.as_deref().unwrap_or(""));
+                        let fts_overview = ep.overview.as_deref().unwrap_or("");
+                        if let Ok(mut conn) = pool.acquire().await {
+                            let _ = movie_repo::upsert_fts_for_media(&mut conn, &mid, &fts_title, fts_overview, &genres_json).await;
+                        }
+                    }
                 }
             }
 
