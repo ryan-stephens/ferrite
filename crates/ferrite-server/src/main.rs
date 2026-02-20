@@ -200,6 +200,7 @@ async fn main() -> Result<()> {
         login_limiter: AppState::new_login_limiter(),
         encoder_profile,
         webhook_dispatcher,
+        scan_registry: ferrite_scanner::ScanRegistry::new(),
     };
 
     let mut router = build_router(state);

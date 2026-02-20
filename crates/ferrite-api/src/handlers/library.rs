@@ -6,6 +6,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use ferrite_db::{library_repo, media_repo};
 use serde::Deserialize;
+use std::sync::Arc;
 
 #[derive(Deserialize)]
 pub struct CreateLibraryRequest {
@@ -39,7 +40,6 @@ pub async fn delete_library(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // Delete media items first, then the library
     media_repo::delete_media_items_for_library(&state.db, &id).await?;
     library_repo::delete_library(&state.db, &id).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -49,63 +49,79 @@ pub async fn scan_library(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // Verify library exists before spawning background task
     let _library = ferrite_db::library_repo::get_library(&state.db, &id).await?;
 
-    // Spawn the entire scan + enrichment as a background task so the HTTP
-    // response returns immediately (avoids reverse-proxy 504 timeouts on
-    // large libraries).
+    // Prevent duplicate concurrent scans for the same library
+    let scan_state = state.scan_registry.try_start(id.clone())
+        .ok_or_else(|| ApiError::bad_request("Scan already in progress for this library"))?;
+
     let db = state.db.clone();
     let config = state.config.clone();
     let lib_id = id.clone();
-    tokio::spawn(async move {
-        let ffprobe_path = &config.transcode.ffprobe_path;
-        let ffmpeg_path = &config.transcode.ffmpeg_path;
-        let concurrent_probes = config.scanner.concurrent_probes;
-        let subtitle_cache_dir = &config.scanner.subtitle_cache_dir;
 
-        match ferrite_scanner::scan_library(&db, &lib_id, ffprobe_path, ffmpeg_path, concurrent_probes, subtitle_cache_dir).await {
+    tokio::spawn(async move {
+        let ffprobe_path = config.transcode.ffprobe_path.clone();
+        let ffmpeg_path = config.transcode.ffmpeg_path.clone();
+        let concurrent_probes = config.scanner.concurrent_probes;
+        let subtitle_cache_dir = config.scanner.subtitle_cache_dir.clone();
+
+        // Build optional TMDB provider for inline enrichment
+        let (tmdb_provider, image_cache) = if let Some(ref api_key) = config.metadata.tmdb_api_key {
+            let provider: Arc<dyn ferrite_metadata::provider::MetadataProvider> = Arc::new(
+                ferrite_metadata::tmdb::TmdbProvider::new(
+                    api_key.clone(),
+                    config.metadata.rate_limit_per_second,
+                )
+            );
+            let cache = Arc::new(ferrite_metadata::image_cache::ImageCache::new(
+                config.metadata.image_cache_dir.clone(),
+            ));
+            (Some(provider), Some(cache))
+        } else {
+            (None, None)
+        };
+
+        match ferrite_scanner::scan_library(
+            &db,
+            &lib_id,
+            &ffprobe_path,
+            &ffmpeg_path,
+            concurrent_probes,
+            &subtitle_cache_dir,
+            scan_state,
+            tmdb_provider,
+            image_cache,
+        ).await {
             Ok(count) => {
-                tracing::info!("Background scan complete for library {}: {} items", lib_id, count);
+                tracing::info!("Scan complete for library {}: {} new items", lib_id, count);
             }
             Err(e) => {
-                tracing::error!("Background scan failed for library {}: {}", lib_id, e);
-                return;
-            }
-        }
-
-        // Metadata enrichment (TMDb)
-        if config.metadata.tmdb_api_key.is_some() {
-            let api_key = config.metadata.tmdb_api_key.as_ref().unwrap();
-            let provider = ferrite_metadata::tmdb::TmdbProvider::new(
-                api_key.clone(),
-                config.metadata.rate_limit_per_second,
-            );
-            let image_cache = ferrite_metadata::image_cache::ImageCache::new(
-                config.metadata.image_cache_dir.clone(),
-            );
-            if let Err(e) = ferrite_metadata::enrichment::enrich_library_movies(
-                &db,
-                &lib_id,
-                &provider,
-                &image_cache,
-            )
-            .await
-            {
-                tracing::warn!("Movie metadata enrichment failed for library {}: {}", lib_id, e);
-            }
-            if let Err(e) = ferrite_metadata::enrichment::enrich_library_shows(
-                &db,
-                &lib_id,
-                &provider,
-                &image_cache,
-            )
-            .await
-            {
-                tracing::warn!("TV metadata enrichment failed for library {}: {}", lib_id, e);
+                tracing::error!("Scan failed for library {}: {}", lib_id, e);
             }
         }
     });
 
     Ok((StatusCode::ACCEPTED, Json(serde_json::json!({ "status": "scanning" }))))
+}
+
+pub async fn scan_status(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<impl IntoResponse, ApiError> {
+    match state.scan_registry.get(&id) {
+        Some(scan_state) => Ok(Json(scan_state.to_progress().await)),
+        None => Ok(Json(ferrite_scanner::ScanProgress {
+            scanning: false,
+            status: ferrite_scanner::progress::ScanStatus::Complete,
+            total_files: 0,
+            files_probed: 0,
+            files_inserted: 0,
+            subtitles_extracted: 0,
+            items_enriched: 0,
+            errors: 0,
+            current_item: String::new(),
+            elapsed_seconds: 0,
+            percent: 100,
+        })),
+    }
 }

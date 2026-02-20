@@ -28,15 +28,9 @@ async function loadMedia(libraryId?: string | null): Promise<void> {
 }
 
 async function addLibrary(name: string, path: string, type: string): Promise<void> {
-  setStatusMessage('Creating library...');
-  setScanning(true);
   const lib = await api.createLibrary(name, path, type);
-  setStatusMessage(`Scanning ${name}...`);
   await api.scanLibrary(lib.id);
-  setStatusMessage('Scan complete');
-  setScanning(false);
   await loadLibraries();
-  await loadMedia();
 }
 
 async function deleteLibrary(id: string): Promise<void> {
@@ -47,14 +41,11 @@ async function deleteLibrary(id: string): Promise<void> {
 
 async function refreshAll(): Promise<void> {
   setScanning(true);
+  setStatusMessage('Triggering scans...');
   const libs = await api.listLibraries();
-  for (const lib of libs) {
-    setStatusMessage(`Scanning ${lib.name}...`);
-    await api.scanLibrary(lib.id);
-  }
-  setStatusMessage('Refresh complete');
-  setScanning(false);
-  await loadMedia();
+  await Promise.all(libs.map(lib => api.scanLibrary(lib.id).catch(() => {})));
+  setStatusMessage('Scans started');
+  setTimeout(() => { setScanning(false); setStatusMessage('Ready'); }, 3000);
 }
 
 export {

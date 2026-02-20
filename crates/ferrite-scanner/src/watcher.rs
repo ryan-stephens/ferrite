@@ -118,8 +118,9 @@ impl LibraryWatcher {
 
                         for lib_id in libs_to_scan {
                             info!("Re-scanning library '{}' due to filesystem changes", lib_id);
+                            let scan_state = crate::progress::ScanState::new(lib_id.clone());
                             if let Err(e) =
-                                crate::scan_library(&pool, &lib_id, &ffprobe_path, &ffmpeg_path, concurrent_probes, &subtitle_cache_dir).await
+                                crate::scan_library(&pool, &lib_id, &ffprobe_path, &ffmpeg_path, concurrent_probes, &subtitle_cache_dir, scan_state, None, None).await
                             {
                                 warn!("Failed to re-scan library '{}': {}", lib_id, e);
                             }

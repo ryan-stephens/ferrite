@@ -1,5 +1,6 @@
 use crate::webhooks::WebhookDispatcher;
 use ferrite_core::config::AppConfig;
+use ferrite_scanner::ScanRegistry;
 use ferrite_stream::hls::HlsSessionManager;
 use ferrite_transcode::hwaccel::EncoderProfile;
 use governor::clock::DefaultClock;
@@ -28,6 +29,8 @@ pub struct AppState {
     pub encoder_profile: Arc<EncoderProfile>,
     /// Webhook event dispatcher for external notifications.
     pub webhook_dispatcher: Arc<WebhookDispatcher>,
+    /// Registry of active library scan progress states.
+    pub scan_registry: ScanRegistry,
 }
 
 impl AppState {

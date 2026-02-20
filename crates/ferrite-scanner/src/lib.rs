@@ -1,11 +1,13 @@
-pub mod extract;
+﻿pub mod extract;
 pub mod filename;
 pub mod probe;
+pub mod progress;
 pub mod subtitle;
 pub mod walker;
 pub mod watcher;
 
 use anyhow::Result;
+use dashmap::DashSet;
 use ferrite_core::media::{LibraryType, VIDEO_EXTENSIONS, AUDIO_EXTENSIONS};
 use ferrite_db::chapter_repo::ChapterInsert;
 use ferrite_db::library_repo;
@@ -15,29 +17,24 @@ use ferrite_db::stream_repo::StreamInsert;
 use ferrite_db::tv_repo;
 use filename::{ParsedFilename, ParsedMovie, ParsedEpisode};
 use futures::stream::{self, StreamExt};
+use progress::{ScanState, ScanStatus};
 use sqlx::SqlitePool;
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
-/// Parsed + probed result for a single discovered file, ready for DB insertion.
-struct ScannedFile {
-    file_path: String,
-    file_size: u64,
-    title: String,
-    year: Option<i32>,
-    parsed: ParsedFilename,
-    probe_data: Option<MediaProbeData>,
-    /// Individual streams (video, audio, subtitle) discovered by ffprobe.
-    streams: Vec<StreamInsert>,
-    /// Chapter markers embedded in the container.
-    chapters: Vec<ChapterInsert>,
-}
+pub use progress::{ScanProgress, ScanRegistry};
 
-/// Scan a single library: walk the directory, identify media files, probe them, insert into DB.
-/// For movie libraries, also creates skeleton movie records for metadata enrichment.
-/// `concurrent_probes` controls how many ffprobe processes run in parallel.
+/// Scan a single library using a per-item concurrent pipeline.
+///
+/// Each file is probed, inserted into the DB, and has subtitles extracted
+/// concurrently. Items become visible in the UI as they are inserted rather
+/// than waiting for the entire scan to complete.
+///
+/// `scan_state` tracks live progress for the status API endpoint.
+/// `tmdb_provider` and `image_cache` are optional — if provided, metadata
+/// enrichment runs inline as each new show/movie is first encountered.
 pub async fn scan_library(
     pool: &SqlitePool,
     library_id: &str,
@@ -45,12 +42,16 @@ pub async fn scan_library(
     ffmpeg_path: &str,
     concurrent_probes: usize,
     subtitle_cache_dir: &Path,
+    scan_state: Arc<ScanState>,
+    tmdb_provider: Option<Arc<dyn ferrite_metadata::provider::MetadataProvider>>,
+    image_cache: Option<Arc<ferrite_metadata::image_cache::ImageCache>>,
 ) -> Result<u32> {
     let library = library_repo::get_library(pool, library_id).await?;
     let lib_path = Path::new(&library.path);
 
     if !lib_path.exists() {
         warn!("Library path does not exist: {}", library.path);
+        scan_state.set_status(ScanStatus::Failed).await;
         return Ok(0);
     }
 
@@ -62,7 +63,9 @@ pub async fn scan_library(
     };
 
     let files = walker::walk_directory(lib_path, extensions).await?;
-    info!("Found {} media files in '{}'", files.len(), library.name);
+    let total = files.len() as u32;
+    info!("Found {} media files in '{}'", total, library.name);
+    scan_state.total_files.store(total, std::sync::atomic::Ordering::Relaxed);
 
     let media_type = match library.library_type {
         LibraryType::Movie => "movie",
@@ -73,14 +76,35 @@ pub async fn scan_library(
     let is_movie_library = matches!(library.library_type, LibraryType::Movie);
     let is_tv_library = matches!(library.library_type, LibraryType::Tv);
 
-    // Probe files concurrently using buffer_unordered.
-    // The semaphore limits how many ffprobe processes run at once.
-    let semaphore = Arc::new(Semaphore::new(concurrent_probes));
+    // Delta scan: load existing (file_path -> file_size) to skip unchanged files
+    let existing: std::collections::HashMap<String, u64> =
+        media_repo::get_all_file_sizes(pool, library_id).await.unwrap_or_default();
 
-    let scanned_files: Vec<ScannedFile> = stream::iter(files)
+    let probe_sem = Arc::new(Semaphore::new(concurrent_probes));
+    let sub_sem = Arc::new(Semaphore::new(concurrent_probes));
+
+    // Track which TV shows have been enriched this scan to avoid duplicate TMDB calls
+    let enriched_shows: Arc<DashSet<String>> = Arc::new(DashSet::new());
+
+    let mut count = 0u32;
+
+    let results: Vec<Result<u32>> = stream::iter(files)
         .map(|file| {
-            let sem = semaphore.clone();
+            let pool = pool.clone();
+            let probe_sem = probe_sem.clone();
+            let sub_sem = sub_sem.clone();
             let ffprobe = ffprobe_path.to_string();
+            let ffmpeg = ffmpeg_path.to_string();
+            let subtitle_cache_dir = subtitle_cache_dir.to_path_buf();
+            let library_id = library_id.to_string();
+            let library_uuid = library.id;
+            let media_type = media_type.to_string();
+            let scan_state = scan_state.clone();
+            let enriched_shows = enriched_shows.clone();
+            let tmdb_provider = tmdb_provider.clone();
+            let image_cache = image_cache.clone();
+            let existing = existing.clone();
+
             async move {
                 let file_path_str = file.path.to_string_lossy().to_string();
                 let file_stem = file
@@ -89,30 +113,31 @@ pub async fn scan_library(
                     .map(|s| s.to_string_lossy().to_string())
                     .unwrap_or_default();
 
-                // Parse the filename to extract title, year, and episode info
                 let parsed = filename::parse_filename(&file_stem);
                 let (title, year) = match &parsed {
-                    ParsedFilename::Movie(ParsedMovie { title, year }) => {
-                        (title.clone(), *year)
-                    }
-                    ParsedFilename::Episode(ParsedEpisode { show_name, .. }) => {
-                        (show_name.clone(), None)
-                    }
-                    ParsedFilename::Unknown(name) => {
-                        (name.clone(), None)
-                    }
+                    ParsedFilename::Movie(ParsedMovie { title, year }) => (title.clone(), *year),
+                    ParsedFilename::Episode(ParsedEpisode { show_name, .. }) => (show_name.clone(), None),
+                    ParsedFilename::Unknown(name) => (name.clone(), None),
                 };
 
-                // Acquire semaphore permit before spawning ffprobe
-                let _permit = sem.acquire().await.expect("semaphore closed unexpectedly");
-                let probe_result = probe::probe_file(&ffprobe, &file.path).await;
+                // Delta scan: skip unchanged files
+                let already_indexed = existing.get(&file_path_str)
+                    .map(|&sz| sz == file.size)
+                    .unwrap_or(false);
 
-                let (probe_data, streams, chapters) = match probe_result {
-                    Ok(pr) => {
-                        let stream_inserts: Vec<StreamInsert> = pr
-                            .streams
-                            .iter()
-                            .map(|s| StreamInsert {
+                if already_indexed {
+                    debug!("Skipping unchanged file: {}", file_path_str);
+                    scan_state.inc_probed();
+                    return Ok(0u32);
+                }
+
+                scan_state.set_current(&format!("Probing: {}", title)).await;
+
+                let (probe_data, streams, chapters) = {
+                    let _permit = probe_sem.acquire().await.expect("semaphore closed");
+                    match probe::probe_file(&ffprobe, &file.path).await {
+                        Ok(pr) => {
+                            let stream_inserts = pr.streams.iter().map(|s| StreamInsert {
                                 stream_index: s.index,
                                 stream_type: s.stream_type.clone(),
                                 codec_name: s.codec_name.clone(),
@@ -134,252 +159,170 @@ pub async fn scan_library(
                                 channel_layout: s.channel_layout.clone(),
                                 sample_rate: s.sample_rate,
                                 bitrate_bps: s.bitrate_bps,
-                            })
-                            .collect();
-
-                        let chapter_inserts: Vec<ChapterInsert> = pr.chapters
-                            .iter()
-                            .map(|c| ChapterInsert {
+                            }).collect();
+                            let chapter_inserts = pr.chapters.iter().map(|c| ChapterInsert {
                                 chapter_index: c.chapter_index,
                                 title: c.title.clone(),
                                 start_time_ms: c.start_time_ms,
                                 end_time_ms: c.end_time_ms,
-                            })
-                            .collect();
-
-                        let data = MediaProbeData {
-                            container_format: pr.container_format,
-                            video_codec: pr.video_codec,
-                            audio_codec: pr.audio_codec,
-                            width: pr.width,
-                            height: pr.height,
-                            duration_ms: pr.duration_ms,
-                            bitrate_kbps: pr.bitrate_kbps,
-                        };
-                        (Some(data), stream_inserts, chapter_inserts)
-                    }
-                    Err(e) => {
-                        warn!("ffprobe failed for {}: {}", file.path.display(), e);
-                        (None, Vec::new(), Vec::new())
+                            }).collect();
+                            let data = MediaProbeData {
+                                container_format: pr.container_format,
+                                video_codec: pr.video_codec,
+                                audio_codec: pr.audio_codec,
+                                width: pr.width,
+                                height: pr.height,
+                                duration_ms: pr.duration_ms,
+                                bitrate_kbps: pr.bitrate_kbps,
+                            };
+                            (Some(data), stream_inserts, chapter_inserts)
+                        }
+                        Err(e) => {
+                            warn!("ffprobe failed for {}: {}", file.path.display(), e);
+                            scan_state.inc_errors();
+                            (None, Vec::new(), Vec::new())
+                        }
                     }
                 };
 
-                ScannedFile {
-                    file_path: file_path_str,
-                    file_size: file.size,
-                    title,
-                    year,
-                    parsed,
-                    probe_data,
-                    streams,
-                    chapters,
+                scan_state.inc_probed();
+                scan_state.set_current(&format!("Indexing: {}", title)).await;
+
+                // Insert into DB immediately — item visible in UI right away
+                let media_item_id = {
+                    let mut tx = pool.begin().await?;
+
+                    let mid = media_repo::insert_media_item(
+                        &mut *tx,
+                        &library_uuid,
+                        &media_type,
+                        &file_path_str,
+                        file.size,
+                        Some(&title),
+                        year,
+                        probe_data.as_ref(),
+                    ).await?;
+
+                    if !streams.is_empty() {
+                        if let Err(e) = ferrite_db::stream_repo::replace_streams(&mut *tx, &mid, &streams).await {
+                            warn!("Failed to store streams for '{}': {}", title, e);
+                        }
+                    }
+                    if !chapters.is_empty() {
+                        if let Err(e) = ferrite_db::chapter_repo::replace_chapters(&mut *tx, &mid, &chapters).await {
+                            warn!("Failed to store chapters for '{}': {}", title, e);
+                        }
+                    }
+                    if is_movie_library {
+                        if let Err(e) = movie_repo::upsert_movie_skeleton(&mut *tx, &mid, &title, year.map(|y| y as i64)).await {
+                            warn!("Failed to create movie skeleton for '{}': {}", title, e);
+                        }
+                    }
+
+                    let show_id_for_enrich: Option<String> = if is_tv_library {
+                        if let ParsedFilename::Episode(ParsedEpisode { show_name, season, episode }) = &parsed {
+                            match tv_repo::upsert_tv_show(&mut *tx, &library_id, show_name).await {
+                                Ok(show_id) => {
+                                    match tv_repo::upsert_season(&mut *tx, &show_id, *season).await {
+                                        Ok(season_id) => {
+                                            if let Err(e) = tv_repo::upsert_episode(&mut *tx, &mid, &season_id, *episode).await {
+                                                warn!("Failed to create episode for '{}' S{:02}E{:02}: {}", show_name, season, episode, e);
+                                            }
+                                        }
+                                        Err(e) => warn!("Failed to create season for '{}' S{:02}: {}", show_name, season, e),
+                                    }
+                                    Some(show_id)
+                                }
+                                Err(e) => { warn!("Failed to create TV show '{}': {}", show_name, e); None }
+                            }
+                        } else { None }
+                    } else { None };
+
+                    tx.commit().await?;
+                    scan_state.inc_inserted();
+
+                    // Inline TMDB enrichment — runs right after insert so posters appear immediately
+                    if let (Some(provider), Some(img_cache)) = (tmdb_provider.as_ref(), image_cache.as_ref()) {
+                        if is_tv_library {
+                            if let (Some(show_id), ParsedFilename::Episode(ParsedEpisode { show_name, .. })) = (show_id_for_enrich, &parsed) {
+                                if enriched_shows.insert(show_id.clone()) {
+                                    scan_state.set_current(&format!("Fetching metadata: {}", show_name)).await;
+                                    match ferrite_metadata::enrichment::enrich_single_show(&pool, &show_id, show_name, provider.as_ref(), img_cache.as_ref()).await {
+                                        Ok(true) => { scan_state.inc_enriched(); }
+                                        Ok(false) => {}
+                                        Err(e) => { warn!("TMDB enrichment failed for '{}': {}", show_name, e); }
+                                    }
+                                }
+                            }
+                        } else if is_movie_library {
+                            scan_state.set_current(&format!("Fetching metadata: {}", title)).await;
+                            match ferrite_metadata::enrichment::enrich_single_movie(&pool, &mid, &title, year.map(|y| y as i32), provider.as_ref(), img_cache.as_ref()).await {
+                                Ok(true) => { scan_state.inc_enriched(); }
+                                Ok(false) => {}
+                                Err(e) => { warn!("TMDB enrichment failed for '{}': {}", title, e); }
+                            }
+                        }
+                    }
+
+                    mid
+                };
+
+                // Concurrent subtitle extraction
+                let embedded_streams: Vec<extract::EmbeddedSubtitleStream> = streams
+                    .iter()
+                    .filter(|s| s.stream_type == "subtitle")
+                    .filter(|s| s.codec_name.as_deref().map(extract::is_extractable_subtitle).unwrap_or(false))
+                    .map(|s| extract::EmbeddedSubtitleStream {
+                        stream_index: s.stream_index,
+                        codec_name: s.codec_name.clone().unwrap_or_default(),
+                        language: s.language.clone(),
+                        title: s.title.clone(),
+                        is_default: s.is_default,
+                        is_forced: s.is_forced,
+                    })
+                    .collect();
+
+                let mut all_subs = subtitle::find_external_subtitles(Path::new(&file_path_str)).await;
+
+                if !embedded_streams.is_empty() {
+                    let _permit = sub_sem.acquire().await.expect("semaphore closed");
+                    scan_state.set_current(&format!("Extracting subtitles: {}", title)).await;
+                    let extracted = extract::extract_embedded_subtitles(
+                        &ffmpeg,
+                        Path::new(&file_path_str),
+                        &embedded_streams,
+                        &subtitle_cache_dir,
+                        &media_item_id,
+                    ).await;
+                    scan_state.inc_subtitles(extracted.len() as u32);
+                    all_subs.extend(extracted);
                 }
+
+                if !all_subs.is_empty() {
+                    if let Err(e) = ferrite_db::subtitle_repo::replace_subtitles(&pool, &media_item_id, &all_subs).await {
+                        warn!("Failed to store subtitles for '{}': {}", title, e);
+                    }
+                }
+
+                Ok(1u32)
             }
         })
-        .buffer_unordered(concurrent_probes)
+        .buffer_unordered(concurrent_probes * 2)
         .collect()
         .await;
 
-    // Insert all results into the database inside a single transaction.
-    // Batching all writes into one transaction is 10-50x faster than individual
-    // auto-commit inserts because SQLite only syncs to disk once at commit time.
-    //
-    // Subtitle extraction (ffmpeg subprocesses) must happen outside the transaction
-    // since it is I/O-bound and can take seconds per file and must not hold the
-    // write lock. It runs in Phase 2 after the transaction commits.
-    let mut count = 0u32;
-
-    {
-        let mut tx = pool.begin().await?;
-
-        for scanned in &scanned_files {
-            let media_item_id = media_repo::insert_media_item(
-                &mut *tx,
-                &library.id,
-                media_type,
-                &scanned.file_path,
-                scanned.file_size,
-                Some(&scanned.title),
-                scanned.year,
-                scanned.probe_data.as_ref(),
-            )
-            .await?;
-
-            // Store individual stream tracks (video, audio, subtitle) from ffprobe
-            if !scanned.streams.is_empty() {
-                if let Err(e) =
-                    ferrite_db::stream_repo::replace_streams(
-                        &mut *tx,
-                        &media_item_id,
-                        &scanned.streams,
-                    )
-                    .await
-                {
-                    warn!(
-                        "Failed to store streams for '{}': {}",
-                        scanned.title, e
-                    );
-                }
-            }
-
-            // Store chapter markers
-            if !scanned.chapters.is_empty() {
-                if let Err(e) =
-                    ferrite_db::chapter_repo::replace_chapters(
-                        &mut *tx,
-                        &media_item_id,
-                        &scanned.chapters,
-                    )
-                    .await
-                {
-                    warn!("Failed to store chapters for '{}': {}", scanned.title, e);
-                }
-            }
-
-            // For movie libraries, create skeleton movie records for later metadata enrichment
-            if is_movie_library {
-                if let Err(e) = movie_repo::upsert_movie_skeleton(
-                    &mut *tx,
-                    &media_item_id,
-                    &scanned.title,
-                    scanned.year.map(|y| y as i64),
-                )
-                .await
-                {
-                    warn!("Failed to create movie skeleton for '{}': {}", scanned.title, e);
-                }
-            }
-
-            // For TV libraries, create show → season → episode hierarchy
-            if is_tv_library {
-                if let ParsedFilename::Episode(ParsedEpisode {
-                    show_name,
-                    season,
-                    episode,
-                }) = &scanned.parsed
-                {
-                    let lib_id_str = library.id.to_string();
-                    match tv_repo::upsert_tv_show(&mut *tx, &lib_id_str, show_name).await {
-                        Ok(show_id) => {
-                            match tv_repo::upsert_season(&mut *tx, &show_id, *season).await {
-                                Ok(season_id) => {
-                                    if let Err(e) = tv_repo::upsert_episode(
-                                        &mut *tx,
-                                        &media_item_id,
-                                        &season_id,
-                                        *episode,
-                                    )
-                                    .await
-                                    {
-                                        warn!(
-                                            "Failed to create episode record for '{}' S{:02}E{:02}: {}",
-                                            show_name, season, episode, e
-                                        );
-                                    }
-                                }
-                                Err(e) => {
-                                    warn!(
-                                        "Failed to create season for '{}' S{:02}: {}",
-                                        show_name, season, e
-                                    );
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            warn!("Failed to create TV show for '{}': {}", show_name, e);
-                        }
-                    }
-                }
-            }
-
-            count += 1;
-        }
-
-        tx.commit().await?;
-    }
-
-    // Phase 2 (outside transaction): subtitle extraction and DB writes.
-    // Subtitle ffmpeg extraction is slow (seconds per file) — done after the main
-    // transaction commits so we don't hold the write lock during subprocess I/O.
-    for scanned in &scanned_files {
-        // Re-fetch the media_item_id by file_path (it was just inserted above).
-        let media_item_id = match media_repo::get_media_item_id_by_path(pool, &scanned.file_path).await {
-            Ok(Some(id)) => id,
-            _ => continue,
-        };
-
-        // Detect external subtitle files next to the media file
-        let mut all_subs =
-            subtitle::find_external_subtitles(Path::new(&scanned.file_path)).await;
-        if !all_subs.is_empty() {
-            info!(
-                "Found {} external subtitle(s) for '{}'",
-                all_subs.len(),
-                scanned.title
-            );
-        }
-
-        // Extract embedded text-based subtitles (SRT/ASS/SSA) from the container
-        let embedded_streams: Vec<extract::EmbeddedSubtitleStream> = scanned
-            .streams
-            .iter()
-            .filter(|s| s.stream_type == "subtitle")
-            .filter(|s| {
-                s.codec_name
-                    .as_deref()
-                    .map(extract::is_extractable_subtitle)
-                    .unwrap_or(false)
-            })
-            .map(|s| extract::EmbeddedSubtitleStream {
-                stream_index: s.stream_index,
-                codec_name: s.codec_name.clone().unwrap_or_default(),
-                language: s.language.clone(),
-                title: s.title.clone(),
-                is_default: s.is_default,
-                is_forced: s.is_forced,
-            })
-            .collect();
-
-        if !embedded_streams.is_empty() {
-            info!(
-                "Extracting {} embedded subtitle(s) from '{}'",
-                embedded_streams.len(),
-                scanned.title
-            );
-            let extracted = extract::extract_embedded_subtitles(
-                ffmpeg_path,
-                Path::new(&scanned.file_path),
-                &embedded_streams,
-                subtitle_cache_dir,
-                &media_item_id,
-            )
-            .await;
-            if !extracted.is_empty() {
-                info!(
-                    "Extracted {} embedded subtitle(s) for '{}'",
-                    extracted.len(),
-                    scanned.title
-                );
-                all_subs.extend(extracted);
-            }
-        }
-
-        if !all_subs.is_empty() {
-            if let Err(e) =
-                ferrite_db::subtitle_repo::replace_subtitles(pool, &media_item_id, &all_subs)
-                    .await
-            {
-                warn!(
-                    "Failed to store subtitles for '{}': {}",
-                    scanned.title, e
-                );
+    for r in results {
+        match r {
+            Ok(n) => count += n,
+            Err(e) => {
+                warn!("Item processing error: {}", e);
+                scan_state.inc_errors();
             }
         }
     }
 
     library_repo::update_last_scanned(pool, library_id).await?;
 
-    // Clean up orphaned seasons/shows left over from title-merge deduplication
     if is_tv_library {
         let empty_seasons = tv_repo::delete_empty_seasons(pool).await.unwrap_or(0);
         let empty_shows = tv_repo::delete_empty_shows(pool).await.unwrap_or(0);
@@ -391,7 +334,8 @@ pub async fn scan_library(
         }
     }
 
-    info!("Scan complete for '{}': {} items indexed", library.name, count);
+    scan_state.set_status(ScanStatus::Complete).await;
+    info!("Scan complete for '{}': {} new items indexed", library.name, count);
 
     Ok(count)
 }

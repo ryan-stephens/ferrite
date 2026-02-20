@@ -70,6 +70,20 @@ pub async fn insert_media_item(
     Ok(actual_id.0)
 }
 
+/// Load all (file_path, file_size) pairs for a library for delta scan.
+/// Used to skip re-probing files that haven't changed since the last scan.
+pub async fn get_all_file_sizes(
+    pool: &SqlitePool,
+    library_id: &str,
+) -> Result<std::collections::HashMap<String, u64>> {
+    let rows: Vec<(String, i64)> =
+        sqlx::query_as("SELECT file_path, file_size FROM media_items WHERE library_id = ?")
+            .bind(library_id)
+            .fetch_all(pool)
+            .await?;
+    Ok(rows.into_iter().map(|(p, s)| (p, s as u64)).collect())
+}
+
 /// Look up a media item's ID by its file path. Used after a batched insert to
 /// retrieve the ID for subtitle extraction (which runs outside the transaction).
 pub async fn get_media_item_id_by_path(

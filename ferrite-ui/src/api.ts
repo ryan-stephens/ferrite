@@ -226,6 +226,20 @@ export interface Episode {
   last_played_at: string | null;
 }
 
+export interface ScanProgress {
+  scanning: boolean;
+  status: 'scanning' | 'enriching' | 'complete' | 'failed';
+  total_files: number;
+  files_probed: number;
+  files_inserted: number;
+  subtitles_extracted: number;
+  items_enriched: number;
+  errors: number;
+  current_item: string;
+  elapsed_seconds: number;
+  percent: number;
+}
+
 export interface AuthStatus {
   auth_required: boolean;
   has_users: boolean;
@@ -266,6 +280,7 @@ export const api = {
     apiFetch<Library>('POST', '/api/libraries', { name, path, library_type }),
   deleteLibrary: (id: string) => apiFetch<void>('DELETE', `/api/libraries/${id}`),
   scanLibrary: (id: string) => apiFetch<void>('POST', `/api/libraries/${id}/scan`),
+  scanStatus: (id: string) => apiFetch<ScanProgress>('GET', `/api/libraries/${id}/scan/status`),
 
   // Media
   listMedia: (params?: Record<string, string>) => {
@@ -308,8 +323,5 @@ export const api = {
   listSeasons: (showId: string) => apiFetch<Season[]>('GET', `/api/shows/${showId}/seasons`),
   listEpisodes: (seasonId: string) => apiFetch<Episode[]>('GET', `/api/seasons/${seasonId}/episodes`),
 
-  // Users
-  createUser: (username: string, password: string) =>
-    apiFetch<{ id: string }>('POST', '/api/users', { username, password }),
   setupStatus: () => apiFetch<{ has_users: boolean }>('GET', '/api/users/setup'),
 };

@@ -29,6 +29,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/libraries", post(library::create_library))
         .route("/api/libraries/{id}", delete(library::delete_library))
         .route("/api/libraries/{id}/scan", post(library::scan_library))
+        .route("/api/libraries/{id}/scan/status", get(library::scan_status))
         // Media
         .route("/api/media", get(media::list_media))
         .route("/api/media/{id}", get(media::get_media))

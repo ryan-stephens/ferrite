@@ -1,4 +1,5 @@
-import { createSignal, For, Show, onMount } from 'solid-js';
+import { createSignal, For, Show, onMount, onCleanup, createEffect } from 'solid-js';
+import type { ScanProgress } from '../api';
 import { Settings, FolderPlus, Trash2, RefreshCw, Server, HardDrive, Users, UserPlus, KeyRound, ShieldCheck, Shield, Sliders } from 'lucide-solid';
 import { libraries, loadLibraries, addLibrary, deleteLibrary, refreshAll, scanning, statusMessage } from '../stores/media';
 import { api } from '../api';
@@ -14,6 +15,45 @@ export default function SettingsPage() {
   const [prefs, setPrefs] = createSignal<UserPreferences>({});
   const [prefsSaving, setPrefsSaving] = createSignal(false);
   const [prefsSaved, setPrefsSaved] = createSignal(false);
+  const [scanProgress, setScanProgress] = createSignal<Record<string, ScanProgress>>({});
+  const [scanningLibs, setScanningLibs] = createSignal<Set<string>>(new Set());
+  let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+  async function pollScanStatus() {
+    const libs = libraries();
+    if (libs.length === 0) return;
+    const updates: Record<string, ScanProgress> = {};
+    await Promise.all(libs.map(async (lib) => {
+      try {
+        const p = await api.scanStatus(lib.id);
+        updates[lib.id] = p;
+      } catch { /* ignore */ }
+    }));
+    setScanProgress(updates);
+    const anyActive = Object.values(updates).some(p => p.scanning);
+    if (!anyActive && pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  }
+
+  function startPolling() {
+    if (pollInterval) return;
+    pollInterval = setInterval(pollScanStatus, 2000);
+  }
+
+  async function triggerScan(libId: string) {
+    setScanningLibs(prev => new Set([...prev, libId]));
+    try {
+      await api.scanLibrary(libId);
+      startPolling();
+      pollScanStatus();
+    } catch (err: any) {
+      alert(err.message || 'Failed to start scan');
+    } finally {
+      setScanningLibs(prev => { const s = new Set(prev); s.delete(libId); return s; });
+    }
+  }
 
   onMount(async () => {
     if (libraries().length === 0) await loadLibraries();
@@ -36,6 +76,14 @@ export default function SettingsPage() {
       const p = await api.getPreferences();
       setPrefs(p);
     } catch { /* ignore */ }
+    // Check if any scans are already running
+    await pollScanStatus();
+    const anyActive = Object.values(scanProgress()).some(p => p.scanning);
+    if (anyActive) startPolling();
+  });
+
+  onCleanup(() => {
+    if (pollInterval) clearInterval(pollInterval);
   });
 
   async function savePrefs(updates: Partial<UserPreferences>) {
@@ -114,29 +162,76 @@ export default function SettingsPage() {
               </button>
             </div>
           }>
-            {(lib) => (
-              <div class="card p-4 flex items-center justify-between group">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-lg bg-surface-200 flex items-center justify-center">
-                    <HardDrive class="w-4 h-4 text-surface-700" />
+            {(lib) => {
+              const progress = () => scanProgress()[lib.id];
+              const isActive = () => progress()?.scanning ?? false;
+              const isTriggeringThis = () => scanningLibs().has(lib.id);
+              return (
+                <div class="card p-4 group">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-lg bg-surface-200 flex items-center justify-center">
+                        <HardDrive class="w-4 h-4 text-surface-700" />
+                      </div>
+                      <div>
+                        <div class="text-sm font-medium text-gray-300">{lib.name}</div>
+                        <div class="text-xs text-surface-700 font-mono">{lib.path}</div>
+                      </div>
+                      <span class="badge bg-surface-300/50 text-surface-800 ml-2">{lib.library_type}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button
+                        class="btn-ghost text-xs py-1 px-2"
+                        onClick={() => triggerScan(lib.id)}
+                        disabled={isActive() || isTriggeringThis()}
+                        title="Scan library"
+                      >
+                        <RefreshCw class={`w-3.5 h-3.5 ${isActive() || isTriggeringThis() ? 'animate-spin' : ''}`} />
+                        {isActive() ? 'Scanning…' : 'Scan'}
+                      </button>
+                      <button
+                        class="btn-icon text-surface-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                        onClick={async () => {
+                          if (confirm(`Delete library "${lib.name}"?`)) await deleteLibrary(lib.id);
+                        }}
+                        title="Delete library"
+                      >
+                        <Trash2 class="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <div class="text-sm font-medium text-gray-300">{lib.name}</div>
-                    <div class="text-xs text-surface-700 font-mono">{lib.path}</div>
-                  </div>
-                  <span class="badge bg-surface-300/50 text-surface-800 ml-2">{lib.library_type}</span>
+                  <Show when={isActive()}>
+                    <div class="mt-3 space-y-1.5">
+                      <div class="flex items-center justify-between text-xs text-surface-600">
+                        <span class="truncate max-w-xs">{progress()?.current_item || 'Scanning…'}</span>
+                        <span class="ml-2 flex-shrink-0">
+                          {progress()?.files_probed ?? 0} / {progress()?.total_files ?? 0}
+                          {' '}({progress()?.percent ?? 0}%)
+                        </span>
+                      </div>
+                      <div class="w-full h-1.5 bg-surface-300 rounded-full overflow-hidden">
+                        <div
+                          class="h-full bg-ferrite-500 rounded-full transition-all duration-500"
+                          style={{ width: `${progress()?.percent ?? 0}%` }}
+                        />
+                      </div>
+                      <div class="flex items-center gap-3 text-xs text-surface-600">
+                        <Show when={(progress()?.items_enriched ?? 0) > 0}>
+                          <span>{progress()!.items_enriched} enriched</span>
+                        </Show>
+                        <Show when={(progress()?.subtitles_extracted ?? 0) > 0}>
+                          <span>{progress()!.subtitles_extracted} subtitles</span>
+                        </Show>
+                        <Show when={(progress()?.errors ?? 0) > 0}>
+                          <span class="text-red-400">{progress()!.errors} errors</span>
+                        </Show>
+                        <span class="ml-auto">{Math.floor((progress()?.elapsed_seconds ?? 0) / 60)}m {(progress()?.elapsed_seconds ?? 0) % 60}s</span>
+                      </div>
+                    </div>
+                  </Show>
                 </div>
-                <button
-                  class="btn-icon text-surface-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                  onClick={async () => {
-                    if (confirm(`Delete library "${lib.name}"?`)) await deleteLibrary(lib.id);
-                  }}
-                  title="Delete library"
-                >
-                  <Trash2 class="w-4 h-4" />
-                </button>
-              </div>
-            )}
+              );
+            }}
           </For>
         </div>
       </section>
