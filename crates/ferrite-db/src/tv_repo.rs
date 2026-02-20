@@ -440,6 +440,36 @@ pub async fn update_episode_metadata(
     Ok(())
 }
 
+/// Update episode metadata within an existing transaction (no pool, no semaphore).
+pub async fn update_episode_metadata_tx(
+    conn: &mut SqliteConnection,
+    season_id: &str,
+    episode_number: i64,
+    title: Option<&str>,
+    overview: Option<&str>,
+    air_date: Option<&str>,
+    still_path: Option<&str>,
+) -> Result<()> {
+    sqlx::query(
+        r#"UPDATE episodes
+           SET title     = ?,
+               overview  = ?,
+               air_date  = ?,
+               still_path = ?
+           WHERE season_id = ? AND episode_number = ?"#,
+    )
+    .bind(title)
+    .bind(overview)
+    .bind(air_date)
+    .bind(still_path)
+    .bind(season_id)
+    .bind(episode_number)
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(())
+}
+
 /// Return (season_id, season_number) pairs for all seasons of a show.
 pub async fn get_seasons_for_show(
     pool: &SqlitePool,

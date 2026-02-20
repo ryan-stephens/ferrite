@@ -11,6 +11,7 @@ use tokio::sync::RwLock;
 pub enum ScanStatus {
     Scanning,
     Enriching,
+    Subtitles,
     Complete,
     Failed,
 }
@@ -96,7 +97,7 @@ pub struct ScanProgress {
 impl ScanState {
     pub async fn to_progress(&self) -> ScanProgress {
         let status = self.status.read().await.clone();
-        let scanning = status == ScanStatus::Scanning || status == ScanStatus::Enriching;
+        let scanning = matches!(status, ScanStatus::Scanning | ScanStatus::Enriching | ScanStatus::Subtitles);
         let total = self.total_files.load(Ordering::Relaxed);
         let probed = self.files_probed.load(Ordering::Relaxed);
         let percent = if total > 0 {
@@ -143,7 +144,7 @@ impl ScanRegistry {
                 let existing = e.get().clone();
                 // Allow starting a new scan if the previous one is done/failed
                 let status = existing.status.try_read().ok()?;
-                if *status == ScanStatus::Scanning || *status == ScanStatus::Enriching {
+                if matches!(*status, ScanStatus::Scanning | ScanStatus::Enriching | ScanStatus::Subtitles) {
                     return None; // Already running
                 }
                 drop(status);

@@ -366,6 +366,9 @@ pub async fn enrich_library_shows(
 
 /// Enrich a single TV show by show_id. Used for inline enrichment during scanning.
 /// Returns Ok(true) if enriched, Ok(false) if already enriched or no match.
+///
+/// All HTTP and image downloads are done first (no DB lock held), then a single
+/// write_sem acquisition covers all DB writes in one transaction.
 pub async fn enrich_single_show(
     pool: &SqlitePool,
     show_id: &str,
@@ -391,6 +394,8 @@ pub async fn enrich_single_show(
         Err(e) => { warn!("TMDB TV details failed for '{}' (id={}): {}", title, best.tmdb_id, e); return Ok(false); }
     };
 
+    // ── Phase 1: all HTTP / image work (no DB lock held) ─────────────────────
+
     let poster_local = if let Some(ref pp) = details.poster_path {
         match image_cache.ensure_poster(pp, details.tmdb_id).await {
             Ok(f) => Some(f),
@@ -406,26 +411,30 @@ pub async fn enrich_single_show(
     } else { None };
 
     let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
-    let _wp = write_sem.acquire().await.expect("semaphore closed");
-    if let Err(e) = tv_repo::update_show_metadata(
-        pool, show_id, Some(details.tmdb_id), &details.title,
-        details.sort_title.as_deref(), details.year.map(|y| y as i64),
-        details.overview.as_deref(), details.status.as_deref(),
-        poster_local.as_deref(), backdrop_local.as_deref(), Some(genres_json.as_str()),
-    ).await {
-        warn!("DB update failed for TV show '{}': {}", title, e);
-        return Ok(false);
-    }
-    drop(_wp);
 
-    info!("Enriched TV: '{}' -> TMDB {} ({})", title, details.tmdb_id, details.title);
-
+    // Fetch seasons from DB (read-only, no write lock needed)
     let seasons = tv_repo::get_seasons_for_show(pool, show_id).await.unwrap_or_default();
+
+    // For each season, fetch all episode metadata + still images via HTTP
+    struct SeasonData {
+        season_id: String,
+        episodes: Vec<EpisodeData>,
+    }
+    struct EpisodeData {
+        episode_number: i64,
+        ep_title: Option<String>,
+        overview: Option<String>,
+        air_date: Option<String>,
+        still_local: Option<String>,
+    }
+
+    let mut season_data: Vec<SeasonData> = Vec::with_capacity(seasons.len());
     for (season_id, season_number) in &seasons {
         let episodes = match provider.get_season_episodes(details.tmdb_id, *season_number).await {
             Ok(eps) => eps,
             Err(e) => { warn!("TMDB season {} fetch failed for '{}': {}", season_number, title, e); continue; }
         };
+        let mut ep_data: Vec<EpisodeData> = Vec::with_capacity(episodes.len());
         for ep in &episodes {
             let still_local = if let Some(ref sp) = ep.still_path {
                 match image_cache.ensure_still(sp, details.tmdb_id, *season_number, ep.episode_number).await {
@@ -433,17 +442,70 @@ pub async fn enrich_single_show(
                     Err(e) => { debug!("Still download failed S{}E{}: {}", season_number, ep.episode_number, e); None }
                 }
             } else { None };
-            let _wp = write_sem.acquire().await.expect("semaphore closed");
-            let _ = tv_repo::update_episode_metadata(
-                pool, season_id, ep.episode_number as i64,
-                ep.title.as_deref(), ep.overview.as_deref(),
-                ep.air_date.as_deref(), still_local.as_deref(),
-            ).await;
-            drop(_wp);
+            ep_data.push(EpisodeData {
+                episode_number: ep.episode_number as i64,
+                ep_title: ep.title.clone(),
+                overview: ep.overview.clone(),
+                air_date: ep.air_date.clone(),
+                still_local,
+            });
         }
-        debug!("Updated {} episode(s) for '{}' season {}", episodes.len(), title, season_number);
+        debug!("Fetched {} episode(s) for '{}' season {}", ep_data.len(), title, season_number);
+        season_data.push(SeasonData { season_id: season_id.clone(), episodes: ep_data });
     }
 
+    // ── Phase 2: single write_sem acquisition, all DB writes in one transaction
+
+    let _wp = write_sem.acquire().await.expect("semaphore closed");
+    let mut tx = pool.begin().await?;
+
+    // Update show-level metadata
+    sqlx::query(
+        r#"UPDATE tv_shows
+           SET tmdb_id       = ?,
+               title         = ?,
+               sort_title    = ?,
+               year          = ?,
+               overview      = ?,
+               status        = ?,
+               poster_path   = ?,
+               backdrop_path = ?,
+               genres        = ?,
+               fetched_at    = datetime('now')
+           WHERE id = ?"#,
+    )
+    .bind(Some(details.tmdb_id))
+    .bind(&details.title)
+    .bind(details.sort_title.as_deref())
+    .bind(details.year.map(|y| y as i64))
+    .bind(details.overview.as_deref())
+    .bind(details.status.as_deref())
+    .bind(poster_local.as_deref())
+    .bind(backdrop_local.as_deref())
+    .bind(Some(genres_json.as_str()))
+    .bind(show_id)
+    .execute(&mut *tx)
+    .await?;
+
+    // Update all episode metadata
+    for sd in &season_data {
+        for ep in &sd.episodes {
+            let _ = tv_repo::update_episode_metadata_tx(
+                &mut *tx,
+                &sd.season_id,
+                ep.episode_number,
+                ep.ep_title.as_deref(),
+                ep.overview.as_deref(),
+                ep.air_date.as_deref(),
+                ep.still_local.as_deref(),
+            ).await;
+        }
+    }
+
+    tx.commit().await?;
+    drop(_wp);
+
+    info!("Enriched TV: '{}' -> TMDB {} ({})", title, details.tmdb_id, details.title);
     Ok(true)
 }
 

@@ -92,15 +92,12 @@ pub async fn scan_library(
 
     let mut count = 0u32;
 
-    let results: Vec<Result<u32>> = stream::iter(files)
+    let phase1_results = stream::iter(files)
         .map(|file| {
             let pool = pool.clone();
             let probe_sem = probe_sem.clone();
-            let sub_sem = sub_sem.clone();
             let write_sem = write_sem.clone();
             let ffprobe = ffprobe_path.to_string();
-            let ffmpeg = ffmpeg_path.to_string();
-            let subtitle_cache_dir = subtitle_cache_dir.to_path_buf();
             let library_id = library_id.to_string();
             let library_uuid = library.id;
             let media_type = media_type.to_string();
@@ -133,7 +130,7 @@ pub async fn scan_library(
                 if already_indexed {
                     debug!("Skipping unchanged file: {}", file_path_str);
                     scan_state.inc_probed();
-                    return Ok(0u32);
+                    return Ok(None);
                 }
 
                 scan_state.set_current(&format!("Probing: {}", title)).await;
@@ -193,102 +190,97 @@ pub async fn scan_library(
                 scan_state.inc_probed();
                 scan_state.set_current(&format!("Indexing: {}", title)).await;
 
-                // Insert into DB immediately — item visible in UI right away.
+                // ── Phase 1: insert media item, streams, TV hierarchy ─────────
                 // Gated behind write_sem to limit concurrent SQLite write transactions.
-                let media_item_id = {
-                    let _write_permit = write_sem.acquire().await.expect("semaphore closed");
-                    let mut tx = pool.begin().await?;
+                let _write_permit = write_sem.acquire().await.expect("semaphore closed");
+                let mut tx = pool.begin().await?;
 
-                    let mid = media_repo::insert_media_item(
-                        &mut *tx,
-                        &library_uuid,
-                        &media_type,
-                        &file_path_str,
-                        file.size,
-                        Some(&title),
-                        year,
-                        probe_data.as_ref(),
-                    ).await?;
+                let mid = media_repo::insert_media_item(
+                    &mut *tx,
+                    &library_uuid,
+                    &media_type,
+                    &file_path_str,
+                    file.size,
+                    Some(&title),
+                    year,
+                    probe_data.as_ref(),
+                ).await?;
 
-                    if !streams.is_empty() {
-                        if let Err(e) = ferrite_db::stream_repo::replace_streams(&mut *tx, &mid, &streams).await {
-                            warn!("Failed to store streams for '{}': {}", title, e);
-                        }
+                if !streams.is_empty() {
+                    if let Err(e) = ferrite_db::stream_repo::replace_streams(&mut *tx, &mid, &streams).await {
+                        warn!("Failed to store streams for '{}': {}", title, e);
                     }
-                    if !chapters.is_empty() {
-                        if let Err(e) = ferrite_db::chapter_repo::replace_chapters(&mut *tx, &mid, &chapters).await {
-                            warn!("Failed to store chapters for '{}': {}", title, e);
-                        }
+                }
+                if !chapters.is_empty() {
+                    if let Err(e) = ferrite_db::chapter_repo::replace_chapters(&mut *tx, &mid, &chapters).await {
+                        warn!("Failed to store chapters for '{}': {}", title, e);
                     }
-                    if is_movie_library {
-                        if let Err(e) = movie_repo::upsert_movie_skeleton(&mut *tx, &mid, &title, year.map(|y| y as i64)).await {
-                            warn!("Failed to create movie skeleton for '{}': {}", title, e);
-                        }
+                }
+                if is_movie_library {
+                    if let Err(e) = movie_repo::upsert_movie_skeleton(&mut *tx, &mid, &title, year.map(|y| y as i64)).await {
+                        warn!("Failed to create movie skeleton for '{}': {}", title, e);
                     }
+                }
 
-                    let show_id_for_enrich: Option<String> = if is_tv_library {
-                        if let ParsedFilename::Episode(ParsedEpisode { show_name, season, episode }) = &parsed {
-                            match tv_repo::upsert_tv_show(&mut *tx, &library_id, show_name).await {
-                                Ok(show_id) => {
-                                    match tv_repo::upsert_season(&mut *tx, &show_id, *season).await {
-                                        Ok(season_id) => {
-                                            if let Err(e) = tv_repo::upsert_episode(&mut *tx, &mid, &season_id, *episode).await {
-                                                warn!("Failed to create episode for '{}' S{:02}E{:02}: {}", show_name, season, episode, e);
-                                            }
+                let show_id_for_enrich: Option<String> = if is_tv_library {
+                    if let ParsedFilename::Episode(ParsedEpisode { show_name, season, episode }) = &parsed {
+                        match tv_repo::upsert_tv_show(&mut *tx, &library_id, show_name).await {
+                            Ok(show_id) => {
+                                match tv_repo::upsert_season(&mut *tx, &show_id, *season).await {
+                                    Ok(season_id) => {
+                                        if let Err(e) = tv_repo::upsert_episode(&mut *tx, &mid, &season_id, *episode).await {
+                                            warn!("Failed to create episode for '{}' S{:02}E{:02}: {}", show_name, season, episode, e);
                                         }
-                                        Err(e) => warn!("Failed to create season for '{}' S{:02}: {}", show_name, season, e),
                                     }
-                                    Some(show_id)
+                                    Err(e) => warn!("Failed to create season for '{}' S{:02}: {}", show_name, season, e),
                                 }
-                                Err(e) => { warn!("Failed to create TV show '{}': {}", show_name, e); None }
+                                Some(show_id)
                             }
-                        } else { None }
-                    } else { None };
-
-                    tx.commit().await?;
-                    // Release write permit before enrichment (which does HTTP, not DB writes)
-                    drop(_write_permit);
-                    scan_state.inc_inserted();
-
-                    // Spawn TMDB enrichment as a detached task so it doesn't occupy a
-                    // buffer_unordered slot while waiting on HTTP responses.
-                    if let (Some(provider), Some(img_cache)) = (tmdb_provider.clone(), image_cache.clone()) {
-                        if is_tv_library {
-                            if let (Some(show_id), ParsedFilename::Episode(ParsedEpisode { show_name, .. })) = (show_id_for_enrich, &parsed) {
-                                if enriched_shows.insert(show_id.clone()) {
-                                    let pool2 = pool.clone();
-                                    let show_name2 = show_name.clone();
-                                    let scan_state2 = scan_state.clone();
-                                    let write_sem2 = write_sem.clone();
-                                    tokio::spawn(async move {
-                                        match ferrite_metadata::enrichment::enrich_single_show(&pool2, &show_id, &show_name2, provider.as_ref(), img_cache.as_ref(), &write_sem2).await {
-                                            Ok(true) => { scan_state2.inc_enriched(); }
-                                            Ok(false) => {}
-                                            Err(e) => { warn!("TMDB enrichment failed for '{}': {}", show_name2, e); }
-                                        }
-                                    });
-                                }
-                            }
-                        } else if is_movie_library {
-                            let pool2 = pool.clone();
-                            let title2 = title.clone();
-                            let mid2 = mid.clone();
-                            let scan_state2 = scan_state.clone();
-                            let write_sem2 = write_sem.clone();
-                            tokio::spawn(async move {
-                                match ferrite_metadata::enrichment::enrich_single_movie(&pool2, &mid2, &title2, year.map(|y| y as i32), provider.as_ref(), img_cache.as_ref(), &write_sem2).await {
-                                    Ok(true) => { scan_state2.inc_enriched(); }
-                                    Ok(false) => {}
-                                    Err(e) => { warn!("TMDB enrichment failed for '{}': {}", title2, e); }
-                                }
-                            });
+                            Err(e) => { warn!("Failed to create TV show '{}': {}", show_name, e); None }
                         }
+                    } else { None }
+                } else { None };
+
+                tx.commit().await?;
+                drop(_write_permit);
+                scan_state.inc_inserted();
+
+                // Spawn TMDB enrichment as a detached task so it doesn't occupy a
+                // buffer_unordered slot while waiting on HTTP responses.
+                if let (Some(provider), Some(img_cache)) = (tmdb_provider.clone(), image_cache.clone()) {
+                    if is_tv_library {
+                        if let (Some(show_id), ParsedFilename::Episode(ParsedEpisode { show_name, .. })) = (show_id_for_enrich, &parsed) {
+                            if enriched_shows.insert(show_id.clone()) {
+                                let pool2 = pool.clone();
+                                let show_name2 = show_name.clone();
+                                let scan_state2 = scan_state.clone();
+                                let write_sem2 = write_sem.clone();
+                                tokio::spawn(async move {
+                                    match ferrite_metadata::enrichment::enrich_single_show(&pool2, &show_id, &show_name2, provider.as_ref(), img_cache.as_ref(), &write_sem2).await {
+                                        Ok(true) => { scan_state2.inc_enriched(); }
+                                        Ok(false) => {}
+                                        Err(e) => { warn!("TMDB enrichment failed for '{}': {}", show_name2, e); }
+                                    }
+                                });
+                            }
+                        }
+                    } else if is_movie_library {
+                        let pool2 = pool.clone();
+                        let title2 = title.clone();
+                        let mid2 = mid.clone();
+                        let scan_state2 = scan_state.clone();
+                        let write_sem2 = write_sem.clone();
+                        tokio::spawn(async move {
+                            match ferrite_metadata::enrichment::enrich_single_movie(&pool2, &mid2, &title2, year.map(|y| y as i32), provider.as_ref(), img_cache.as_ref(), &write_sem2).await {
+                                Ok(true) => { scan_state2.inc_enriched(); }
+                                Ok(false) => {}
+                                Err(e) => { warn!("TMDB enrichment failed for '{}': {}", title2, e); }
+                            }
+                        });
                     }
+                }
 
-                    mid
-                };
-
-                // Concurrent subtitle extraction
+                // Collect embedded subtitle stream descriptors for Phase 2
                 let embedded_streams: Vec<extract::EmbeddedSubtitleStream> = streams
                     .iter()
                     .filter(|s| s.stream_type == "subtitle")
@@ -303,39 +295,18 @@ pub async fn scan_library(
                     })
                     .collect();
 
-                let mut all_subs = subtitle::find_external_subtitles(Path::new(&file_path_str)).await;
-
-                if !embedded_streams.is_empty() {
-                    let _permit = sub_sem.acquire().await.expect("semaphore closed");
-                    scan_state.set_current(&format!("Extracting subtitles: {}", title)).await;
-                    let extracted = extract::extract_embedded_subtitles(
-                        &ffmpeg,
-                        Path::new(&file_path_str),
-                        &embedded_streams,
-                        &subtitle_cache_dir,
-                        &media_item_id,
-                    ).await;
-                    scan_state.inc_subtitles(extracted.len() as u32);
-                    all_subs.extend(extracted);
-                }
-
-                if !all_subs.is_empty() {
-                    let _write_permit = write_sem.acquire().await.expect("semaphore closed");
-                    if let Err(e) = ferrite_db::subtitle_repo::replace_subtitles(&pool, &media_item_id, &all_subs).await {
-                        warn!("Failed to store subtitles for '{}': {}", title, e);
-                    }
-                }
-
-                Ok(1u32)
+                // Return item info needed for Phase 2 subtitle work
+                Ok(Some((mid, file_path_str, title, embedded_streams)))
             }
         })
         .buffer_unordered(concurrent_probes * 2)
-        .collect()
+        .collect::<Vec<Result<Option<(String, String, String, Vec<extract::EmbeddedSubtitleStream>)>>>>()
         .await;
 
-    for r in results {
+    for r in &phase1_results {
         match r {
-            Ok(n) => count += n,
+            Ok(Some(_)) => count += 1,
+            Ok(None) => {}
             Err(e) => {
                 warn!("Item processing error: {}", e);
                 scan_state.inc_errors();
@@ -356,8 +327,64 @@ pub async fn scan_library(
         }
     }
 
+    // Mark library as fully indexed — items are now visible in the UI.
     scan_state.set_status(ScanStatus::Complete).await;
     info!("Scan complete for '{}': {} new items indexed", library.name, count);
+
+    // ── Phase 2: subtitle extraction (runs after library is fully visible) ────
+    // Collect items that need subtitle work (new/changed files only).
+    let subtitle_items: Vec<(String, String, String, Vec<extract::EmbeddedSubtitleStream>)> = phase1_results
+        .into_iter()
+        .filter_map(|r| r.ok().flatten())
+        .collect();
+
+    if !subtitle_items.is_empty() {
+        info!("Starting subtitle extraction for {} item(s) in '{}'", subtitle_items.len(), library.name);
+        scan_state.set_status(ScanStatus::Subtitles).await;
+
+        let subtitle_results: Vec<()> = stream::iter(subtitle_items)
+            .map(|item| {
+                let (media_item_id, file_path_str, title, embedded_streams) = item;
+                let pool = pool.clone();
+                let sub_sem = sub_sem.clone();
+                let write_sem = write_sem.clone();
+                let ffmpeg = ffmpeg_path.to_string();
+                let subtitle_cache_dir = subtitle_cache_dir.to_path_buf();
+                let scan_state = scan_state.clone();
+
+                async move {
+                    let mut all_subs = subtitle::find_external_subtitles(Path::new(&file_path_str)).await;
+
+                    if !embedded_streams.is_empty() {
+                        let _permit = sub_sem.acquire().await.expect("semaphore closed");
+                        scan_state.set_current(&format!("Extracting subtitles: {}", title)).await;
+                        let extracted = extract::extract_embedded_subtitles(
+                            &ffmpeg,
+                            Path::new(&file_path_str),
+                            &embedded_streams,
+                            &subtitle_cache_dir,
+                            &media_item_id,
+                        ).await;
+                        scan_state.inc_subtitles(extracted.len() as u32);
+                        all_subs.extend(extracted);
+                    }
+
+                    if !all_subs.is_empty() {
+                        let _write_permit = write_sem.acquire().await.expect("semaphore closed");
+                        if let Err(e) = ferrite_db::subtitle_repo::replace_subtitles(&pool, &media_item_id, &all_subs).await {
+                            warn!("Failed to store subtitles for '{}': {}", title, e);
+                        }
+                    }
+                }
+            })
+            .buffer_unordered(concurrent_probes * 2)
+            .collect()
+            .await;
+
+        let _ = subtitle_results;
+        info!("Subtitle extraction complete for '{}'", library.name);
+        scan_state.set_status(ScanStatus::Complete).await;
+    }
 
     Ok(count)
 }
