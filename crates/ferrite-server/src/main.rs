@@ -203,7 +203,6 @@ async fn main() -> Result<()> {
         scan_registry: ferrite_scanner::ScanRegistry::new(),
     };
 
-    let scan_registry = state.scan_registry.clone();
     let mut router = build_router(state);
     let addr = SocketAddr::new(config.server.host.parse()?, config.server.port);
 
@@ -221,15 +220,20 @@ async fn main() -> Result<()> {
         };
         router = router.merge(ferrite_dlna::routes::build_dlna_router(dlna_state));
 
-        // Start SSDP discovery in background (supervised — logs panics)
+        // Start SSDP discovery in background.
+        // Binding to port 1900 requires elevated privileges on Linux; failure is non-fatal.
         let ssdp = std::sync::Arc::new(
             ferrite_dlna::ssdp::SsdpServer::new(server_uuid, http_base_url),
         );
-        tokio::spawn(supervised_task("SSDP server", async move {
+        tokio::spawn(async move {
             if let Err(e) = ssdp.run().await {
-                tracing::warn!("SSDP server error: {}", e);
+                tracing::warn!(
+                    "SSDP server stopped (DLNA discovery unavailable): {}. \
+                     On Linux, binding port 1900 requires CAP_NET_BIND_SERVICE or running as root.",
+                    e
+                );
             }
-        }));
+        });
 
         info!("DLNA server enabled ({})", config.dlna.friendly_name);
     }
@@ -237,8 +241,6 @@ async fn main() -> Result<()> {
     // Start filesystem watcher for auto-rescan
     let watcher = ferrite_scanner::watcher::LibraryWatcher::new(
         pool,
-        Arc::new(config.clone()),
-        scan_registry,
         config.transcode.ffprobe_path.clone(),
         config.transcode.ffmpeg_path.clone(),
         config.scanner.watch_debounce_seconds,

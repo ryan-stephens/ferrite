@@ -82,32 +82,6 @@ pub async fn upsert_tv_show(
         return Ok(id);
     }
 
-    // 2b. Similarity fallback: load all shows for this library and use jaro_winkler
-    //     to catch variants like "Survivor AU" vs "Survivor Australia" (same show,
-    //     different folder names). Threshold 0.85 is tight enough to avoid false
-    //     positives between genuinely different shows.
-    let all_shows: Vec<(String, String)> = sqlx::query_as(
-        "SELECT id, normalized_title FROM tv_shows WHERE library_id = ? AND normalized_title IS NOT NULL",
-    )
-    .bind(library_id)
-    .fetch_all(&mut *executor)
-    .await?;
-
-    let mut best_sim_id: Option<String> = None;
-    let mut best_sim = 0.0f64;
-    for (show_id, show_norm) in &all_shows {
-        let sim = strsim::jaro_winkler(&norm_base, show_norm);
-        if sim > best_sim {
-            best_sim = sim;
-            best_sim_id = Some(show_id.clone());
-        }
-    }
-    if best_sim >= 0.85 {
-        if let Some(id) = best_sim_id {
-            return Ok(id);
-        }
-    }
-
     // 3. No match — insert new show with its normalized title pre-computed
     let id = Uuid::new_v4().to_string();
     sqlx::query(
@@ -165,11 +139,8 @@ pub async fn upsert_episode(
     episode_number: u32,
 ) -> Result<()> {
     sqlx::query(
-        r#"INSERT INTO episodes (media_item_id, season_id, episode_number)
-           VALUES (?, ?, ?)
-           ON CONFLICT(media_item_id) DO UPDATE SET
-               season_id = excluded.season_id,
-               episode_number = excluded.episode_number"#,
+        r#"INSERT OR REPLACE INTO episodes (media_item_id, season_id, episode_number)
+           VALUES (?, ?, ?)"#,
     )
     .bind(media_item_id)
     .bind(season_id)
@@ -556,6 +527,7 @@ pub async fn update_show_metadata(
     pool: &SqlitePool,
     show_id: &str,
     tmdb_id: Option<i64>,
+    title: &str,
     sort_title: Option<&str>,
     year: Option<i64>,
     overview: Option<&str>,
@@ -568,6 +540,7 @@ pub async fn update_show_metadata(
         r#"
         UPDATE tv_shows
         SET tmdb_id       = ?,
+            title         = ?,
             sort_title    = ?,
             year          = ?,
             overview      = ?,
@@ -580,6 +553,7 @@ pub async fn update_show_metadata(
         "#,
     )
     .bind(tmdb_id)
+    .bind(title)
     .bind(sort_title)
     .bind(year)
     .bind(overview)
@@ -592,20 +566,4 @@ pub async fn update_show_metadata(
     .await?;
 
     Ok(())
-}
-
-/// Look up the media_item_id for a specific episode by season_id and episode_number.
-pub async fn get_episode_media_item_id(
-    pool: &SqlitePool,
-    season_id: &str,
-    episode_number: i64,
-) -> Result<Option<String>> {
-    let row: Option<(String,)> = sqlx::query_as(
-        "SELECT media_item_id FROM episodes WHERE season_id = ? AND episode_number = ? LIMIT 1",
-    )
-    .bind(season_id)
-    .bind(episode_number)
-    .fetch_optional(pool)
-    .await?;
-    Ok(row.map(|(id,)| id))
 }

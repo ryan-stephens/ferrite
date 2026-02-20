@@ -25,8 +25,6 @@ pub struct ScanState {
     pub files_inserted: AtomicU32,
     pub subtitles_extracted: AtomicU32,
     pub items_enriched: AtomicU32,
-    pub total_to_enrich: AtomicU32,
-    pub total_for_subtitles: AtomicU32,
     pub errors: AtomicU32,
     pub current_item: RwLock<String>,
     pub started_at_unix: AtomicU64,
@@ -46,8 +44,6 @@ impl ScanState {
             files_inserted: AtomicU32::new(0),
             subtitles_extracted: AtomicU32::new(0),
             items_enriched: AtomicU32::new(0),
-            total_to_enrich: AtomicU32::new(0),
-            total_for_subtitles: AtomicU32::new(0),
             errors: AtomicU32::new(0),
             current_item: RwLock::new(String::new()),
             started_at_unix: AtomicU64::new(started),
@@ -78,14 +74,6 @@ impl ScanState {
         self.items_enriched.fetch_add(1, Ordering::Relaxed);
     }
 
-    pub fn set_total_to_enrich(&self, n: u32) {
-        self.total_to_enrich.store(n, Ordering::Relaxed);
-    }
-
-    pub fn set_total_for_subtitles(&self, n: u32) {
-        self.total_for_subtitles.store(n, Ordering::Relaxed);
-    }
-
     pub fn inc_errors(&self) {
         self.errors.fetch_add(1, Ordering::Relaxed);
     }
@@ -112,21 +100,10 @@ impl ScanState {
         let scanning = matches!(status, ScanStatus::Scanning | ScanStatus::Enriching | ScanStatus::Subtitles);
         let total = self.total_files.load(Ordering::Relaxed);
         let probed = self.files_probed.load(Ordering::Relaxed);
-        let enriched = self.items_enriched.load(Ordering::Relaxed);
-        let total_enrich = self.total_to_enrich.load(Ordering::Relaxed);
-        let subs = self.subtitles_extracted.load(Ordering::Relaxed);
-        let total_subs = self.total_for_subtitles.load(Ordering::Relaxed);
-        let percent = match status {
-            ScanStatus::Scanning => {
-                if total > 0 { ((probed as f32 / total as f32) * 100.0).min(100.0) as u8 } else { 0 }
-            }
-            ScanStatus::Enriching => {
-                if total_enrich > 0 { ((enriched as f32 / total_enrich as f32) * 100.0).min(100.0) as u8 } else { 0 }
-            }
-            ScanStatus::Subtitles => {
-                if total_subs > 0 { ((subs as f32 / total_subs as f32) * 100.0).min(100.0) as u8 } else { 0 }
-            }
-            _ => 100,
+        let percent = if total > 0 {
+            ((probed as f32 / total as f32) * 100.0).min(100.0) as u8
+        } else {
+            0
         };
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

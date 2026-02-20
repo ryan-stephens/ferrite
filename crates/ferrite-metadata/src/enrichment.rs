@@ -7,9 +7,27 @@ use sqlx::SqlitePool;
 use tracing::{debug, info, warn};
 
 /// Strip a trailing 4-digit year from a title string.
+/// Handles both bare years ("Cosmos 2014") and parenthesized years ("Cosmos (2014)").
 /// Returns (cleaned_title, Some(year)) if found, or (original, None) if not.
 fn strip_trailing_year(title: &str) -> (String, Option<i32>) {
     let trimmed = title.trim();
+
+    // Try parenthesized year: "Title (YYYY)"
+    if trimmed.ends_with(')') {
+        if let Some(open) = trimmed.rfind('(') {
+            let inner = &trimmed[open + 1..trimmed.len() - 1];
+            if let Ok(y) = inner.trim().parse::<i32>() {
+                if (1900..=2099).contains(&y) {
+                    let prefix = trimmed[..open].trim_end();
+                    if !prefix.is_empty() {
+                        return (prefix.to_string(), Some(y));
+                    }
+                }
+            }
+        }
+    }
+
+    // Try bare trailing year: "Title 2014"
     if trimmed.len() >= 5 {
         let last4 = &trimmed[trimmed.len() - 4..];
         if let Ok(y) = last4.parse::<i32>() {
@@ -21,6 +39,7 @@ fn strip_trailing_year(title: &str) -> (String, Option<i32>) {
             }
         }
     }
+
     (trimmed.to_string(), None)
 }
 
@@ -63,7 +82,7 @@ pub async fn enrich_library_movies(
         let best = match tmdb::pick_best_match(&results, &item.title, year) {
             Some(m) => m,
             None => {
-                warn!("No TMDB match for movie '{}' ({} results returned)", item.title, results.len());
+                debug!("No TMDB match for '{}'", item.title);
                 continue;
             }
         };
@@ -106,41 +125,26 @@ pub async fn enrich_library_movies(
             None
         };
 
-        // Save to DB — combine metadata + FTS update in one transaction to
-        // reduce the number of write-lock acquisitions per movie.
+        // Save to DB
         let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
-        let db_result: Result<(), anyhow::Error> = async {
-            let mut tx = pool.begin().await?;
-            movie_repo::update_movie_metadata_tx(
-                &mut tx,
-                &item.media_item_id,
-                Some(details.tmdb_id),
-                details.imdb_id.as_deref(),
-                &details.title,
-                details.sort_title.as_deref(),
-                details.year.map(|y| y as i64),
-                details.overview.as_deref(),
-                details.tagline.as_deref(),
-                details.rating,
-                details.content_rating.as_deref(),
-                poster_local.as_deref(),
-                backdrop_local.as_deref(),
-                Some(genres_json.as_str()),
-            )
-            .await?;
-            movie_repo::upsert_fts_for_media(
-                &mut *tx,
-                &item.media_item_id,
-                &details.title,
-                details.overview.as_deref().unwrap_or(""),
-                &genres_json,
-            )
-            .await?;
-            tx.commit().await?;
-            Ok(())
-        }
-        .await;
-        if let Err(e) = db_result {
+        if let Err(e) = movie_repo::update_movie_metadata(
+            pool,
+            &item.media_item_id,
+            Some(details.tmdb_id),
+            details.imdb_id.as_deref(),
+            &details.title,
+            details.sort_title.as_deref(),
+            details.year.map(|y| y as i64),
+            details.overview.as_deref(),
+            details.tagline.as_deref(),
+            details.rating,
+            details.content_rating.as_deref(),
+            poster_local.as_deref(),
+            backdrop_local.as_deref(),
+            Some(genres_json.as_str()),
+        )
+        .await
+        {
             warn!("DB update failed for '{}': {}", item.title, e);
             continue;
         }
@@ -200,7 +204,7 @@ pub async fn enrich_library_shows(
         let best = match tmdb::pick_best_tv_match(&results, &search_title, year_i32) {
             Some(m) => m,
             None => {
-                warn!("No TMDB match for TV show '{}' (searched: '{}', {} results returned)", title, search_title, results.len());
+                debug!("No TMDB match for TV show '{}' (searched: '{}')", title, search_title);
                 continue;
             }
         };
@@ -249,6 +253,7 @@ pub async fn enrich_library_shows(
             pool,
             show_id,
             Some(details.tmdb_id),
+            &details.title,
             details.sort_title.as_deref(),
             details.year.map(|y| y as i64),
             details.overview.as_deref(),
@@ -319,18 +324,6 @@ pub async fn enrich_library_shows(
                         "Failed to update episode S{}E{} for '{}': {}",
                         season_number, ep.episode_number, title, e
                     );
-                    continue;
-                }
-
-                // Update FTS index for this episode's media_item
-                if let Ok(media_item_id) = tv_repo::get_episode_media_item_id(pool, season_id, ep.episode_number as i64).await {
-                    if let Some(mid) = media_item_id {
-                        let fts_title = format!("{} {}", details.title, ep.title.as_deref().unwrap_or(""));
-                        let fts_overview = ep.overview.as_deref().unwrap_or("");
-                        if let Ok(mut conn) = pool.acquire().await {
-                            let _ = movie_repo::upsert_fts_for_media(&mut conn, &mid, &fts_title, fts_overview, &genres_json).await;
-                        }
-                    }
                 }
             }
 
@@ -489,6 +482,7 @@ pub async fn enrich_single_show(
     sqlx::query(
         r#"UPDATE tv_shows
            SET tmdb_id       = ?,
+               title         = ?,
                sort_title    = ?,
                year          = ?,
                overview      = ?,
@@ -500,6 +494,7 @@ pub async fn enrich_single_show(
            WHERE id = ?"#,
     )
     .bind(Some(details.tmdb_id))
+    .bind(&details.title)
     .bind(details.sort_title.as_deref())
     .bind(details.year.map(|y| y as i64))
     .bind(details.overview.as_deref())
@@ -551,7 +546,7 @@ pub async fn enrich_single_movie(
 
     let best = match tmdb::pick_best_match(&results, title, year) {
         Some(m) => m,
-        None => { debug!("No TMDB match for '{}'", title); return Ok(false); }
+        None => { warn!("No TMDB match for '{}' ({} results returned)", title, results.len()); return Ok(false); }
     };
 
     let details = match provider.get_movie_details(best.tmdb_id).await {
@@ -575,27 +570,17 @@ pub async fn enrich_single_movie(
 
     let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
     let _wp = write_sem.acquire().await.expect("semaphore closed");
-    let db_result: Result<(), anyhow::Error> = async {
-        let mut tx = pool.begin().await?;
-        movie_repo::update_movie_metadata_tx(
-            &mut tx, media_item_id, Some(details.tmdb_id), details.imdb_id.as_deref(),
-            &details.title, details.sort_title.as_deref(), details.year.map(|y| y as i64),
-            details.overview.as_deref(), details.tagline.as_deref(), details.rating,
-            details.content_rating.as_deref(), poster_local.as_deref(),
-            backdrop_local.as_deref(), Some(genres_json.as_str()),
-        ).await?;
-        movie_repo::upsert_fts_for_media(
-            &mut *tx, media_item_id, &details.title,
-            details.overview.as_deref().unwrap_or(""), &genres_json,
-        ).await?;
-        tx.commit().await?;
-        Ok(())
-    }.await;
-    drop(_wp);
-    if let Err(e) = db_result {
+    if let Err(e) = movie_repo::update_movie_metadata(
+        pool, media_item_id, Some(details.tmdb_id), details.imdb_id.as_deref(),
+        &details.title, details.sort_title.as_deref(), details.year.map(|y| y as i64),
+        details.overview.as_deref(), details.tagline.as_deref(), details.rating,
+        details.content_rating.as_deref(), poster_local.as_deref(),
+        backdrop_local.as_deref(), Some(genres_json.as_str()),
+    ).await {
         warn!("DB update failed for '{}': {}", title, e);
         return Ok(false);
     }
+    drop(_wp);
 
     info!("Enriched: '{}' -> TMDB {} ({})", title, details.tmdb_id, details.title);
     Ok(true)

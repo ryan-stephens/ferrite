@@ -331,48 +331,6 @@ pub async fn scan_library(
     scan_state.set_status(ScanStatus::Complete).await;
     info!("Scan complete for '{}': {} new items indexed", library.name, count);
 
-    // ── Enrichment sweep: catch any shows/movies still missing metadata ───────
-    // This covers: (a) items that existed before TMDB was configured, (b) items
-    // whose inline enrichment was skipped due to delta-scan, (c) any that failed
-    // during the inline pass (rate limits, transient errors, etc.).
-    if let (Some(provider), Some(img_cache)) = (tmdb_provider.as_ref(), image_cache.as_ref()) {
-        scan_state.set_status(ScanStatus::Enriching).await;
-        // Set total_to_enrich so percent is accurate during the Enriching phase
-        if is_tv_library {
-            if let Ok(pending) = ferrite_db::tv_repo::get_shows_needing_metadata(pool, library_id).await {
-                scan_state.set_total_to_enrich(pending.len() as u32);
-            }
-        } else if is_movie_library {
-            if let Ok(pending) = ferrite_db::movie_repo::get_movies_needing_metadata(pool, library_id).await {
-                scan_state.set_total_to_enrich(pending.len() as u32);
-            }
-        }
-        if is_tv_library {
-            match ferrite_metadata::enrichment::enrich_library_shows(
-                pool, library_id, provider.as_ref(), img_cache.as_ref(),
-            ).await {
-                Ok(n) if n > 0 => {
-                    info!("Enrichment sweep: {} show(s) enriched in '{}'", n, library.name);
-                    scan_state.items_enriched.fetch_add(n, std::sync::atomic::Ordering::Relaxed);
-                }
-                Ok(_) => {}
-                Err(e) => warn!("Enrichment sweep failed for '{}': {}", library.name, e),
-            }
-        } else if is_movie_library {
-            match ferrite_metadata::enrichment::enrich_library_movies(
-                pool, library_id, provider.as_ref(), img_cache.as_ref(),
-            ).await {
-                Ok(n) if n > 0 => {
-                    info!("Enrichment sweep: {} movie(s) enriched in '{}'", n, library.name);
-                    scan_state.items_enriched.fetch_add(n, std::sync::atomic::Ordering::Relaxed);
-                }
-                Ok(_) => {}
-                Err(e) => warn!("Enrichment sweep failed for '{}': {}", library.name, e),
-            }
-        }
-        scan_state.set_status(ScanStatus::Complete).await;
-    }
-
     // ── Phase 2: subtitle extraction (runs after library is fully visible) ────
     // Collect items that need subtitle work (new/changed files only).
     let subtitle_items: Vec<(String, String, String, Vec<extract::EmbeddedSubtitleStream>)> = phase1_results
@@ -382,7 +340,6 @@ pub async fn scan_library(
 
     if !subtitle_items.is_empty() {
         info!("Starting subtitle extraction for {} item(s) in '{}'", subtitle_items.len(), library.name);
-        scan_state.set_total_for_subtitles(subtitle_items.len() as u32);
         scan_state.set_status(ScanStatus::Subtitles).await;
 
         let subtitle_results: Vec<()> = stream::iter(subtitle_items)
@@ -420,9 +377,7 @@ pub async fn scan_library(
                     }
                 }
             })
-            // Cap at 2 concurrent subtitle DB writers — more than this causes write-lock
-            // pile-up when enrichment tasks are also holding write transactions.
-            .buffer_unordered(2)
+            .buffer_unordered(concurrent_probes * 2)
             .collect()
             .await;
 

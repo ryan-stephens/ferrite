@@ -27,10 +27,9 @@ pub async fn create_library(
     Json(req): Json<CreateLibraryRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let lib_type = match req.library_type.as_str() {
-        "movies" | "movie" => ferrite_core::media::LibraryType::Movie,
         "tv" => ferrite_core::media::LibraryType::Tv,
         "music" => ferrite_core::media::LibraryType::Music,
-        other => return Err(ApiError::bad_request(&format!("Unknown library type: '{}'", other))),
+        _ => ferrite_core::media::LibraryType::Movie,
     };
 
     let lib = library_repo::create_library(&state.db, &req.name, &req.path, lib_type).await?;

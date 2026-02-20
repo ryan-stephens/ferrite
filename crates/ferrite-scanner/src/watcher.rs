@@ -1,21 +1,15 @@
 use anyhow::Result;
-use ferrite_core::config::AppConfig;
 use ferrite_db::library_repo;
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use sqlx::SqlitePool;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
-use crate::progress::ScanRegistry;
-
 pub struct LibraryWatcher {
     pool: SqlitePool,
-    config: Arc<AppConfig>,
-    scan_registry: ScanRegistry,
     ffprobe_path: String,
     ffmpeg_path: String,
     debounce_seconds: u64,
@@ -24,20 +18,9 @@ pub struct LibraryWatcher {
 }
 
 impl LibraryWatcher {
-    pub fn new(
-        pool: SqlitePool,
-        config: Arc<AppConfig>,
-        scan_registry: ScanRegistry,
-        ffprobe_path: String,
-        ffmpeg_path: String,
-        debounce_seconds: u64,
-        concurrent_probes: usize,
-        subtitle_cache_dir: PathBuf,
-    ) -> Self {
+    pub fn new(pool: SqlitePool, ffprobe_path: String, ffmpeg_path: String, debounce_seconds: u64, concurrent_probes: usize, subtitle_cache_dir: PathBuf) -> Self {
         Self {
             pool,
-            config,
-            scan_registry,
             ffprobe_path,
             ffmpeg_path,
             debounce_seconds,
@@ -103,8 +86,6 @@ impl LibraryWatcher {
         });
 
         let pool = self.pool;
-        let config = self.config;
-        let scan_registry = self.scan_registry;
         let ffprobe_path = self.ffprobe_path;
         let ffmpeg_path = self.ffmpeg_path;
         let debounce = Duration::from_secs(self.debounce_seconds);
@@ -137,35 +118,10 @@ impl LibraryWatcher {
 
                         for lib_id in libs_to_scan {
                             info!("Re-scanning library '{}' due to filesystem changes", lib_id);
-
-                            let scan_state = match scan_registry.try_start(lib_id.clone()) {
-                                Some(s) => s,
-                                None => {
-                                    info!("Skipping watcher rescan for '{}': scan already in progress", lib_id);
-                                    continue;
-                                }
-                            };
-
-                            let (tmdb_provider, image_cache) = if let Some(ref api_key) = config.metadata.tmdb_api_key {
-                                let provider: Arc<dyn ferrite_metadata::provider::MetadataProvider> = Arc::new(
-                                    ferrite_metadata::tmdb::TmdbProvider::new(
-                                        api_key.clone(),
-                                        config.metadata.rate_limit_per_second,
-                                    )
-                                );
-                                let cache = Arc::new(ferrite_metadata::image_cache::ImageCache::new(
-                                    config.metadata.image_cache_dir.clone(),
-                                ));
-                                (Some(provider), Some(cache))
-                            } else {
-                                (None, None)
-                            };
-
-                            if let Err(e) = crate::scan_library(
-                                &pool, &lib_id, &ffprobe_path, &ffmpeg_path,
-                                concurrent_probes, &subtitle_cache_dir,
-                                scan_state, tmdb_provider, image_cache,
-                            ).await {
+                            let scan_state = crate::progress::ScanState::new(lib_id.clone());
+                            if let Err(e) =
+                                crate::scan_library(&pool, &lib_id, &ffprobe_path, &ffmpeg_path, concurrent_probes, &subtitle_cache_dir, scan_state, None, None).await
+                            {
                                 warn!("Failed to re-scan library '{}': {}", lib_id, e);
                             }
                         }

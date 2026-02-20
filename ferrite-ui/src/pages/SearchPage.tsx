@@ -1,7 +1,8 @@
-import { createSignal, createEffect, For, Show } from 'solid-js';
+import { createSignal, createEffect, For, Show, onMount } from 'solid-js';
 import { useNavigate, useSearchParams } from '@solidjs/router';
 import { Search, Play, Star, SlidersHorizontal } from 'lucide-solid';
-import { api, authUrl } from '../api';
+import { allMedia, loadMedia, libraries, loadLibraries } from '../stores/media';
+import { authUrl } from '../api';
 import type { MediaItem } from '../api';
 import { getDisplayTitle, getDisplayYear, formatDuration, getResLabel, formatSize } from '../utils';
 
@@ -12,41 +13,48 @@ export default function SearchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // Derive query directly from the URL param so header-bar typing updates results live
   const query = () => searchParams.q || '';
   const [sort, setSort] = createSignal<SortKey>((localStorage.getItem('ferrite-sort') as SortKey) || 'title-asc');
   const [viewMode, setViewMode] = createSignal<ViewMode>((localStorage.getItem('ferrite-view') as ViewMode) || 'grid');
   const [showFilters, setShowFilters] = createSignal(false);
   const [results, setResults] = createSignal<MediaItem[]>([]);
-  const [total, setTotal] = createSignal(0);
-  const [loading, setLoading] = createSignal(false);
 
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  async function fetchResults(q: string, s: SortKey) {
-    setLoading(true);
-    try {
-      const [sortBy, sortDir] = s.split('-');
-      const params: Record<string, string> = {
-        sort: sortBy,
-        dir: sortDir,
-        per_page: '100',
-      };
-      if (q.trim()) params['search'] = q.trim();
-      const data = await api.listMedia(params);
-      setResults(data.items);
-      setTotal(data.total);
-    } catch { /* ignore */ }
-    setLoading(false);
-  }
+  onMount(async () => {
+    if (allMedia().length === 0) await loadMedia();
+    if (libraries().length === 0) await loadLibraries();
+  });
 
   createEffect(() => {
-    const q = query();
+    const q = query().toLowerCase().trim();
     const s = sort();
     localStorage.setItem('ferrite-sort', s);
     localStorage.setItem('ferrite-view', viewMode());
 
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => fetchResults(q, s), 250);
+    let items = allMedia();
+    if (q) {
+      items = items.filter(item => {
+        const title = getDisplayTitle(item).toLowerCase();
+        const overview = (item.overview || '').toLowerCase();
+        const genres = (item.genres || '').toLowerCase();
+        return title.includes(q) || overview.includes(q) || genres.includes(q);
+      });
+    }
+
+    items = [...items].sort((a, b) => {
+      switch (s) {
+        case 'title-asc': return getDisplayTitle(a).localeCompare(getDisplayTitle(b));
+        case 'title-desc': return getDisplayTitle(b).localeCompare(getDisplayTitle(a));
+        case 'year-desc': return (getDisplayYear(b) || 0) - (getDisplayYear(a) || 0);
+        case 'year-asc': return (getDisplayYear(a) || 0) - (getDisplayYear(b) || 0);
+        case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
+        case 'added-desc': return (b.added_at || '').localeCompare(a.added_at || '');
+        case 'played-desc': return (b.last_played_at || '').localeCompare(a.last_played_at || '');
+        default: return 0;
+      }
+    });
+
+    setResults(items);
   });
 
   return (
@@ -118,11 +126,8 @@ export default function SearchPage() {
       </Show>
 
       {/* Results count */}
-      <div class="text-sm text-surface-700 mb-4 flex items-center gap-2">
-        <Show when={loading()}>
-          <div class="w-3.5 h-3.5 border-2 border-ferrite-500/30 border-t-ferrite-500 rounded-full animate-spin" />
-        </Show>
-        {total()} {total() === 1 ? 'item' : 'items'}
+      <div class="text-sm text-surface-700 mb-4">
+        {results().length} {results().length === 1 ? 'item' : 'items'}
         {query() ? ` matching "${query()}"` : ''}
       </div>
 

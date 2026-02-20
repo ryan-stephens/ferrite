@@ -33,23 +33,19 @@ impl MetadataProvider for TmdbProvider {
     async fn search_movie(&self, title: &str, year: Option<i32>) -> Result<Vec<MovieSearchResult>> {
         self.rate_limiter.until_ready().await;
 
-        debug!("TMDB search: {}", title);
-
-        let mut params = vec![
-            ("api_key", self.api_key.as_str()),
-            ("query", title),
-            ("language", "en-US"),
-        ];
-        let year_str;
+        let mut url = format!(
+            "{}/search/movie?api_key={}&query={}&language=en-US",
+            TMDB_BASE_URL, self.api_key, title
+        );
         if let Some(y) = year {
-            year_str = y.to_string();
-            params.push(("year", year_str.as_str()));
+            url.push_str(&format!("&year={}", y));
         }
+
+        debug!("TMDB search: {}", title);
 
         let response = self
             .client
-            .get(format!("{}/search/movie", TMDB_BASE_URL))
-            .query(&params)
+            .get(&url)
             .send()
             .await
             .context("TMDB search request failed")?;
@@ -146,23 +142,19 @@ impl MetadataProvider for TmdbProvider {
     async fn search_tv(&self, title: &str, year: Option<i32>) -> Result<Vec<TvSearchResult>> {
         self.rate_limiter.until_ready().await;
 
-        debug!("TMDB TV search: {}", title);
-
-        let mut params = vec![
-            ("api_key", self.api_key.as_str()),
-            ("query", title),
-            ("language", "en-US"),
-        ];
-        let year_str;
+        let mut url = format!(
+            "{}/search/tv?api_key={}&query={}&language=en-US",
+            TMDB_BASE_URL, self.api_key, title
+        );
         if let Some(y) = year {
-            year_str = y.to_string();
-            params.push(("first_air_date_year", year_str.as_str()));
+            url.push_str(&format!("&first_air_date_year={}", y));
         }
+
+        debug!("TMDB TV search: {}", title);
 
         let response = self
             .client
-            .get(format!("{}/search/tv", TMDB_BASE_URL))
-            .query(&params)
+            .get(&url)
             .send()
             .await
             .context("TMDB TV search request failed")?;
@@ -292,6 +284,26 @@ impl MetadataProvider for TmdbProvider {
     }
 }
 
+/// Fold a string to ASCII-approximate form for fuzzy comparison.
+/// Strips common Latin diacritics so that e.g. "Shōgun" matches "Shogun".
+fn ascii_fold(s: &str) -> String {
+    s.chars()
+        .map(|c| match c {
+            'À'|'Á'|'Â'|'Ã'|'Ä'|'Å'|'à'|'á'|'â'|'ã'|'ä'|'å' => 'a',
+            'Æ'|'æ' => 'a',
+            'Ç'|'ç' => 'c',
+            'È'|'É'|'Ê'|'Ë'|'è'|'é'|'ê'|'ë' => 'e',
+            'Ì'|'Í'|'Î'|'Ï'|'ì'|'í'|'î'|'ï' => 'i',
+            'Ñ'|'ñ' => 'n',
+            'Ò'|'Ó'|'Ô'|'Õ'|'Ö'|'Ø'|'ò'|'ó'|'ô'|'õ'|'ö'|'ø'|'ō'|'Ō' => 'o',
+            'Ù'|'Ú'|'Û'|'Ü'|'ù'|'ú'|'û'|'ü' => 'u',
+            'Ý'|'ý'|'ÿ' => 'y',
+            'ß' => 's',
+            other => other,
+        })
+        .collect()
+}
+
 /// Generate a sort-friendly title by stripping leading articles.
 fn generate_sort_title(title: &str) -> Option<String> {
     let lower = title.to_lowercase();
@@ -303,30 +315,19 @@ fn generate_sort_title(title: &str) -> Option<String> {
     None
 }
 
-/// Returns true if at least one significant word (>= 3 chars) from `query`
-/// appears in `candidate`. Used to guard against jaro_winkler false positives
-/// on short or abbreviated titles (e.g. "Survivor AU" vs "Auschwitz...").
-fn has_word_overlap(query: &str, candidate: &str) -> bool {
-    let candidate_lower = candidate.to_lowercase();
-    query
-        .split_whitespace()
-        .filter(|w| w.len() >= 3)
-        .any(|w| candidate_lower.contains(w))
-}
-
 /// Pick the best matching result from a TMDB search using string similarity.
-/// Returns `None` if no result scores above the 0.75 threshold.
+/// Returns `None` if no result scores above the 0.6 threshold.
 pub fn pick_best_match(
     results: &[MovieSearchResult],
     query_title: &str,
     query_year: Option<i32>,
 ) -> Option<MovieSearchResult> {
-    let query_lower = query_title.to_lowercase();
+    let query_lower = ascii_fold(&query_title.to_lowercase());
     let mut best_score = 0.0f64;
     let mut best: Option<&MovieSearchResult> = None;
 
     for result in results {
-        let result_lower = result.title.to_lowercase();
+        let result_lower = ascii_fold(&result.title.to_lowercase());
         let mut score = strsim::jaro_winkler(&query_lower, &result_lower);
 
         // Boost score if year matches
@@ -342,7 +343,7 @@ pub fn pick_best_match(
         }
     }
 
-    if best_score >= 0.75 {
+    if best_score >= 0.6 {
         best.cloned()
     } else {
         None
@@ -350,19 +351,17 @@ pub fn pick_best_match(
 }
 
 /// Pick the best matching TV show result from a TMDB search using string similarity.
-/// Requires both a score >= 0.75 AND at least one significant query word present
-/// in the result title, to prevent false positives on short/abbreviated names.
 pub fn pick_best_tv_match(
     results: &[TvSearchResult],
     query_title: &str,
     query_year: Option<i32>,
 ) -> Option<TvSearchResult> {
-    let query_lower = query_title.to_lowercase();
+    let query_lower = ascii_fold(&query_title.to_lowercase());
     let mut best_score = 0.0f64;
     let mut best: Option<&TvSearchResult> = None;
 
     for result in results {
-        let result_lower = result.title.to_lowercase();
+        let result_lower = ascii_fold(&result.title.to_lowercase());
         let mut score = strsim::jaro_winkler(&query_lower, &result_lower);
 
         if let (Some(qy), Some(ry)) = (query_year, result.year) {
@@ -377,14 +376,11 @@ pub fn pick_best_tv_match(
         }
     }
 
-    if best_score >= 0.75 {
-        if let Some(b) = best {
-            if has_word_overlap(&query_lower, &b.title) {
-                return Some(b.clone());
-            }
-        }
+    if best_score >= 0.6 {
+        best.cloned()
+    } else {
+        None
     }
-    None
 }
 
 #[derive(Deserialize)]

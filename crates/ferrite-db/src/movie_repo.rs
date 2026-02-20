@@ -139,64 +139,6 @@ pub async fn update_movie_metadata(
     Ok(())
 }
 
-/// Transaction-accepting variant of `update_movie_metadata`.
-/// Use this when you want to batch the metadata write + FTS update in a single
-/// transaction to reduce write-lock acquisitions under concurrent enrichment.
-#[allow(clippy::too_many_arguments)]
-pub async fn update_movie_metadata_tx(
-    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
-    media_item_id: &str,
-    tmdb_id: Option<i64>,
-    imdb_id: Option<&str>,
-    title: &str,
-    sort_title: Option<&str>,
-    year: Option<i64>,
-    overview: Option<&str>,
-    tagline: Option<&str>,
-    rating: Option<f64>,
-    content_rating: Option<&str>,
-    poster_path: Option<&str>,
-    backdrop_path: Option<&str>,
-    genres_json: Option<&str>,
-) -> Result<()> {
-    sqlx::query(
-        r#"
-        UPDATE movies
-        SET tmdb_id        = ?,
-            imdb_id        = ?,
-            title          = ?,
-            sort_title     = ?,
-            year           = ?,
-            overview       = ?,
-            tagline        = ?,
-            rating         = ?,
-            content_rating = ?,
-            poster_path    = ?,
-            backdrop_path  = ?,
-            genres         = ?,
-            fetched_at     = datetime('now')
-        WHERE media_item_id = ?
-        "#,
-    )
-    .bind(tmdb_id)
-    .bind(imdb_id)
-    .bind(title)
-    .bind(sort_title)
-    .bind(year)
-    .bind(overview)
-    .bind(tagline)
-    .bind(rating)
-    .bind(content_rating)
-    .bind(poster_path)
-    .bind(backdrop_path)
-    .bind(genres_json)
-    .bind(media_item_id)
-    .execute(&mut **tx)
-    .await?;
-
-    Ok(())
-}
-
 /// Fetch a single movie joined with its media_item row.
 /// Returns `None` if the media_item_id does not exist.
 pub async fn get_movie_with_media(
@@ -267,7 +209,8 @@ pub async fn list_movies_with_media(
     let offset = (query.page - 1) * query.per_page;
     let order_clause = build_order_clause(query);
 
-    let select = r#"
+    let sql = format!(
+        r#"
         SELECT mi.id, mi.library_id, mi.media_type, mi.file_path, mi.file_size, mi.duration_ms,
                mi.container_format, mi.video_codec, mi.audio_codec, mi.width, mi.height, mi.bitrate_kbps,
                COALESCE(m.title, mi.title) AS movie_title,
@@ -294,45 +237,23 @@ pub async fn list_movies_with_media(
         LEFT JOIN playback_progress pp ON pp.media_item_id = mi.id
         LEFT JOIN episodes ep ON ep.media_item_id = mi.id
         LEFT JOIN seasons s ON s.id = ep.season_id
-        LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id"#;
-
-    let rows = if let Some(search) = query.search {
-        // FTS5 path: join against media_fts for index-friendly full-text search
-        let fts_term = format!("{}*", search);
-        let sql = format!(
-            r#"{select}
-        JOIN media_fts ON media_fts.media_item_id = mi.id
-        WHERE media_fts MATCH ?
-          AND (? IS NULL OR mi.library_id = ?)
-          AND (? IS NULL OR COALESCE(m.genres, ts.genres) LIKE '%' || ? || '%')
-        {order_clause}
-        LIMIT ? OFFSET ?"#
-        );
-        sqlx::query_as::<_, MovieWithMediaRow>(&sql)
-            .bind(&fts_term)
-            .bind(query.library_id).bind(query.library_id)
-            .bind(query.genre).bind(query.genre)
-            .bind(query.per_page)
-            .bind(offset)
-            .fetch_all(pool)
-            .await?
-    } else {
-        // Non-search path: fixed SQL, prepared-statement friendly
-        let sql = format!(
-            r#"{select}
+        LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id
         WHERE (? IS NULL OR mi.library_id = ?)
-          AND (? IS NULL OR COALESCE(m.genres, ts.genres) LIKE '%' || ? || '%')
+          AND (? IS NULL OR COALESCE(m.title, mi.title) LIKE '%' || ? || '%')
+          AND (? IS NULL OR m.genres LIKE '%' || ? || '%')
         {order_clause}
-        LIMIT ? OFFSET ?"#
-        );
-        sqlx::query_as::<_, MovieWithMediaRow>(&sql)
-            .bind(query.library_id).bind(query.library_id)
-            .bind(query.genre).bind(query.genre)
-            .bind(query.per_page)
-            .bind(offset)
-            .fetch_all(pool)
-            .await?
-    };
+        LIMIT ? OFFSET ?
+        "#
+    );
+
+    let rows = sqlx::query_as::<_, MovieWithMediaRow>(&sql)
+        .bind(query.library_id).bind(query.library_id)
+        .bind(query.search).bind(query.search)
+        .bind(query.genre).bind(query.genre)
+        .bind(query.per_page)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
     Ok(rows)
 }
 
@@ -342,49 +263,21 @@ pub async fn count_movies_with_media(
     pool: &SqlitePool,
     query: &MediaQuery<'_>,
 ) -> Result<i64> {
-    let row: (i64,) = if let Some(search) = query.search {
-        let fts_term = format!("{}*", search);
-        sqlx::query_as(
-            r#"
-            SELECT COUNT(*)
-            FROM media_items mi
-            LEFT JOIN movies m ON m.media_item_id = mi.id
-            LEFT JOIN tv_shows ts ON ts.id = (
-                SELECT s2.tv_show_id FROM episodes ep2
-                JOIN seasons s2 ON s2.id = ep2.season_id
-                WHERE ep2.media_item_id = mi.id LIMIT 1
-            )
-            JOIN media_fts ON media_fts.media_item_id = mi.id
-            WHERE media_fts MATCH ?
-              AND (? IS NULL OR mi.library_id = ?)
-              AND (? IS NULL OR COALESCE(m.genres, ts.genres) LIKE '%' || ? || '%')
-            "#,
-        )
-        .bind(&fts_term)
-        .bind(query.library_id).bind(query.library_id)
-        .bind(query.genre).bind(query.genre)
-        .fetch_one(pool)
-        .await?
-    } else {
-        sqlx::query_as(
-            r#"
-            SELECT COUNT(*)
-            FROM media_items mi
-            LEFT JOIN movies m ON m.media_item_id = mi.id
-            LEFT JOIN tv_shows ts ON ts.id = (
-                SELECT s2.tv_show_id FROM episodes ep2
-                JOIN seasons s2 ON s2.id = ep2.season_id
-                WHERE ep2.media_item_id = mi.id LIMIT 1
-            )
-            WHERE (? IS NULL OR mi.library_id = ?)
-              AND (? IS NULL OR COALESCE(m.genres, ts.genres) LIKE '%' || ? || '%')
-            "#,
-        )
-        .bind(query.library_id).bind(query.library_id)
-        .bind(query.genre).bind(query.genre)
-        .fetch_one(pool)
-        .await?
-    };
+    let row: (i64,) = sqlx::query_as(
+        r#"
+        SELECT COUNT(*)
+        FROM media_items mi
+        LEFT JOIN movies m ON m.media_item_id = mi.id
+        WHERE (? IS NULL OR mi.library_id = ?)
+          AND (? IS NULL OR COALESCE(m.title, mi.title) LIKE '%' || ? || '%')
+          AND (? IS NULL OR m.genres LIKE '%' || ? || '%')
+        "#,
+    )
+    .bind(query.library_id).bind(query.library_id)
+    .bind(query.search).bind(query.search)
+    .bind(query.genre).bind(query.genre)
+    .fetch_one(pool)
+    .await?;
     Ok(row.0)
 }
 
@@ -395,7 +288,6 @@ fn build_order_clause(query: &MediaQuery<'_>) -> String {
         "year" => "COALESCE(m.year, mi.year)",
         "rating" => "m.rating",
         "added" | "added_at" => "mi.added_at",
-        "last_played" => "pp.last_played_at",
         "duration" => "mi.duration_ms",
         "size" | "file_size" => "mi.file_size",
         _ => "COALESCE(m.sort_title, m.title, mi.title)",
@@ -408,31 +300,6 @@ fn build_order_clause(query: &MediaQuery<'_>) -> String {
 
     // NULLS LAST for nullable sort columns
     format!("ORDER BY {order_expr} IS NULL, {order_expr} {dir}")
-}
-
-/// Update (delete + insert) the FTS5 index entry for a single media item.
-/// Call this after writing enriched metadata so searches stay accurate.
-pub async fn upsert_fts_for_media(
-    executor: &mut SqliteConnection,
-    media_item_id: &str,
-    title: &str,
-    overview: &str,
-    genres: &str,
-) -> Result<()> {
-    sqlx::query("DELETE FROM media_fts WHERE media_item_id = ?")
-        .bind(media_item_id)
-        .execute(&mut *executor)
-        .await?;
-    sqlx::query(
-        "INSERT INTO media_fts (media_item_id, title, overview, genres) VALUES (?, ?, ?, ?)",
-    )
-    .bind(media_item_id)
-    .bind(title)
-    .bind(overview)
-    .bind(genres)
-    .execute(&mut *executor)
-    .await?;
-    Ok(())
 }
 
 /// Get movies that have a skeleton row but no metadata yet (fetched_at IS NULL),
