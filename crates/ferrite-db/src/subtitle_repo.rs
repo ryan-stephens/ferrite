@@ -15,14 +15,18 @@ pub struct SubtitleInsert {
 
 /// Replace all external subtitles for a media item (delete old, insert new).
 /// Called during scanning when a media file's sibling subtitles are re-discovered.
+/// All operations run in a single transaction to avoid per-row write lock contention
+/// when many concurrent subtitle extractions are running simultaneously.
 pub async fn replace_subtitles(
     pool: &SqlitePool,
     media_item_id: &str,
     subtitles: &[SubtitleInsert],
 ) -> Result<()> {
+    let mut tx = pool.begin().await?;
+
     sqlx::query("DELETE FROM external_subtitles WHERE media_item_id = ?")
         .bind(media_item_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
 
     for s in subtitles {
@@ -39,10 +43,11 @@ pub async fn replace_subtitles(
         .bind(s.is_forced as i32)
         .bind(s.is_sdh as i32)
         .bind(s.file_size as i64)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
     }
 
+    tx.commit().await?;
     Ok(())
 }
 
