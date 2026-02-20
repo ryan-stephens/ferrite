@@ -376,7 +376,7 @@ pub fn pick_best_tv_match(
         }
     }
 
-    if best_score >= 0.6 {
+    if best_score >= 0.75 {
         best.cloned()
     } else {
         None

@@ -253,8 +253,6 @@ pub async fn enrich_library_shows(
             pool,
             show_id,
             Some(details.tmdb_id),
-            &details.title,
-            details.sort_title.as_deref(),
             details.year.map(|y| y as i64),
             details.overview.as_deref(),
             details.status.as_deref(),
@@ -484,8 +482,6 @@ pub async fn enrich_single_show(
     sqlx::query(
         r#"UPDATE tv_shows
            SET tmdb_id       = ?,
-               title         = ?,
-               sort_title    = ?,
                year          = ?,
                overview      = ?,
                status        = ?,
@@ -496,8 +492,6 @@ pub async fn enrich_single_show(
            WHERE id = ?"#,
     )
     .bind(Some(details.tmdb_id))
-    .bind(&details.title)
-    .bind(details.sort_title.as_deref())
     .bind(details.year.map(|y| y as i64))
     .bind(details.overview.as_deref())
     .bind(details.status.as_deref())

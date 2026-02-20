@@ -532,8 +532,6 @@ pub async fn update_show_metadata(
     pool: &SqlitePool,
     show_id: &str,
     tmdb_id: Option<i64>,
-    title: &str,
-    sort_title: Option<&str>,
     year: Option<i64>,
     overview: Option<&str>,
     status: Option<&str>,
@@ -545,8 +543,6 @@ pub async fn update_show_metadata(
         r#"
         UPDATE tv_shows
         SET tmdb_id       = ?,
-            title         = ?,
-            sort_title    = ?,
             year          = ?,
             overview      = ?,
             status        = ?,
@@ -558,8 +554,6 @@ pub async fn update_show_metadata(
         "#,
     )
     .bind(tmdb_id)
-    .bind(title)
-    .bind(sort_title)
     .bind(year)
     .bind(overview)
     .bind(status)
