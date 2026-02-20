@@ -318,6 +318,7 @@ pub async fn scan_library(
                 }
 
                 if !all_subs.is_empty() {
+                    let _write_permit = write_sem.acquire().await.expect("semaphore closed");
                     if let Err(e) = ferrite_db::subtitle_repo::replace_subtitles(&pool, &media_item_id, &all_subs).await {
                         warn!("Failed to store subtitles for '{}': {}", title, e);
                     }
