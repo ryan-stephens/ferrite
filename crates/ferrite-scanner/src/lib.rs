@@ -1,4 +1,4 @@
-﻿pub mod extract;
+pub mod extract;
 pub mod filename;
 pub mod probe;
 pub mod progress;
@@ -76,12 +76,16 @@ pub async fn scan_library(
     let is_movie_library = matches!(library.library_type, LibraryType::Movie);
     let is_tv_library = matches!(library.library_type, LibraryType::Tv);
 
-    // Delta scan: load existing (file_path -> file_size) to skip unchanged files
-    let existing: std::collections::HashMap<String, u64> =
-        media_repo::get_all_file_sizes(pool, library_id).await.unwrap_or_default();
+    // Delta scan: load existing (file_path -> file_size) to skip unchanged files.
+    // Wrapped in Arc so it is shared across all per-item futures without cloning.
+    let existing: Arc<std::collections::HashMap<String, u64>> =
+        Arc::new(media_repo::get_all_file_sizes(pool, library_id).await.unwrap_or_default());
 
     let probe_sem = Arc::new(Semaphore::new(concurrent_probes));
     let sub_sem = Arc::new(Semaphore::new(concurrent_probes));
+    // Limit concurrent DB write transactions to avoid SQLite write-lock contention.
+    // ffprobe and ffmpeg work proceeds freely; only the DB commit is gated.
+    let write_sem = Arc::new(Semaphore::new(2));
 
     // Track which TV shows have been enriched this scan to avoid duplicate TMDB calls
     let enriched_shows: Arc<DashSet<String>> = Arc::new(DashSet::new());
@@ -93,6 +97,7 @@ pub async fn scan_library(
             let pool = pool.clone();
             let probe_sem = probe_sem.clone();
             let sub_sem = sub_sem.clone();
+            let write_sem = write_sem.clone();
             let ffprobe = ffprobe_path.to_string();
             let ffmpeg = ffmpeg_path.to_string();
             let subtitle_cache_dir = subtitle_cache_dir.to_path_buf();
@@ -103,7 +108,7 @@ pub async fn scan_library(
             let enriched_shows = enriched_shows.clone();
             let tmdb_provider = tmdb_provider.clone();
             let image_cache = image_cache.clone();
-            let existing = existing.clone();
+            let existing = existing.clone(); // cheap Arc clone
 
             async move {
                 let file_path_str = file.path.to_string_lossy().to_string();
@@ -188,8 +193,10 @@ pub async fn scan_library(
                 scan_state.inc_probed();
                 scan_state.set_current(&format!("Indexing: {}", title)).await;
 
-                // Insert into DB immediately — item visible in UI right away
+                // Insert into DB immediately — item visible in UI right away.
+                // Gated behind write_sem to limit concurrent SQLite write transactions.
                 let media_item_id = {
+                    let _write_permit = write_sem.acquire().await.expect("semaphore closed");
                     let mut tx = pool.begin().await?;
 
                     let mid = media_repo::insert_media_item(
@@ -239,28 +246,40 @@ pub async fn scan_library(
                     } else { None };
 
                     tx.commit().await?;
+                    // Release write permit before enrichment (which does HTTP, not DB writes)
+                    drop(_write_permit);
                     scan_state.inc_inserted();
 
-                    // Inline TMDB enrichment — runs right after insert so posters appear immediately
-                    if let (Some(provider), Some(img_cache)) = (tmdb_provider.as_ref(), image_cache.as_ref()) {
+                    // Spawn TMDB enrichment as a detached task so it doesn't occupy a
+                    // buffer_unordered slot while waiting on HTTP responses.
+                    if let (Some(provider), Some(img_cache)) = (tmdb_provider.clone(), image_cache.clone()) {
                         if is_tv_library {
                             if let (Some(show_id), ParsedFilename::Episode(ParsedEpisode { show_name, .. })) = (show_id_for_enrich, &parsed) {
                                 if enriched_shows.insert(show_id.clone()) {
-                                    scan_state.set_current(&format!("Fetching metadata: {}", show_name)).await;
-                                    match ferrite_metadata::enrichment::enrich_single_show(&pool, &show_id, show_name, provider.as_ref(), img_cache.as_ref()).await {
-                                        Ok(true) => { scan_state.inc_enriched(); }
-                                        Ok(false) => {}
-                                        Err(e) => { warn!("TMDB enrichment failed for '{}': {}", show_name, e); }
-                                    }
+                                    let pool2 = pool.clone();
+                                    let show_name2 = show_name.clone();
+                                    let scan_state2 = scan_state.clone();
+                                    tokio::spawn(async move {
+                                        match ferrite_metadata::enrichment::enrich_single_show(&pool2, &show_id, &show_name2, provider.as_ref(), img_cache.as_ref()).await {
+                                            Ok(true) => { scan_state2.inc_enriched(); }
+                                            Ok(false) => {}
+                                            Err(e) => { warn!("TMDB enrichment failed for '{}': {}", show_name2, e); }
+                                        }
+                                    });
                                 }
                             }
                         } else if is_movie_library {
-                            scan_state.set_current(&format!("Fetching metadata: {}", title)).await;
-                            match ferrite_metadata::enrichment::enrich_single_movie(&pool, &mid, &title, year.map(|y| y as i32), provider.as_ref(), img_cache.as_ref()).await {
-                                Ok(true) => { scan_state.inc_enriched(); }
-                                Ok(false) => {}
-                                Err(e) => { warn!("TMDB enrichment failed for '{}': {}", title, e); }
-                            }
+                            let pool2 = pool.clone();
+                            let title2 = title.clone();
+                            let mid2 = mid.clone();
+                            let scan_state2 = scan_state.clone();
+                            tokio::spawn(async move {
+                                match ferrite_metadata::enrichment::enrich_single_movie(&pool2, &mid2, &title2, year.map(|y| y as i32), provider.as_ref(), img_cache.as_ref()).await {
+                                    Ok(true) => { scan_state2.inc_enriched(); }
+                                    Ok(false) => {}
+                                    Err(e) => { warn!("TMDB enrichment failed for '{}': {}", title2, e); }
+                                }
+                            });
                         }
                     }
 
