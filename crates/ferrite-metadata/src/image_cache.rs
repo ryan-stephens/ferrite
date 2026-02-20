@@ -1,9 +1,12 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use reqwest::Client;
 use std::path::PathBuf;
-use tracing::{debug, info};
+use std::time::Duration;
+use tracing::{debug, info, warn};
 
 const TMDB_IMAGE_BASE: &str = "https://image.tmdb.org/t/p/";
+const REQUEST_TIMEOUT_SECS: u64 = 10;
+const MAX_RETRIES: u32 = 3;
 
 pub struct ImageCache {
     client: Client,
@@ -12,16 +15,42 @@ pub struct ImageCache {
 
 impl ImageCache {
     pub fn new(cache_dir: PathBuf) -> Self {
-        Self {
-            client: Client::new(),
-            cache_dir,
+        let client = Client::builder()
+            .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+            .build()
+            .unwrap_or_default();
+        Self { client, cache_dir }
+    }
+
+    /// Download a URL with retry + exponential backoff. Returns raw bytes.
+    async fn fetch_with_retry(&self, url: &str) -> Result<Vec<u8>> {
+        let mut last_err = anyhow!("no attempts made");
+        for attempt in 0..MAX_RETRIES {
+            if attempt > 0 {
+                let delay = Duration::from_secs(1u64 << (attempt - 1)); // 1s, 2s
+                warn!("Image download retry {}/{} for {} (waiting {}s)", attempt, MAX_RETRIES - 1, url, delay.as_secs());
+                tokio::time::sleep(delay).await;
+            }
+            match self.client.get(url).send().await {
+                Ok(resp) if resp.status().is_success() => {
+                    match resp.bytes().await {
+                        Ok(b) => return Ok(b.to_vec()),
+                        Err(e) => last_err = e.into(),
+                    }
+                }
+                Ok(resp) => {
+                    last_err = anyhow!("HTTP {}", resp.status());
+                }
+                Err(e) => {
+                    last_err = e.into();
+                }
+            }
         }
+        Err(last_err)
     }
 
     /// Download a TMDB poster image and cache it locally.
-    /// `tmdb_path` is the relative path from TMDB (e.g., "/abc123.jpg")
     /// Uses "w500" size for posters.
-    /// `tmdb_id` is used to create a deterministic filename.
     /// Returns the local filename (just the name, not full path).
     pub async fn ensure_poster(&self, tmdb_path: &str, tmdb_id: i64) -> Result<String> {
         let filename = format!("{}_poster.jpg", tmdb_id);
@@ -33,7 +62,7 @@ impl ImageCache {
         }
 
         let url = format!("{}w500{}", TMDB_IMAGE_BASE, tmdb_path);
-        let bytes = self.client.get(&url).send().await?.bytes().await?;
+        let bytes = self.fetch_with_retry(&url).await?;
         tokio::fs::write(&local_path, &bytes).await?;
         info!("Cached poster image: {} ({} bytes)", filename, bytes.len());
 
@@ -41,9 +70,7 @@ impl ImageCache {
     }
 
     /// Download a TMDB backdrop image and cache it locally.
-    /// `tmdb_path` is the relative path from TMDB (e.g., "/abc123.jpg")
     /// Uses "w1280" size for backdrops.
-    /// `tmdb_id` is used to create a deterministic filename.
     /// Returns the local filename (just the name, not full path).
     pub async fn ensure_backdrop(&self, tmdb_path: &str, tmdb_id: i64) -> Result<String> {
         let filename = format!("{}_backdrop.jpg", tmdb_id);
@@ -55,7 +82,7 @@ impl ImageCache {
         }
 
         let url = format!("{}w1280{}", TMDB_IMAGE_BASE, tmdb_path);
-        let bytes = self.client.get(&url).send().await?.bytes().await?;
+        let bytes = self.fetch_with_retry(&url).await?;
         tokio::fs::write(&local_path, &bytes).await?;
         info!("Cached backdrop image: {} ({} bytes)", filename, bytes.len());
 
@@ -75,7 +102,7 @@ impl ImageCache {
         }
 
         let url = format!("{}w300{}", TMDB_IMAGE_BASE, tmdb_path);
-        let bytes = self.client.get(&url).send().await?.bytes().await?;
+        let bytes = self.fetch_with_retry(&url).await?;
         tokio::fs::write(&local_path, &bytes).await?;
         info!("Cached still image: {} ({} bytes)", filename, bytes.len());
 

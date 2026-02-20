@@ -337,6 +337,16 @@ pub async fn scan_library(
     // during the inline pass (rate limits, transient errors, etc.).
     if let (Some(provider), Some(img_cache)) = (tmdb_provider.as_ref(), image_cache.as_ref()) {
         scan_state.set_status(ScanStatus::Enriching).await;
+        // Set total_to_enrich so percent is accurate during the Enriching phase
+        if is_tv_library {
+            if let Ok(pending) = ferrite_db::tv_repo::get_shows_needing_metadata(pool, library_id).await {
+                scan_state.set_total_to_enrich(pending.len() as u32);
+            }
+        } else if is_movie_library {
+            if let Ok(pending) = ferrite_db::movie_repo::get_movies_needing_metadata(pool, library_id).await {
+                scan_state.set_total_to_enrich(pending.len() as u32);
+            }
+        }
         if is_tv_library {
             match ferrite_metadata::enrichment::enrich_library_shows(
                 pool, library_id, provider.as_ref(), img_cache.as_ref(),
@@ -372,6 +382,7 @@ pub async fn scan_library(
 
     if !subtitle_items.is_empty() {
         info!("Starting subtitle extraction for {} item(s) in '{}'", subtitle_items.len(), library.name);
+        scan_state.set_total_for_subtitles(subtitle_items.len() as u32);
         scan_state.set_status(ScanStatus::Subtitles).await;
 
         let subtitle_results: Vec<()> = stream::iter(subtitle_items)
