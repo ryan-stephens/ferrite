@@ -16,3 +16,4 @@ anyhow = { workspace = true }
 bcrypt = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+strsim = { workspace = true }

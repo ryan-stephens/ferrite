@@ -82,6 +82,32 @@ pub async fn upsert_tv_show(
         return Ok(id);
     }
 
+    // 2b. Similarity fallback: load all shows for this library and use jaro_winkler
+    //     to catch variants like "Survivor AU" vs "Survivor Australia" (same show,
+    //     different folder names). Threshold 0.85 is tight enough to avoid false
+    //     positives between genuinely different shows.
+    let all_shows: Vec<(String, String)> = sqlx::query_as(
+        "SELECT id, normalized_title FROM tv_shows WHERE library_id = ? AND normalized_title IS NOT NULL",
+    )
+    .bind(library_id)
+    .fetch_all(&mut *executor)
+    .await?;
+
+    let mut best_sim_id: Option<String> = None;
+    let mut best_sim = 0.0f64;
+    for (show_id, show_norm) in &all_shows {
+        let sim = strsim::jaro_winkler(&norm_base, show_norm);
+        if sim > best_sim {
+            best_sim = sim;
+            best_sim_id = Some(show_id.clone());
+        }
+    }
+    if best_sim >= 0.85 {
+        if let Some(id) = best_sim_id {
+            return Ok(id);
+        }
+    }
+
     // 3. No match — insert new show with its normalized title pre-computed
     let id = Uuid::new_v4().to_string();
     sqlx::query(

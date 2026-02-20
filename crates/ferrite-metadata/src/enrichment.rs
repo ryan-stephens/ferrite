@@ -63,7 +63,7 @@ pub async fn enrich_library_movies(
         let best = match tmdb::pick_best_match(&results, &item.title, year) {
             Some(m) => m,
             None => {
-                debug!("No TMDB match for '{}'", item.title);
+                warn!("No TMDB match for movie '{}' ({} results returned)", item.title, results.len());
                 continue;
             }
         };
@@ -198,7 +198,7 @@ pub async fn enrich_library_shows(
         let best = match tmdb::pick_best_tv_match(&results, &search_title, year_i32) {
             Some(m) => m,
             None => {
-                debug!("No TMDB match for TV show '{}' (searched: '{}')", title, search_title);
+                warn!("No TMDB match for TV show '{}' (searched: '{}', {} results returned)", title, search_title, results.len());
                 continue;
             }
         };
@@ -410,7 +410,7 @@ pub async fn enrich_single_show(
 
     let best = match tmdb::pick_best_tv_match(&results, &search_title, parsed_year) {
         Some(m) => m,
-        None => { debug!("No TMDB match for TV show '{}'", title); return Ok(false); }
+        None => { warn!("No TMDB match for TV show '{}' (searched: '{}', {} results returned)", title, search_title, results.len()); return Ok(false); }
     };
 
     let details = match provider.get_tv_details(best.tmdb_id).await {

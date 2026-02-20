@@ -303,8 +303,19 @@ fn generate_sort_title(title: &str) -> Option<String> {
     None
 }
 
+/// Returns true if at least one significant word (>= 3 chars) from `query`
+/// appears in `candidate`. Used to guard against jaro_winkler false positives
+/// on short or abbreviated titles (e.g. "Survivor AU" vs "Auschwitz...").
+fn has_word_overlap(query: &str, candidate: &str) -> bool {
+    let candidate_lower = candidate.to_lowercase();
+    query
+        .split_whitespace()
+        .filter(|w| w.len() >= 3)
+        .any(|w| candidate_lower.contains(w))
+}
+
 /// Pick the best matching result from a TMDB search using string similarity.
-/// Returns `None` if no result scores above the 0.6 threshold.
+/// Returns `None` if no result scores above the 0.75 threshold.
 pub fn pick_best_match(
     results: &[MovieSearchResult],
     query_title: &str,
@@ -331,7 +342,7 @@ pub fn pick_best_match(
         }
     }
 
-    if best_score >= 0.6 {
+    if best_score >= 0.75 {
         best.cloned()
     } else {
         None
@@ -339,6 +350,8 @@ pub fn pick_best_match(
 }
 
 /// Pick the best matching TV show result from a TMDB search using string similarity.
+/// Requires both a score >= 0.75 AND at least one significant query word present
+/// in the result title, to prevent false positives on short/abbreviated names.
 pub fn pick_best_tv_match(
     results: &[TvSearchResult],
     query_title: &str,
@@ -364,11 +377,14 @@ pub fn pick_best_tv_match(
         }
     }
 
-    if best_score >= 0.6 {
-        best.cloned()
-    } else {
-        None
+    if best_score >= 0.75 {
+        if let Some(b) = best {
+            if has_word_overlap(&query_lower, &b.title) {
+                return Some(b.clone());
+            }
+        }
     }
+    None
 }
 
 #[derive(Deserialize)]
