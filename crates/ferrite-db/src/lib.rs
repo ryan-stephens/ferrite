@@ -29,8 +29,9 @@ pub async fn create_pool(db_path: &Path, max_connections: u32) -> Result<SqliteP
         .pragma("synchronous", "NORMAL")
         // 20MB page cache (negative = KiB) — reduces disk reads for repeated queries
         .pragma("cache_size", "-20000")
-        // Wait up to 5s for write locks instead of failing immediately
-        .pragma("busy_timeout", "5000")
+        // Wait up to 30s for write locks — scans can hold locks for 10s+ under
+        // concurrent enrichment + subtitle extraction load
+        .pragma("busy_timeout", "30000")
         // 64MB WAL file limit — prevents unbounded WAL growth
         .pragma("journal_size_limit", "67108864")
         // Store temp tables in memory for faster intermediate query results

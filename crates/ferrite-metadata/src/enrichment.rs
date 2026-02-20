@@ -106,11 +106,13 @@ pub async fn enrich_library_movies(
             None
         };
 
-        // Save to DB
+        // Save to DB — combine metadata + FTS update in one transaction to
+        // reduce the number of write-lock acquisitions per movie.
         let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
         let db_result: Result<(), anyhow::Error> = async {
-            movie_repo::update_movie_metadata(
-                pool,
+            let mut tx = pool.begin().await?;
+            movie_repo::update_movie_metadata_tx(
+                &mut tx,
                 &item.media_item_id,
                 Some(details.tmdb_id),
                 details.imdb_id.as_deref(),
@@ -126,15 +128,15 @@ pub async fn enrich_library_movies(
                 Some(genres_json.as_str()),
             )
             .await?;
-            let mut conn = pool.acquire().await?;
             movie_repo::upsert_fts_for_media(
-                &mut conn,
+                &mut *tx,
                 &item.media_item_id,
                 &details.title,
                 details.overview.as_deref().unwrap_or(""),
                 &genres_json,
             )
             .await?;
+            tx.commit().await?;
             Ok(())
         }
         .await;
@@ -573,17 +575,27 @@ pub async fn enrich_single_movie(
 
     let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
     let _wp = write_sem.acquire().await.expect("semaphore closed");
-    if let Err(e) = movie_repo::update_movie_metadata(
-        pool, media_item_id, Some(details.tmdb_id), details.imdb_id.as_deref(),
-        &details.title, details.sort_title.as_deref(), details.year.map(|y| y as i64),
-        details.overview.as_deref(), details.tagline.as_deref(), details.rating,
-        details.content_rating.as_deref(), poster_local.as_deref(),
-        backdrop_local.as_deref(), Some(genres_json.as_str()),
-    ).await {
+    let db_result: Result<(), anyhow::Error> = async {
+        let mut tx = pool.begin().await?;
+        movie_repo::update_movie_metadata_tx(
+            &mut tx, media_item_id, Some(details.tmdb_id), details.imdb_id.as_deref(),
+            &details.title, details.sort_title.as_deref(), details.year.map(|y| y as i64),
+            details.overview.as_deref(), details.tagline.as_deref(), details.rating,
+            details.content_rating.as_deref(), poster_local.as_deref(),
+            backdrop_local.as_deref(), Some(genres_json.as_str()),
+        ).await?;
+        movie_repo::upsert_fts_for_media(
+            &mut *tx, media_item_id, &details.title,
+            details.overview.as_deref().unwrap_or(""), &genres_json,
+        ).await?;
+        tx.commit().await?;
+        Ok(())
+    }.await;
+    drop(_wp);
+    if let Err(e) = db_result {
         warn!("DB update failed for '{}': {}", title, e);
         return Ok(false);
     }
-    drop(_wp);
 
     info!("Enriched: '{}' -> TMDB {} ({})", title, details.tmdb_id, details.title);
     Ok(true)

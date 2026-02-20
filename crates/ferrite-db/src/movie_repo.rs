@@ -139,6 +139,64 @@ pub async fn update_movie_metadata(
     Ok(())
 }
 
+/// Transaction-accepting variant of `update_movie_metadata`.
+/// Use this when you want to batch the metadata write + FTS update in a single
+/// transaction to reduce write-lock acquisitions under concurrent enrichment.
+#[allow(clippy::too_many_arguments)]
+pub async fn update_movie_metadata_tx(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    media_item_id: &str,
+    tmdb_id: Option<i64>,
+    imdb_id: Option<&str>,
+    title: &str,
+    sort_title: Option<&str>,
+    year: Option<i64>,
+    overview: Option<&str>,
+    tagline: Option<&str>,
+    rating: Option<f64>,
+    content_rating: Option<&str>,
+    poster_path: Option<&str>,
+    backdrop_path: Option<&str>,
+    genres_json: Option<&str>,
+) -> Result<()> {
+    sqlx::query(
+        r#"
+        UPDATE movies
+        SET tmdb_id        = ?,
+            imdb_id        = ?,
+            title          = ?,
+            sort_title     = ?,
+            year           = ?,
+            overview       = ?,
+            tagline        = ?,
+            rating         = ?,
+            content_rating = ?,
+            poster_path    = ?,
+            backdrop_path  = ?,
+            genres         = ?,
+            fetched_at     = datetime('now')
+        WHERE media_item_id = ?
+        "#,
+    )
+    .bind(tmdb_id)
+    .bind(imdb_id)
+    .bind(title)
+    .bind(sort_title)
+    .bind(year)
+    .bind(overview)
+    .bind(tagline)
+    .bind(rating)
+    .bind(content_rating)
+    .bind(poster_path)
+    .bind(backdrop_path)
+    .bind(genres_json)
+    .bind(media_item_id)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}
+
 /// Fetch a single movie joined with its media_item row.
 /// Returns `None` if the media_item_id does not exist.
 pub async fn get_movie_with_media(

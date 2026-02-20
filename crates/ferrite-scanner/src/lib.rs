@@ -420,7 +420,9 @@ pub async fn scan_library(
                     }
                 }
             })
-            .buffer_unordered(concurrent_probes * 2)
+            // Cap at 2 concurrent subtitle DB writers — more than this causes write-lock
+            // pile-up when enrichment tasks are also holding write transactions.
+            .buffer_unordered(2)
             .collect()
             .await;
 
