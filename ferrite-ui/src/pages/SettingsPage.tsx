@@ -589,7 +589,6 @@ function AddLibraryDialog(props: { onClose: () => void }) {
             <option value="movies">Movies</option>
             <option value="tv">TV Shows</option>
             <option value="music">Music</option>
-            <option value="other">Other</option>
           </select>
         </div>
 

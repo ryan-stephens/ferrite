@@ -203,6 +203,7 @@ async fn main() -> Result<()> {
         scan_registry: ferrite_scanner::ScanRegistry::new(),
     };
 
+    let scan_registry = state.scan_registry.clone();
     let mut router = build_router(state);
     let addr = SocketAddr::new(config.server.host.parse()?, config.server.port);
 
@@ -236,6 +237,8 @@ async fn main() -> Result<()> {
     // Start filesystem watcher for auto-rescan
     let watcher = ferrite_scanner::watcher::LibraryWatcher::new(
         pool,
+        Arc::new(config.clone()),
+        scan_registry,
         config.transcode.ffprobe_path.clone(),
         config.transcode.ffmpeg_path.clone(),
         config.scanner.watch_debounce_seconds,

@@ -33,19 +33,23 @@ impl MetadataProvider for TmdbProvider {
     async fn search_movie(&self, title: &str, year: Option<i32>) -> Result<Vec<MovieSearchResult>> {
         self.rate_limiter.until_ready().await;
 
-        let mut url = format!(
-            "{}/search/movie?api_key={}&query={}&language=en-US",
-            TMDB_BASE_URL, self.api_key, title
-        );
-        if let Some(y) = year {
-            url.push_str(&format!("&year={}", y));
-        }
-
         debug!("TMDB search: {}", title);
+
+        let mut params = vec![
+            ("api_key", self.api_key.as_str()),
+            ("query", title),
+            ("language", "en-US"),
+        ];
+        let year_str;
+        if let Some(y) = year {
+            year_str = y.to_string();
+            params.push(("year", year_str.as_str()));
+        }
 
         let response = self
             .client
-            .get(&url)
+            .get(format!("{}/search/movie", TMDB_BASE_URL))
+            .query(&params)
             .send()
             .await
             .context("TMDB search request failed")?;
@@ -142,19 +146,23 @@ impl MetadataProvider for TmdbProvider {
     async fn search_tv(&self, title: &str, year: Option<i32>) -> Result<Vec<TvSearchResult>> {
         self.rate_limiter.until_ready().await;
 
-        let mut url = format!(
-            "{}/search/tv?api_key={}&query={}&language=en-US",
-            TMDB_BASE_URL, self.api_key, title
-        );
-        if let Some(y) = year {
-            url.push_str(&format!("&first_air_date_year={}", y));
-        }
-
         debug!("TMDB TV search: {}", title);
+
+        let mut params = vec![
+            ("api_key", self.api_key.as_str()),
+            ("query", title),
+            ("language", "en-US"),
+        ];
+        let year_str;
+        if let Some(y) = year {
+            year_str = y.to_string();
+            params.push(("first_air_date_year", year_str.as_str()));
+        }
 
         let response = self
             .client
-            .get(&url)
+            .get(format!("{}/search/tv", TMDB_BASE_URL))
+            .query(&params)
             .send()
             .await
             .context("TMDB TV search request failed")?;

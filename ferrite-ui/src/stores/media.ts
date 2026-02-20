@@ -8,6 +8,30 @@ const [loading, setLoading] = createSignal(false);
 const [scanning, setScanning] = createSignal(false);
 const [statusMessage, setStatusMessage] = createSignal('Ready');
 
+let _scanPollTimer: ReturnType<typeof setInterval> | null = null;
+
+function _stopScanPoll() {
+  if (_scanPollTimer) { clearInterval(_scanPollTimer); _scanPollTimer = null; }
+}
+
+async function _checkScansDone(libs: Library[]): Promise<void> {
+  try {
+    const statuses = await Promise.all(libs.map(lib => api.scanStatus(lib.id).catch(() => null)));
+    const anyActive = statuses.some(s => s?.scanning);
+    if (anyActive) {
+      setStatusMessage('Scanning…');
+    } else {
+      _stopScanPoll();
+      setScanning(false);
+      setStatusMessage('Ready');
+    }
+  } catch {
+    _stopScanPoll();
+    setScanning(false);
+    setStatusMessage('Ready');
+  }
+}
+
 async function loadLibraries(): Promise<void> {
   try {
     const libs = await api.listLibraries();
@@ -41,11 +65,12 @@ async function deleteLibrary(id: string): Promise<void> {
 
 async function refreshAll(): Promise<void> {
   setScanning(true);
-  setStatusMessage('Triggering scans...');
+  setStatusMessage('Triggering scans…');
   const libs = await api.listLibraries();
   await Promise.all(libs.map(lib => api.scanLibrary(lib.id).catch(() => {})));
-  setStatusMessage('Scans started');
-  setTimeout(() => { setScanning(false); setStatusMessage('Ready'); }, 3000);
+  setStatusMessage('Scanning…');
+  _stopScanPoll();
+  _scanPollTimer = setInterval(() => _checkScansDone(libs), 2000);
 }
 
 export {
