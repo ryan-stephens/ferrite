@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show, onMount } from 'solid-js';
+import { createSignal, createEffect, For, Show, onMount, untrack } from 'solid-js';
 import { useParams, useNavigate } from '@solidjs/router';
 import { Play, FolderOpen, RefreshCw, Trash2, Filter, X, ChevronLeft, ChevronRight } from 'lucide-solid';
 import { libraries, loadLibraries, deleteLibrary, refreshAll } from '../stores/media';
@@ -29,17 +29,23 @@ export default function LibraryPage() {
   }
 
   async function fetchPage() {
+    // Read all signals via untrack so this function never creates reactive
+    // subscriptions when called from inside a createEffect.
+    const currentPage = untrack(page);
+    const currentSort = untrack(sort);
+    const currentGenre = untrack(filterGenre);
+
     setLoading(true);
     try {
-      const [sortBy, sortDir] = sort().split('-');
+      const [sortBy, sortDir] = currentSort.split('-');
       const params_: Record<string, string> = {
         library_id: params.id,
-        page: String(page()),
+        page: String(currentPage),
         per_page: String(PER_PAGE),
         sort: sortBy,
         dir: sortDir,
       };
-      if (filterGenre()) params_['genre'] = filterGenre()!;
+      if (currentGenre) params_['genre'] = currentGenre;
       const data = await api.listMedia(params_);
       setItems(data.items);
       setTotal(data.total);
@@ -57,21 +63,20 @@ export default function LibraryPage() {
     await fetchPage();
   });
 
+  // When sort or filter changes: reset to page 1 and fetch.
+  // setPage(1) when already on page 1 is a no-op in SolidJS (same value),
+  // so the page effect below won't double-fire on initial load.
   createEffect(() => {
     localStorage.setItem('ferrite-lib-sort', sort());
+    void filterGenre(); // track
     setPage(1);
     fetchPage();
   });
 
+  // When page changes due to pagination buttons: fetch the new page.
+  // Skip page 1 — the sort/filter effect above already handles that.
   createEffect(() => {
-    void filterGenre();
-    setPage(1);
-    fetchPage();
-  });
-
-  createEffect(() => {
-    void page();
-    fetchPage();
+    if (page() > 1) fetchPage();
   });
 
   async function handleDelete() {
