@@ -259,8 +259,9 @@ pub async fn scan_library(
                                     let pool2 = pool.clone();
                                     let show_name2 = show_name.clone();
                                     let scan_state2 = scan_state.clone();
+                                    let write_sem2 = write_sem.clone();
                                     tokio::spawn(async move {
-                                        match ferrite_metadata::enrichment::enrich_single_show(&pool2, &show_id, &show_name2, provider.as_ref(), img_cache.as_ref()).await {
+                                        match ferrite_metadata::enrichment::enrich_single_show(&pool2, &show_id, &show_name2, provider.as_ref(), img_cache.as_ref(), &write_sem2).await {
                                             Ok(true) => { scan_state2.inc_enriched(); }
                                             Ok(false) => {}
                                             Err(e) => { warn!("TMDB enrichment failed for '{}': {}", show_name2, e); }
@@ -273,8 +274,9 @@ pub async fn scan_library(
                             let title2 = title.clone();
                             let mid2 = mid.clone();
                             let scan_state2 = scan_state.clone();
+                            let write_sem2 = write_sem.clone();
                             tokio::spawn(async move {
-                                match ferrite_metadata::enrichment::enrich_single_movie(&pool2, &mid2, &title2, year.map(|y| y as i32), provider.as_ref(), img_cache.as_ref()).await {
+                                match ferrite_metadata::enrichment::enrich_single_movie(&pool2, &mid2, &title2, year.map(|y| y as i32), provider.as_ref(), img_cache.as_ref(), &write_sem2).await {
                                     Ok(true) => { scan_state2.inc_enriched(); }
                                     Ok(false) => {}
                                     Err(e) => { warn!("TMDB enrichment failed for '{}': {}", title2, e); }

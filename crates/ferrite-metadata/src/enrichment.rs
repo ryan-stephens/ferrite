@@ -372,6 +372,7 @@ pub async fn enrich_single_show(
     title: &str,
     provider: &dyn MetadataProvider,
     image_cache: &ImageCache,
+    write_sem: &tokio::sync::Semaphore,
 ) -> Result<bool> {
     let (search_title, parsed_year) = strip_trailing_year(title);
 
@@ -405,6 +406,7 @@ pub async fn enrich_single_show(
     } else { None };
 
     let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
+    let _wp = write_sem.acquire().await.expect("semaphore closed");
     if let Err(e) = tv_repo::update_show_metadata(
         pool, show_id, Some(details.tmdb_id), &details.title,
         details.sort_title.as_deref(), details.year.map(|y| y as i64),
@@ -414,6 +416,7 @@ pub async fn enrich_single_show(
         warn!("DB update failed for TV show '{}': {}", title, e);
         return Ok(false);
     }
+    drop(_wp);
 
     info!("Enriched TV: '{}' -> TMDB {} ({})", title, details.tmdb_id, details.title);
 
@@ -430,11 +433,13 @@ pub async fn enrich_single_show(
                     Err(e) => { debug!("Still download failed S{}E{}: {}", season_number, ep.episode_number, e); None }
                 }
             } else { None };
+            let _wp = write_sem.acquire().await.expect("semaphore closed");
             let _ = tv_repo::update_episode_metadata(
                 pool, season_id, ep.episode_number as i64,
                 ep.title.as_deref(), ep.overview.as_deref(),
                 ep.air_date.as_deref(), still_local.as_deref(),
             ).await;
+            drop(_wp);
         }
         debug!("Updated {} episode(s) for '{}' season {}", episodes.len(), title, season_number);
     }
@@ -451,6 +456,7 @@ pub async fn enrich_single_movie(
     year: Option<i32>,
     provider: &dyn MetadataProvider,
     image_cache: &ImageCache,
+    write_sem: &tokio::sync::Semaphore,
 ) -> Result<bool> {
     let results = match provider.search_movie(title, year).await {
         Ok(r) => r,
@@ -482,6 +488,7 @@ pub async fn enrich_single_movie(
     } else { None };
 
     let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
+    let _wp = write_sem.acquire().await.expect("semaphore closed");
     if let Err(e) = movie_repo::update_movie_metadata(
         pool, media_item_id, Some(details.tmdb_id), details.imdb_id.as_deref(),
         &details.title, details.sort_title.as_deref(), details.year.map(|y| y as i64),
@@ -492,6 +499,7 @@ pub async fn enrich_single_movie(
         warn!("DB update failed for '{}': {}", title, e);
         return Ok(false);
     }
+    drop(_wp);
 
     info!("Enriched: '{}' -> TMDB {} ({})", title, details.tmdb_id, details.title);
     Ok(true)
