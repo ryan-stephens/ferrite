@@ -70,17 +70,17 @@ pub fn standard_variants() -> Vec<QualityVariant> {
 /// - Never upscale: only include variants whose height ≤ source height.
 /// - Always include at least one variant (the closest to source resolution).
 /// - The highest variant uses the source's native resolution (no scaling).
-pub fn select_variants(source_width: Option<u32>, source_height: Option<u32>) -> Vec<QualityVariant> {
+pub fn select_variants(
+    source_width: Option<u32>,
+    source_height: Option<u32>,
+) -> Vec<QualityVariant> {
     let src_h = source_height.unwrap_or(1080);
     let src_w = source_width.unwrap_or(1920);
 
     let all = standard_variants();
 
     // Filter to variants that don't upscale
-    let mut selected: Vec<QualityVariant> = all
-        .into_iter()
-        .filter(|v| v.height <= src_h)
-        .collect();
+    let mut selected: Vec<QualityVariant> = all.into_iter().filter(|v| v.height <= src_h).collect();
 
     // If source is smaller than all standard variants, use the smallest one
     // but adjust its resolution to match the source

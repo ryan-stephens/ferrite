@@ -1,3 +1,4 @@
+use crate::metrics::PlaybackMetrics;
 use crate::webhooks::WebhookDispatcher;
 use ferrite_core::config::AppConfig;
 use ferrite_scanner::ScanRegistry;
@@ -31,13 +32,15 @@ pub struct AppState {
     pub webhook_dispatcher: Arc<WebhookDispatcher>,
     /// Registry of active library scan progress states.
     pub scan_registry: ScanRegistry,
+    /// In-memory playback and hot-path metrics (WS0 observability).
+    pub playback_metrics: Arc<PlaybackMetrics>,
 }
 
 impl AppState {
     /// Create a login rate limiter: 5 burst, 1 per second replenish.
     pub fn new_login_limiter() -> Arc<LoginRateLimiter> {
-        let quota = Quota::per_second(NonZeroU32::new(1).unwrap())
-            .allow_burst(NonZeroU32::new(5).unwrap());
+        let quota =
+            Quota::per_second(NonZeroU32::new(1).unwrap()).allow_burst(NonZeroU32::new(5).unwrap());
         Arc::new(RateLimiter::direct(quota))
     }
 }

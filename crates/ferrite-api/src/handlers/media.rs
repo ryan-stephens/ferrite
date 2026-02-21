@@ -1,10 +1,15 @@
+use crate::auth::AuthUser;
 use crate::error::ApiError;
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
-use axum::Json;
+use axum::{Extension, Json};
 use ferrite_db::{chapter_repo, movie_repo, stream_repo};
 use serde::Deserialize;
+
+fn extract_user_id(auth_user: &Option<AuthUser>) -> Option<&str> {
+    auth_user.as_ref().map(|u| u.user_id.as_str())
+}
 
 #[derive(Deserialize)]
 pub struct ListMediaQuery {
@@ -19,8 +24,11 @@ pub struct ListMediaQuery {
 
 pub async fn list_media(
     State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
     Query(query): Query<ListMediaQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
+    let user = auth_user.map(|e| e.0);
+    let user_id = extract_user_id(&user);
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(50).clamp(1, 200);
 
@@ -34,7 +42,7 @@ pub async fn list_media(
         per_page: per_page as i64,
     };
 
-    let items = movie_repo::list_movies_with_media(&state.db, &mq).await?;
+    let items = movie_repo::list_movies_with_media(&state.db, &mq, user_id).await?;
     let total = movie_repo::count_movies_with_media(&state.db, &mq).await?;
 
     Ok(Json(serde_json::json!({
@@ -47,10 +55,13 @@ pub async fn list_media(
 
 pub async fn get_media(
     State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
+    let user = auth_user.map(|e| e.0);
+    let user_id = extract_user_id(&user);
     // Use enriched query with movie metadata
-    let item = movie_repo::get_movie_with_media(&state.db, &id)
+    let item = movie_repo::get_movie_with_media(&state.db, &id, user_id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Media item '{id}' not found")))?;
     Ok(Json(item))

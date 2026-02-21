@@ -44,10 +44,7 @@ pub async fn serve_subtitle(
         }
     };
 
-    Ok((
-        [(header::CONTENT_TYPE, "text/vtt; charset=utf-8")],
-        vtt,
-    ))
+    Ok(([(header::CONTENT_TYPE, "text/vtt; charset=utf-8")], vtt))
 }
 
 /// Convert SRT subtitle text to WebVTT format.
@@ -173,9 +170,18 @@ mod tests {
 
     #[test]
     fn test_ass_time_to_vtt() {
-        assert_eq!(ass_time_to_vtt("0:00:01.00"), Some("00:00:01.000".to_string()));
-        assert_eq!(ass_time_to_vtt("1:23:45.67"), Some("01:23:45.670".to_string()));
-        assert_eq!(ass_time_to_vtt("0:02:30.50"), Some("00:02:30.500".to_string()));
+        assert_eq!(
+            ass_time_to_vtt("0:00:01.00"),
+            Some("00:00:01.000".to_string())
+        );
+        assert_eq!(
+            ass_time_to_vtt("1:23:45.67"),
+            Some("01:23:45.670".to_string())
+        );
+        assert_eq!(
+            ass_time_to_vtt("0:02:30.50"),
+            Some("00:02:30.500".to_string())
+        );
     }
 
     #[test]

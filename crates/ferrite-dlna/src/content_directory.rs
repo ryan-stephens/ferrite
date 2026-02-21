@@ -14,7 +14,8 @@ pub struct BrowseRequest {
 /// Parse the SOAP XML body for a Browse action.
 pub fn parse_browse_request(body: &str) -> Option<BrowseRequest> {
     let object_id = extract_xml_value(body, "ObjectID")?;
-    let browse_flag = extract_xml_value(body, "BrowseFlag").unwrap_or_else(|| "BrowseDirectChildren".into());
+    let browse_flag =
+        extract_xml_value(body, "BrowseFlag").unwrap_or_else(|| "BrowseDirectChildren".into());
     let starting_index = extract_xml_value(body, "StartingIndex")
         .and_then(|s| s.parse().ok())
         .unwrap_or(0);
@@ -109,7 +110,10 @@ pub fn handle_get_protocol_info() -> String {
     wrap_soap_response(
         "GetProtocolInfo",
         "urn:schemas-upnp-org:service:ConnectionManager:1",
-        &format!("<Source>{}</Source><Sink></Sink>", quick_xml::escape::escape(&source_protocols)),
+        &format!(
+            "<Source>{}</Source><Sink></Sink>",
+            quick_xml::escape::escape(&source_protocols)
+        ),
     )
 }
 
@@ -172,9 +176,7 @@ fn item_to_didl(item: &MediaItemRow, http_base_url: &str) -> String {
 }
 
 fn item_to_didl_element(item: &MediaItemRow, http_base_url: &str) -> String {
-    let title = quick_xml::escape::escape(
-        item.title.as_deref().unwrap_or(&item.file_path),
-    );
+    let title = quick_xml::escape::escape(item.title.as_deref().unwrap_or(&item.file_path));
 
     let mime = guess_mime_type(&item.file_path, &item.container_format);
     let upnp_class = if item.media_type == "audio" {
@@ -347,8 +349,14 @@ mod tests {
 
     #[test]
     fn test_guess_mime_type_from_container() {
-        assert_eq!(guess_mime_type("test.mkv", &Some("matroska".into())), "video/x-matroska");
-        assert_eq!(guess_mime_type("test.mp4", &Some("mp4".into())), "video/mp4");
+        assert_eq!(
+            guess_mime_type("test.mkv", &Some("matroska".into())),
+            "video/x-matroska"
+        );
+        assert_eq!(
+            guess_mime_type("test.mp4", &Some("mp4".into())),
+            "video/mp4"
+        );
     }
 
     #[test]

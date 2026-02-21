@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-02-20T00:00:00Z",
+  "base_url": "http://127.0.0.1:8080",
+  "media_id": "<media-id>",
+  "auth_mode": "bearer",
+  "benchmark": {
+    "iterations": 20,
+    "concurrency": 16,
+    "playback_session_id": "auth-hotpath-template",
+    "target_url": "http://127.0.0.1:8080/api/stream/<media-id>/hls/<session-id>/init.mp4"
+  },
+  "auth_hotpath": {
+    "count": 0,
+    "min_ms": 0,
+    "avg_ms": 0,
+    "p50_ms": 0,
+    "p95_ms": 0,
+    "max_ms": 0,
+    "samples_ms": []
+  },
+  "backend_metrics": {
+    "auth_hotpath_timings": [
+      {
+        "name": "auth_hotpath_ms{path=stream,method=bearer,outcome=ok}",
+        "count": 0,
+        "avg_ms": 0,
+        "min_ms": 0,
+        "max_ms": 0,
+        "last_ms": 0
+      }
+    ],
+    "raw": {
+      "timings": [],
+      "counters": []
+    }
+  }
+}

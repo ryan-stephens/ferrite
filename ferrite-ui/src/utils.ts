@@ -36,9 +36,86 @@ export function getResLabel(w: number | null, h: number | null): string {
   return `${h}p`;
 }
 
-const COMPAT_AUDIO = ['aac', 'mp3', 'opus', 'vorbis', 'flac', 'pcm_s16le', 'pcm_s24le', 'pcm_f32le'];
-const COMPAT_VIDEO = ['h264', 'vp8', 'vp9', 'av1'];
-const COMPAT_CONTAINER = ['mp4', 'mov', 'webm', 'ogg', 'flac', 'wav'];
+export type ClientProfile = 'web-chrome' | 'safari-ios' | 'android' | 'tvos' | 'roku';
+
+const PROFILE_CAPABILITIES: Record<ClientProfile, {
+  audio: string[];
+  video: string[];
+  containers: string[];
+}> = {
+  'web-chrome': {
+    audio: ['aac', 'mp3', 'opus', 'vorbis', 'flac', 'pcm_s16le', 'pcm_s24le', 'pcm_f32le'],
+    video: ['h264', 'vp8', 'vp9', 'av1'],
+    containers: ['mp4', 'mov', 'webm', 'ogg', 'flac', 'wav'],
+  },
+  'safari-ios': {
+    audio: ['aac', 'mp3', 'alac'],
+    video: ['h264', 'hevc'],
+    containers: ['mp4', 'mov', 'm4v', 'm4a'],
+  },
+  android: {
+    audio: ['aac', 'mp3', 'opus', 'vorbis', 'flac'],
+    video: ['h264', 'vp8', 'vp9', 'av1', 'hevc'],
+    containers: ['mp4', 'mov', 'webm'],
+  },
+  tvos: {
+    audio: ['aac', 'mp3', 'alac', 'ac3', 'eac3'],
+    video: ['h264', 'hevc'],
+    containers: ['mp4', 'mov', 'm4v', 'm4a'],
+  },
+  roku: {
+    audio: ['aac', 'mp3', 'ac3', 'eac3'],
+    video: ['h264', 'hevc'],
+    containers: ['mp4', 'mov', 'mkv', 'matroska'],
+  },
+};
+
+function parseClientProfile(value?: string | null): ClientProfile | null {
+  if (!value) return null;
+  switch (value.trim().toLowerCase()) {
+    case 'web-chrome':
+    case 'chrome':
+    case 'web':
+    case 'default':
+      return 'web-chrome';
+    case 'safari-ios':
+    case 'ios':
+    case 'iphone':
+    case 'ipad':
+      return 'safari-ios';
+    case 'android':
+      return 'android';
+    case 'tvos':
+    case 'apple-tv':
+    case 'appletv':
+      return 'tvos';
+    case 'roku':
+      return 'roku';
+    default:
+      return null;
+  }
+}
+
+function inferClientProfileFromNavigator(): ClientProfile {
+  if (typeof navigator === 'undefined') return 'web-chrome';
+  const ua = navigator.userAgent.toLowerCase();
+  const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+  const platform = [navigator.platform || '', nav.userAgentData?.platform || '']
+    .join(' ')
+    .toLowerCase();
+
+  if (ua.includes('roku')) return 'roku';
+  if (ua.includes('appletv') || ua.includes('apple tv') || ua.includes('tvos')) return 'tvos';
+  if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod') || platform.includes('ios')) {
+    return 'safari-ios';
+  }
+  if (ua.includes('android') || platform.includes('android')) return 'android';
+  return 'web-chrome';
+}
+
+export function resolveClientProfile(explicitOverride?: string | null): ClientProfile {
+  return parseClientProfile(explicitOverride) || inferClientProfileFromNavigator();
+}
 
 export type StreamType = 'direct' | 'remux' | 'audio-transcode' | 'full-transcode';
 
@@ -47,10 +124,13 @@ export function getStreamType(
   container: string | null,
   videoCodec: string | null,
   audioCodec: string | null,
+  explicitProfile?: string | null,
 ): StreamType {
-  const cOk = container ? COMPAT_CONTAINER.includes(container.toLowerCase()) : false;
-  const vOk = !videoCodec || COMPAT_VIDEO.includes(videoCodec.toLowerCase());
-  const aOk = !audioCodec || COMPAT_AUDIO.includes(audioCodec.toLowerCase());
+  const profile = resolveClientProfile(explicitProfile);
+  const caps = PROFILE_CAPABILITIES[profile];
+  const cOk = container ? caps.containers.includes(container.toLowerCase()) : false;
+  const vOk = !videoCodec || caps.video.includes(videoCodec.toLowerCase());
+  const aOk = !audioCodec || caps.audio.includes(audioCodec.toLowerCase());
   if (cOk && vOk && aOk) return 'direct';
   if (vOk && aOk && !cOk) return 'remux';
   if (vOk && !aOk) return 'audio-transcode';

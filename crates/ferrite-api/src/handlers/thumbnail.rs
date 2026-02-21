@@ -76,7 +76,9 @@ pub async fn serve_sprite_image(
     let sprite_path = thumb_dir.join(format!("{}_sprites.jpg", id));
 
     if !sprite_path.exists() {
-        return Err(ApiError::not_found("Sprite sheet not found. POST to /api/media/{id}/thumbnails to generate."));
+        return Err(ApiError::not_found(
+            "Sprite sheet not found. POST to /api/media/{id}/thumbnails to generate.",
+        ));
     }
 
     let data = tokio::fs::read(&sprite_path)
@@ -102,7 +104,9 @@ pub async fn serve_sprite_vtt(
     let vtt_path = thumb_dir.join(format!("{}_sprites.vtt", id));
 
     if !vtt_path.exists() {
-        return Err(ApiError::not_found("Sprite VTT not found. POST to /api/media/{id}/thumbnails to generate."));
+        return Err(ApiError::not_found(
+            "Sprite VTT not found. POST to /api/media/{id}/thumbnails to generate.",
+        ));
     }
 
     let data = tokio::fs::read_to_string(&vtt_path)

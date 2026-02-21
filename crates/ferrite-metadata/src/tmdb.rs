@@ -1,7 +1,14 @@
-use crate::provider::{EpisodeMetadata, MetadataProvider, MovieDetails, MovieSearchResult, TvSearchResult, TvShowDetails};
-use async_trait::async_trait;
+use crate::provider::{
+    EpisodeMetadata, MetadataProvider, MovieDetails, MovieSearchResult, TvSearchResult,
+    TvShowDetails,
+};
 use anyhow::{Context, Result};
-use governor::{Quota, RateLimiter, clock::DefaultClock, state::{InMemoryState, NotKeyed}};
+use async_trait::async_trait;
+use governor::{
+    clock::DefaultClock,
+    state::{InMemoryState, NotKeyed},
+    Quota, RateLimiter,
+};
 use reqwest::Client;
 use serde::Deserialize;
 use std::num::NonZeroU32;
@@ -191,7 +198,11 @@ impl MetadataProvider for TmdbProvider {
         Ok(results)
     }
 
-    async fn get_season_episodes(&self, tmdb_id: i64, season_number: i64) -> Result<Vec<EpisodeMetadata>> {
+    async fn get_season_episodes(
+        &self,
+        tmdb_id: i64,
+        season_number: i64,
+    ) -> Result<Vec<EpisodeMetadata>> {
         self.rate_limiter.until_ready().await;
 
         let url = format!(
@@ -199,7 +210,10 @@ impl MetadataProvider for TmdbProvider {
             TMDB_BASE_URL, tmdb_id, season_number, self.api_key
         );
 
-        debug!("TMDB season episodes: show={} season={}", tmdb_id, season_number);
+        debug!(
+            "TMDB season episodes: show={} season={}",
+            tmdb_id, season_number
+        );
 
         let response = self
             .client
@@ -289,15 +303,19 @@ impl MetadataProvider for TmdbProvider {
 fn ascii_fold(s: &str) -> String {
     s.chars()
         .map(|c| match c {
-            'À'|'Á'|'Â'|'Ã'|'Ä'|'Å'|'à'|'á'|'â'|'ã'|'ä'|'å' => 'a',
-            'Æ'|'æ' => 'a',
-            'Ç'|'ç' => 'c',
-            'È'|'É'|'Ê'|'Ë'|'è'|'é'|'ê'|'ë' => 'e',
-            'Ì'|'Í'|'Î'|'Ï'|'ì'|'í'|'î'|'ï' => 'i',
-            'Ñ'|'ñ' => 'n',
-            'Ò'|'Ó'|'Ô'|'Õ'|'Ö'|'Ø'|'ò'|'ó'|'ô'|'õ'|'ö'|'ø'|'ō'|'Ō' => 'o',
-            'Ù'|'Ú'|'Û'|'Ü'|'ù'|'ú'|'û'|'ü' => 'u',
-            'Ý'|'ý'|'ÿ' => 'y',
+            'À' | 'Á' | 'Â' | 'Ã' | 'Ä' | 'Å' | 'à' | 'á' | 'â' | 'ã' | 'ä' | 'å' => {
+                'a'
+            }
+            'Æ' | 'æ' => 'a',
+            'Ç' | 'ç' => 'c',
+            'È' | 'É' | 'Ê' | 'Ë' | 'è' | 'é' | 'ê' | 'ë' => 'e',
+            'Ì' | 'Í' | 'Î' | 'Ï' | 'ì' | 'í' | 'î' | 'ï' => 'i',
+            'Ñ' | 'ñ' => 'n',
+            'Ò' | 'Ó' | 'Ô' | 'Õ' | 'Ö' | 'Ø' | 'ò' | 'ó' | 'ô' | 'õ' | 'ö' | 'ø' | 'ō' | 'Ō' => {
+                'o'
+            }
+            'Ù' | 'Ú' | 'Û' | 'Ü' | 'ù' | 'ú' | 'û' | 'ü' => 'u',
+            'Ý' | 'ý' | 'ÿ' => 'y',
             'ß' => 's',
             other => other,
         })

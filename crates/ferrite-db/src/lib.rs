@@ -1,9 +1,10 @@
 pub mod chapter_repo;
 pub mod collection_repo;
-pub mod preference_repo;
-pub mod media_repo;
+pub mod keyframe_repo;
 pub mod library_repo;
+pub mod media_repo;
 pub mod movie_repo;
+pub mod preference_repo;
 pub mod progress_repo;
 pub mod stream_repo;
 pub mod subtitle_repo;
@@ -56,9 +57,7 @@ pub async fn create_pool(db_path: &Path, max_connections: u32) -> Result<SqliteP
 /// Tracks which migrations have been applied in a `_sqlx_migrations` table,
 /// so new migrations are applied automatically on startup.
 async fn run_migrations(pool: &SqlitePool) -> Result<()> {
-    sqlx::migrate!("../../migrations")
-        .run(pool)
-        .await?;
+    sqlx::migrate!("../../migrations").run(pool).await?;
     info!("Database migrations applied");
     Ok(())
 }

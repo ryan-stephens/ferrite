@@ -6,12 +6,12 @@ use tracing::{debug, info, warn};
 /// Text-based subtitle codecs that can be extracted to external files.
 /// PGS (hdmv_pgs_subtitle) and DVB are bitmap-based and cannot be extracted as text.
 const EXTRACTABLE_CODECS: &[&str] = &[
-    "subrip",      // SRT
-    "ass",         // ASS/SSA
-    "ssa",         // SSA
-    "webvtt",      // WebVTT
-    "mov_text",    // MP4 text subtitles
-    "srt",         // Alias for subrip
+    "subrip",   // SRT
+    "ass",      // ASS/SSA
+    "ssa",      // SSA
+    "webvtt",   // WebVTT
+    "mov_text", // MP4 text subtitles
+    "srt",      // Alias for subrip
 ];
 
 /// Output format mapping: codec_name → file extension
@@ -66,7 +66,11 @@ pub async fn extract_embedded_subtitles(
     // Each media item gets its own subdirectory so files are easy to clean up
     let output_dir = subtitle_cache_dir.join(media_item_id);
     if let Err(e) = tokio::fs::create_dir_all(&output_dir).await {
-        warn!("Failed to create subtitle cache dir {}: {}", output_dir.display(), e);
+        warn!(
+            "Failed to create subtitle cache dir {}: {}",
+            output_dir.display(),
+            e
+        );
         return Vec::new();
     }
 
@@ -90,19 +94,32 @@ pub async fn extract_embedded_subtitles(
         let forced_part = if stream.is_forced { ".forced" } else { "" };
         let output_name = format!(
             "{}.embedded.{}.{}{}{}",
-            media_stem, stream.stream_index, lang_part, forced_part,
-            if ext.is_empty() { String::new() } else { format!(".{}", ext) }
+            media_stem,
+            stream.stream_index,
+            lang_part,
+            forced_part,
+            if ext.is_empty() {
+                String::new()
+            } else {
+                format!(".{}", ext)
+            }
         );
         let output_path = output_dir.join(&output_name);
 
         if output_path.exists() {
-            debug!("Embedded subtitle already extracted: {}", output_path.display());
+            debug!(
+                "Embedded subtitle already extracted: {}",
+                output_path.display()
+            );
             if let Ok(meta) = tokio::fs::metadata(&output_path).await {
                 already_extracted.push(SubtitleInsert {
                     file_path: output_path.to_string_lossy().to_string(),
                     format: ext.to_string(),
                     language: stream.language.clone(),
-                    title: stream.title.clone().or_else(|| Some(format!("Embedded #{}", stream.stream_index))),
+                    title: stream
+                        .title
+                        .clone()
+                        .or_else(|| Some(format!("Embedded #{}", stream.stream_index))),
                     is_forced: stream.is_forced,
                     is_sdh: false,
                     file_size: meta.len(),
@@ -148,10 +165,7 @@ pub async fn extract_embedded_subtitles(
         args.push(t.output_path.to_string_lossy().into_owned());
     }
 
-    let result = Command::new(ffmpeg_path)
-        .args(&args)
-        .output()
-        .await;
+    let result = Command::new(ffmpeg_path).args(&args).output().await;
 
     let mut extracted = already_extracted;
 
@@ -165,20 +179,29 @@ pub async fn extract_embedded_subtitles(
 
                 if file_size == 0 {
                     let _ = tokio::fs::remove_file(&t.output_path).await;
-                    debug!("Extracted empty subtitle (stream {}), removed", t.stream_index);
+                    debug!(
+                        "Extracted empty subtitle (stream {}), removed",
+                        t.stream_index
+                    );
                     continue;
                 }
 
                 info!(
                     "Extracted embedded subtitle: stream {} ({}) → {} ({} bytes)",
-                    t.stream_index, t.codec_name, t.output_path.display(), file_size,
+                    t.stream_index,
+                    t.codec_name,
+                    t.output_path.display(),
+                    file_size,
                 );
 
                 extracted.push(SubtitleInsert {
                     file_path: t.output_path.to_string_lossy().to_string(),
                     format: t.ext.to_string(),
                     language: t.language.clone(),
-                    title: t.title.clone().or_else(|| Some(format!("Embedded #{}", t.stream_index))),
+                    title: t
+                        .title
+                        .clone()
+                        .or_else(|| Some(format!("Embedded #{}", t.stream_index))),
                     is_forced: t.is_forced,
                     is_sdh: false,
                     file_size,
@@ -194,7 +217,11 @@ pub async fn extract_embedded_subtitles(
             );
         }
         Err(e) => {
-            warn!("Failed to run FFmpeg for subtitle extraction from {}: {}", media_file.display(), e);
+            warn!(
+                "Failed to run FFmpeg for subtitle extraction from {}: {}",
+                media_file.display(),
+                e
+            );
         }
     }
 

@@ -1,6 +1,7 @@
 use axum::body::Body;
 use axum::http::{header, StatusCode};
 use axum::response::Response;
+use ferrite_transcode::hwaccel::EncoderProfile;
 use std::path::Path;
 use std::pin::Pin;
 use std::process::Stdio;
@@ -8,8 +9,31 @@ use std::task::{Context, Poll};
 use tokio::io::AsyncRead;
 use tokio::process::{Child, Command};
 use tokio_util::io::ReaderStream;
-use ferrite_transcode::hwaccel::EncoderProfile;
 use tracing::{debug, info, warn};
+
+fn is_ffmpeg_error_line(line: &str) -> bool {
+    let lower = line.to_ascii_lowercase();
+    lower.contains("error")
+        || lower.contains("failed")
+        || lower.contains("invalid")
+        || lower.contains("no such file")
+        || lower.contains("permission denied")
+}
+
+fn spawn_ffmpeg_stderr_drain(stderr: tokio::process::ChildStderr, op: &'static str) {
+    tokio::spawn(async move {
+        use tokio::io::AsyncBufReadExt;
+
+        let mut lines = tokio::io::BufReader::new(stderr).lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            if is_ffmpeg_error_line(&line) {
+                warn!("ffmpeg {}: {}", op, line);
+            } else {
+                debug!("ffmpeg {}: {}", op, line);
+            }
+        }
+    });
+}
 
 /// Wraps an FFmpeg child process stdout so that when the stream is dropped
 /// (e.g. client disconnects), the FFmpeg process is killed immediately.
@@ -68,12 +92,17 @@ pub async fn find_keyframe_before(
     let output = Command::new(ffprobe_path)
         .args([
             "-hide_banner",
-            "-loglevel", "error",
-            "-read_intervals", &format!("{}%+5", (target_secs - 15.0).max(0.0)),
-            "-select_streams", "v:0",
+            "-loglevel",
+            "error",
+            "-read_intervals",
+            &format!("{}%+5", (target_secs - 15.0).max(0.0)),
+            "-select_streams",
+            "v:0",
             "-show_packets",
-            "-show_entries", "packet=pts_time,flags",
-            "-of", "csv=print_section=0",
+            "-show_entries",
+            "packet=pts_time,flags",
+            "-of",
+            "csv=print_section=0",
         ])
         .arg(file_path)
         .stdout(Stdio::piped())
@@ -115,6 +144,7 @@ pub async fn serve_remux(
     file_path: &Path,
     duration_secs: Option<f64>,
     start_secs: Option<f64>,
+    pre_resolved_start_secs: Option<f64>,
     subtitle_path: Option<&Path>,
     encoder: &EncoderProfile,
     audio_stream_index: Option<u32>,
@@ -123,22 +153,35 @@ pub async fn serve_remux(
     // If subtitle burn-in is requested, we need to re-encode video — fall back to audio transcode
     if subtitle_path.is_some() {
         return serve_audio_transcode(
-            ffmpeg_path, ffprobe_path, file_path, duration_secs, start_secs, subtitle_path, encoder, audio_stream_index,
-        ).await;
+            ffmpeg_path,
+            ffprobe_path,
+            file_path,
+            duration_secs,
+            start_secs,
+            pre_resolved_start_secs,
+            subtitle_path,
+            encoder,
+            audio_stream_index,
+        )
+        .await;
     }
 
     if !file_path.exists() {
         return Err(StatusCode::NOT_FOUND);
     }
 
-    let start = start_secs.unwrap_or(0.0);
+    let start = pre_resolved_start_secs.or(start_secs).unwrap_or(0.0);
 
-    let actual_start = if start > 0.1 {
+    let actual_start = if pre_resolved_start_secs.is_some() || start <= 0.1 {
+        start
+    } else {
         match find_keyframe_before(ffprobe_path, file_path, start).await {
             Some(kf_time) => {
                 info!(
                     "Remux seek to {:.1}s → snapped to keyframe at {:.3}s (delta {:.1}s)",
-                    start, kf_time, start - kf_time
+                    start,
+                    kf_time,
+                    start - kf_time
                 );
                 kf_time
             }
@@ -147,8 +190,6 @@ pub async fn serve_remux(
                 start
             }
         }
-    } else {
-        start
     };
 
     info!(
@@ -158,10 +199,7 @@ pub async fn serve_remux(
         duration_secs,
     );
 
-    let mut args: Vec<String> = vec![
-        "-hide_banner".into(),
-        "-nostdin".into(),
-    ];
+    let mut args: Vec<String> = vec!["-hide_banner".into(), "-nostdin".into()];
 
     if actual_start > 0.1 {
         args.push("-ss".into());
@@ -180,10 +218,14 @@ pub async fn serve_remux(
     // Map first video and selected audio stream — copy both without re-encoding
     let audio_map = format!("0:a:{}", audio_stream_index.unwrap_or(0));
     args.extend([
-        "-map".into(), "0:v:0".into(),
-        "-map".into(), audio_map,
-        "-c:v".into(), "copy".into(),
-        "-c:a".into(), "copy".into(),
+        "-map".into(),
+        "0:v:0".into(),
+        "-map".into(),
+        audio_map,
+        "-c:v".into(),
+        "copy".into(),
+        "-c:a".into(),
+        "copy".into(),
     ]);
 
     // Choose output container based on video codec:
@@ -216,6 +258,10 @@ pub async fn serve_remux(
             warn!("Failed to spawn ffmpeg for remux: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
+
+    if let Some(stderr) = child.stderr.take() {
+        spawn_ffmpeg_stderr_drain(stderr, "remux");
+    }
 
     let stdout = child.stdout.take().ok_or_else(|| {
         warn!("Failed to capture ffmpeg stdout");
@@ -264,6 +310,7 @@ pub async fn serve_audio_transcode(
     file_path: &Path,
     duration_secs: Option<f64>,
     start_secs: Option<f64>,
+    pre_resolved_start_secs: Option<f64>,
     subtitle_path: Option<&Path>,
     _encoder: &EncoderProfile,
     audio_stream_index: Option<u32>,
@@ -272,18 +319,22 @@ pub async fn serve_audio_transcode(
         return Err(StatusCode::NOT_FOUND);
     }
 
-    let start = start_secs.unwrap_or(0.0);
+    let start = pre_resolved_start_secs.or(start_secs).unwrap_or(0.0);
 
     // For seeks, find the actual keyframe position so we start cleanly.
     // This avoids the "frozen video" problem: with -c:v copy, FFmpeg outputs
     // from the nearest keyframe but the browser can't render partial GOPs.
     // By seeking exactly to a keyframe, the first frame is immediately renderable.
-    let actual_start = if start > 0.1 {
+    let actual_start = if pre_resolved_start_secs.is_some() || start <= 0.1 {
+        start
+    } else {
         match find_keyframe_before(ffprobe_path, file_path, start).await {
             Some(kf_time) => {
                 info!(
                     "Seek to {:.1}s → snapped to keyframe at {:.3}s (delta {:.1}s)",
-                    start, kf_time, start - kf_time
+                    start,
+                    kf_time,
+                    start - kf_time
                 );
                 kf_time
             }
@@ -292,8 +343,6 @@ pub async fn serve_audio_transcode(
                 start
             }
         }
-    } else {
-        start
     };
 
     info!(
@@ -304,10 +353,7 @@ pub async fn serve_audio_transcode(
     );
 
     // Build ffmpeg args dynamically
-    let mut args: Vec<String> = vec![
-        "-hide_banner".into(),
-        "-nostdin".into(),
-    ];
+    let mut args: Vec<String> = vec!["-hide_banner".into(), "-nostdin".into()];
 
     // Seek strategy: fast-seek to keyframe position (before -i).
     //
@@ -338,10 +384,7 @@ pub async fn serve_audio_transcode(
 
     // Map first video and selected audio stream
     let audio_map = format!("0:a:{}", audio_stream_index.unwrap_or(0));
-    args.extend([
-        "-map".into(), "0:v:0".into(),
-        "-map".into(), audio_map,
-    ]);
+    args.extend(["-map".into(), "0:v:0".into(), "-map".into(), audio_map]);
 
     // Video: copy (no re-encoding) unless subtitle burn-in is requested
     if let Some(sub_path) = subtitle_path {
@@ -349,21 +392,24 @@ pub async fn serve_audio_transcode(
         // Use the subtitles filter to render text onto the video frames.
         // Note: subtitle filter requires CPU-side frames, so always use software encoder here.
         let sub_path_escaped = escape_ffmpeg_filter_path(&sub_path.to_string_lossy());
-        args.extend([
-            "-vf".into(),
-            format!("subtitles={}", sub_path_escaped),
-        ]);
+        args.extend(["-vf".into(), format!("subtitles={}", sub_path_escaped)]);
         args.extend(EncoderProfile::software().video_encode_args());
-        info!("Subtitle burn-in enabled (software encode): {}", sub_path.display());
+        info!(
+            "Subtitle burn-in enabled (software encode): {}",
+            sub_path.display()
+        );
     } else {
         args.extend(["-c:v".into(), "copy".into()]);
     }
 
     // Audio: transcode to AAC stereo
     args.extend([
-        "-c:a".into(), "aac".into(),
-        "-b:a".into(), "192k".into(),
-        "-ac".into(), "2".into(),
+        "-c:a".into(),
+        "aac".into(),
+        "-b:a".into(),
+        "192k".into(),
+        "-ac".into(),
+        "2".into(),
     ]);
 
     // Fragmented MP4 for streaming — empty_moov allows playback before the
@@ -387,6 +433,10 @@ pub async fn serve_audio_transcode(
             warn!("Failed to spawn ffmpeg: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
+
+    if let Some(stderr) = child.stderr.take() {
+        spawn_ffmpeg_stderr_drain(stderr, "audio-transcode");
+    }
 
     let stdout = child.stdout.take().ok_or_else(|| {
         warn!("Failed to capture ffmpeg stdout");
@@ -439,6 +489,7 @@ pub async fn serve_full_transcode(
     file_path: &Path,
     duration_secs: Option<f64>,
     start_secs: Option<f64>,
+    pre_resolved_start_secs: Option<f64>,
     subtitle_path: Option<&Path>,
     encoder: &EncoderProfile,
     pixel_format: Option<&str>,
@@ -450,10 +501,12 @@ pub async fn serve_full_transcode(
         return Err(StatusCode::NOT_FOUND);
     }
 
-    let start = start_secs.unwrap_or(0.0);
+    let start = pre_resolved_start_secs.or(start_secs).unwrap_or(0.0);
 
     // For seeks, find the actual keyframe position so we start cleanly.
-    let actual_start = if start > 0.1 {
+    let actual_start = if pre_resolved_start_secs.is_some() || start <= 0.1 {
+        start
+    } else {
         match find_keyframe_before(ffprobe_path, file_path, start).await {
             Some(kf_time) => {
                 info!(
@@ -467,8 +520,6 @@ pub async fn serve_full_transcode(
                 start
             }
         }
-    } else {
-        start
     };
 
     info!(
@@ -486,10 +537,7 @@ pub async fn serve_full_transcode(
         encoder.clone()
     };
 
-    let mut args: Vec<String> = vec![
-        "-hide_banner".into(),
-        "-nostdin".into(),
-    ];
+    let mut args: Vec<String> = vec!["-hide_banner".into(), "-nostdin".into()];
 
     // HW-accelerated decoding args (before -i)
     if subtitle_path.is_none() {
@@ -512,10 +560,7 @@ pub async fn serve_full_transcode(
 
     // Map first video and selected audio stream
     let audio_map = format!("0:a:{}", audio_stream_index.unwrap_or(0));
-    args.extend([
-        "-map".into(), "0:v:0".into(),
-        "-map".into(), audio_map,
-    ]);
+    args.extend(["-map".into(), "0:v:0".into(), "-map".into(), audio_map]);
 
     // Build video filter chain: HDR tone-mapping + subtitle burn-in
     let mut vf_parts: Vec<String> = Vec::new();
@@ -523,8 +568,8 @@ pub async fn serve_full_transcode(
     let is_high_bit = pixel_format
         .map(ferrite_transcode::tonemap::is_high_bit_depth)
         .unwrap_or(false);
-    let needs_tonemap = is_high_bit
-        && ferrite_transcode::tonemap::is_true_hdr(color_transfer, color_primaries);
+    let needs_tonemap =
+        is_high_bit && ferrite_transcode::tonemap::is_true_hdr(color_transfer, color_primaries);
     if needs_tonemap {
         info!("True HDR detected (pix={}, transfer={:?}, primaries={:?}), applying tone-mapping (full transcode)",
             pixel_format.unwrap_or("unknown"), color_transfer, color_primaries);
@@ -538,7 +583,10 @@ pub async fn serve_full_transcode(
     if let Some(sub_path) = subtitle_path {
         let sub_path_escaped = escape_ffmpeg_filter_path(&sub_path.to_string_lossy());
         vf_parts.push(format!("subtitles={}", sub_path_escaped));
-        info!("Subtitle burn-in enabled (full transcode): {}", sub_path.display());
+        info!(
+            "Subtitle burn-in enabled (full transcode): {}",
+            sub_path.display()
+        );
     }
 
     if !vf_parts.is_empty() {
@@ -555,9 +603,12 @@ pub async fn serve_full_transcode(
 
     // Audio: transcode to AAC stereo
     args.extend([
-        "-c:a".into(), "aac".into(),
-        "-b:a".into(), "192k".into(),
-        "-ac".into(), "2".into(),
+        "-c:a".into(),
+        "aac".into(),
+        "-b:a".into(),
+        "192k".into(),
+        "-ac".into(),
+        "2".into(),
     ]);
 
     // Fragmented MP4 for streaming
@@ -580,6 +631,10 @@ pub async fn serve_full_transcode(
             warn!("Failed to spawn ffmpeg for full transcode: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
+
+    if let Some(stderr) = child.stderr.take() {
+        spawn_ffmpeg_stderr_drain(stderr, "full-transcode");
+    }
 
     let stdout = child.stdout.take().ok_or_else(|| {
         warn!("Failed to capture ffmpeg stdout");

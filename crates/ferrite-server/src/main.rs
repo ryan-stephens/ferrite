@@ -85,7 +85,10 @@ async fn main() -> Result<()> {
         info!("Loaded config from {}", config_path.display());
         toml::from_str::<AppConfig>(&content)?
     } else {
-        info!("Config file not found at {}, using defaults", config_path.display());
+        info!(
+            "Config file not found at {}, using defaults",
+            config_path.display()
+        );
         AppConfig::default()
     };
 
@@ -122,6 +125,7 @@ async fn main() -> Result<()> {
             config.auth = Some(ferrite_core::config::AuthConfig {
                 jwt_secret: secret,
                 token_expiry_days: 30,
+                auth_hotpath_no_db: false,
                 api_keys: Vec::new(),
                 username: None,
                 password_hash: None,
@@ -146,19 +150,17 @@ async fn main() -> Result<()> {
             None
         }
     });
-    let hw_caps = ferrite_transcode::hwaccel::detect_and_select(
-        &config.transcode.ffmpeg_path,
-        hw_pref,
-    ).await;
+    let hw_caps =
+        ferrite_transcode::hwaccel::detect_and_select(&config.transcode.ffmpeg_path, hw_pref).await;
     info!(
         "Video encoder: {} (backend={})",
-        hw_caps.selected_profile.encoder_name,
-        hw_caps.selected_profile.backend,
+        hw_caps.selected_profile.encoder_name, hw_caps.selected_profile.backend,
     );
     let encoder_profile = Arc::new(hw_caps.selected_profile.clone());
 
     // Initialize database (before background tasks that may need it)
-    let pool = ferrite_db::create_pool(&config.database.path, config.database.max_connections).await?;
+    let pool =
+        ferrite_db::create_pool(&config.database.path, config.database.max_connections).await?;
 
     // Initialize HLS session manager
     let hls_cache_dir = config.transcode.cache_dir.join("hls");
@@ -168,6 +170,7 @@ async fn main() -> Result<()> {
         hls_cache_dir,
         config.transcode.ffmpeg_path.clone(),
         config.transcode.hls_segment_duration,
+        config.transcode.hls_playlist_window_segments,
         config.transcode.hls_session_timeout_secs,
         config.transcode.hls_ffmpeg_idle_secs,
         hw_caps.selected_profile,
@@ -185,9 +188,7 @@ async fn main() -> Result<()> {
     ));
 
     // Initialize webhook dispatcher
-    let webhook_dispatcher = Arc::new(
-        ferrite_api::webhooks::WebhookDispatcher::new(pool.clone()),
-    );
+    let webhook_dispatcher = Arc::new(ferrite_api::webhooks::WebhookDispatcher::new(pool.clone()));
 
     // Keep a reference for graceful shutdown cleanup (before state is moved into the router)
     let shutdown_hls_manager = hls_manager.clone();
@@ -201,6 +202,7 @@ async fn main() -> Result<()> {
         encoder_profile,
         webhook_dispatcher,
         scan_registry: ferrite_scanner::ScanRegistry::new(),
+        playback_metrics: Arc::new(ferrite_api::metrics::PlaybackMetrics::default()),
     };
 
     let mut router = build_router(state);
@@ -222,9 +224,10 @@ async fn main() -> Result<()> {
 
         // Start SSDP discovery in background.
         // Binding to port 1900 requires elevated privileges on Linux; failure is non-fatal.
-        let ssdp = std::sync::Arc::new(
-            ferrite_dlna::ssdp::SsdpServer::new(server_uuid, http_base_url),
-        );
+        let ssdp = std::sync::Arc::new(ferrite_dlna::ssdp::SsdpServer::new(
+            server_uuid,
+            http_base_url,
+        ));
         tokio::spawn(async move {
             if let Err(e) = ssdp.run().await {
                 tracing::warn!(
@@ -253,7 +256,10 @@ async fn main() -> Result<()> {
     }
 
     info!("Ferrite starting on http://{}", addr);
-    info!("Open http://localhost:{} in your browser", config.server.port);
+    info!(
+        "Open http://localhost:{} in your browser",
+        config.server.port
+    );
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
 
@@ -290,7 +296,11 @@ async fn run_init(port: u16, output_dir: &PathBuf) -> Result<()> {
     }
 
     // Generate a random JWT secret using two UUID v4s for 244 bits of entropy
-    let jwt_secret = format!("{}{}", uuid::Uuid::new_v4().simple(), uuid::Uuid::new_v4().simple());
+    let jwt_secret = format!(
+        "{}{}",
+        uuid::Uuid::new_v4().simple(),
+        uuid::Uuid::new_v4().simple()
+    );
 
     let config_content = format!(
         r#"# Ferrite Media Server Configuration
@@ -316,8 +326,15 @@ ffmpeg_path = "ffmpeg"
 ffprobe_path = "ffprobe"
 cache_dir = "cache/transcode"
 max_concurrent_transcodes = 2
-hls_segment_duration = 6
+# queue wait timeout (seconds) before returning 503 when transcode slots are saturated
+transcode_queue_timeout_secs = 15
+# low-latency segment size
+hls_segment_duration = 2
+# max segments retained in live playlist window
+hls_playlist_window_segments = 30
 hls_session_timeout_secs = 30
+# fMP4 media segment MIME mode: "video-mp4" (default) or "video-iso-segment"
+hls_segment_mime_mode = "video-mp4"
 # Hardware acceleration: "nvenc", "qsv", "vaapi", "software", or omit for auto-detect
 # hw_accel = "software"
 
@@ -329,6 +346,8 @@ rate_limit_per_second = 4
 [auth]
 jwt_secret = "{jwt_secret}"
 token_expiry_days = 30
+# skip per-request DB user checks on /api/stream hot path (JWT validation still applies)
+auth_hotpath_no_db = false
 
 [dlna]
 enabled = true

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sqlx::{SqlitePool, SqliteConnection};
+use sqlx::{SqliteConnection, SqlitePool};
 use uuid::Uuid;
 
 /// Probe data from ffprobe, used during scanning.
@@ -90,11 +90,10 @@ pub async fn get_media_item_id_by_path(
     pool: &SqlitePool,
     file_path: &str,
 ) -> Result<Option<String>> {
-    let row: Option<(String,)> =
-        sqlx::query_as("SELECT id FROM media_items WHERE file_path = ?")
-            .bind(file_path)
-            .fetch_optional(pool)
-            .await?;
+    let row: Option<(String,)> = sqlx::query_as("SELECT id FROM media_items WHERE file_path = ?")
+        .bind(file_path)
+        .fetch_optional(pool)
+        .await?;
     Ok(row.map(|r| r.0))
 }
 
@@ -188,6 +187,38 @@ pub async fn delete_media_items_for_library(pool: &SqlitePool, library_id: &str)
         .execute(pool)
         .await?;
     Ok(())
+}
+
+pub async fn delete_media_item_by_path(pool: &SqlitePool, file_path: &str) -> Result<u64> {
+    let result = sqlx::query("DELETE FROM media_items WHERE file_path = ?")
+        .bind(file_path)
+        .execute(pool)
+        .await?;
+    Ok(result.rows_affected())
+}
+
+pub async fn delete_media_items_by_path_prefix(
+    pool: &SqlitePool,
+    path_prefix: &str,
+) -> Result<u64> {
+    let normalized = path_prefix.trim_end_matches(['\\', '/']);
+    let escaped = normalized
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_");
+    let like_backslash = format!("{}\\\\%", escaped);
+    let like_slash = format!("{}/%", escaped);
+
+    let result = sqlx::query(
+        "DELETE FROM media_items WHERE file_path = ? OR file_path LIKE ? ESCAPE '\\' OR file_path LIKE ? ESCAPE '\\'",
+    )
+    .bind(normalized)
+    .bind(like_backslash)
+    .bind(like_slash)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
 }
 
 #[derive(Debug, Clone, sqlx::FromRow, serde::Serialize)]

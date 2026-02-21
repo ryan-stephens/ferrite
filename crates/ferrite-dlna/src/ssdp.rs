@@ -46,7 +46,10 @@ fn build_search_response(st: &str, usn: &str, location: &str, server_name: &str)
 fn notification_types(udn: &str) -> Vec<(String, String)> {
     vec![
         // Root device
-        ("upnp:rootdevice".into(), format!("{}::upnp:rootdevice", udn)),
+        (
+            "upnp:rootdevice".into(),
+            format!("{}::upnp:rootdevice", udn),
+        ),
         // Device UUID
         (udn.to_string(), udn.to_string()),
         // MediaServer device type
@@ -80,7 +83,10 @@ impl SsdpServer {
         Self {
             server_uuid,
             location_url,
-            server_name: format!("Ferrite/{} UPnP/1.0 DLNADOC/1.50", env!("CARGO_PKG_VERSION")),
+            server_name: format!(
+                "Ferrite/{} UPnP/1.0 DLNADOC/1.50",
+                env!("CARGO_PKG_VERSION")
+            ),
         }
     }
 
@@ -119,12 +125,7 @@ impl SsdpServer {
     }
 
     /// Handle an incoming SSDP M-SEARCH request.
-    async fn handle_search(
-        &self,
-        socket: &UdpSocket,
-        data: &[u8],
-        from: SocketAddr,
-    ) -> Result<()> {
+    async fn handle_search(&self, socket: &UdpSocket, data: &[u8], from: SocketAddr) -> Result<()> {
         let msg = String::from_utf8_lossy(data);
         if !msg.contains("M-SEARCH") {
             return Ok(());
@@ -149,8 +150,7 @@ impl SsdpServer {
         };
 
         for (nt, usn) in matches {
-            let response =
-                build_search_response(&nt, &usn, &self.location_url, &self.server_name);
+            let response = build_search_response(&nt, &usn, &self.location_url, &self.server_name);
             socket.send_to(response.as_bytes(), from).await?;
             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
         }

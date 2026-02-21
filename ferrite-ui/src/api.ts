@@ -245,6 +245,18 @@ export interface AuthStatus {
   has_users: boolean;
 }
 
+export interface PlaybackMetricTrackRequest {
+  metric: 'playback_ttff_ms' | 'seek_latency_ms' | 'rebuffer_count' | 'rebuffer_ms';
+  value_ms?: number;
+  increment?: number;
+  labels?: Record<string, string>;
+}
+
+export interface HlsSessionStartResponse {
+  playback_session_id: string;
+  master_url: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -264,6 +276,10 @@ export const api = {
 
   // System
   info: () => apiFetch<{ name: string; version: string }>('GET', '/api/system/info'),
+  playbackMetrics: () => apiFetch<{ timings: unknown[]; counters: unknown[] }>('GET', '/api/system/metrics'),
+  resetPlaybackMetrics: () => apiFetch<void>('DELETE', '/api/system/metrics'),
+  trackPlaybackMetric: (payload: PlaybackMetricTrackRequest) =>
+    apiQuiet('POST', '/api/system/metrics/track', payload),
 
   // Users
   listUsers: () => apiFetch<User[]>('GET', '/api/users'),
@@ -307,15 +323,50 @@ export const api = {
     apiQuiet('DELETE', `/api/progress/${mediaId}`),
 
   // HLS
-  hlsSeek: (id: string, start: number, audioStream?: number) => {
+  hlsSessionStart: (id: string, start?: number, playbackSessionId?: string) => {
+    const params = new URLSearchParams();
+    if (start != null) params.set('start', start.toFixed(3));
+    if (playbackSessionId) params.set('playback_session_id', playbackSessionId);
+    const suffix = params.toString();
+    return apiFetch<HlsSessionStartResponse>(
+      'POST',
+      `/api/stream/${id}/hls/session/start${suffix ? `?${suffix}` : ''}`,
+    );
+  },
+  hlsSessionHeartbeat: (id: string, playbackSessionId: string) =>
+    apiQuiet(
+      'POST',
+      `/api/stream/${id}/hls/session/heartbeat?playback_session_id=${encodeURIComponent(playbackSessionId)}`,
+    ),
+  hlsSessionStop: (id: string, playbackSessionId: string) =>
+    apiQuiet(
+      'DELETE',
+      `/api/stream/${id}/hls/session/stop?playback_session_id=${encodeURIComponent(playbackSessionId)}`,
+    ),
+  hlsSeek: (id: string, start: number, audioStream?: number, playbackSessionId?: string) => {
     const params = new URLSearchParams({ start: start.toFixed(3) });
     if (audioStream != null) params.set('audio_stream', String(audioStream));
-    return apiFetch<{ session_id: string; master_url: string; start_secs: number; variant_count: number; timing_ms?: Record<string, number> }>(
+    if (playbackSessionId) params.set('playback_session_id', playbackSessionId);
+    return apiFetch<{
+      session_id: string;
+      master_url: string;
+      start_secs: number;
+      variant_count: number;
+      reused: boolean;
+      video_copied?: boolean;
+      timing_ms?: Record<string, number>;
+    }>(
       'POST', `/api/stream/${id}/hls/seek?${params}`
     );
   },
   hlsStop: (id: string, sessionId: string) =>
     apiQuiet('DELETE', `/api/stream/${id}/hls/${sessionId}`),
+  hlsStopMedia: (id: string, playbackSessionId?: string) => {
+    const suffix = playbackSessionId
+      ? `?playback_session_id=${encodeURIComponent(playbackSessionId)}`
+      : '';
+    apiQuiet('DELETE', `/api/stream/${id}/hls${suffix}`);
+  },
 
   // TV Shows
   listShows: (libraryId: string) => apiFetch<TvShow[]>('GET', `/api/shows?library_id=${libraryId}`),

@@ -1,5 +1,6 @@
 use anyhow::Result;
-use sqlx::{SqlitePool, SqliteConnection};
+use sqlx::{SqliteConnection, SqlitePool};
+use tracing::warn;
 
 /// Row for the movies table joined with media_items.
 #[derive(Debug, Clone, sqlx::FromRow, serde::Serialize)]
@@ -144,6 +145,7 @@ pub async fn update_movie_metadata(
 pub async fn get_movie_with_media(
     pool: &SqlitePool,
     media_item_id: &str,
+    user_id: Option<&str>,
 ) -> Result<Option<MovieWithMediaRow>> {
     let row = sqlx::query_as::<_, MovieWithMediaRow>(
         r#"
@@ -170,13 +172,14 @@ pub async fn get_movie_with_media(
                ep.still_path
         FROM media_items mi
         LEFT JOIN movies m ON m.media_item_id = mi.id
-        LEFT JOIN playback_progress pp ON pp.media_item_id = mi.id
+        LEFT JOIN playback_progress pp ON pp.media_item_id = mi.id AND pp.user_id IS ?
         LEFT JOIN episodes ep ON ep.media_item_id = mi.id
         LEFT JOIN seasons s ON s.id = ep.season_id
         LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id
         WHERE mi.id = ?
         "#,
     )
+    .bind(user_id)
     .bind(media_item_id)
     .fetch_optional(pool)
     .await?;
@@ -205,6 +208,70 @@ pub struct MediaQuery<'a> {
 pub async fn list_movies_with_media(
     pool: &SqlitePool,
     query: &MediaQuery<'_>,
+    user_id: Option<&str>,
+) -> Result<Vec<MovieWithMediaRow>> {
+    let search = query.search.map(str::trim).filter(|s| !s.is_empty());
+
+    if let Some(search_term) = search {
+        if let Some(fts_query) = build_fts_match_query(search_term) {
+            match list_movies_with_media_fts(pool, query, user_id, &fts_query).await {
+                Ok(rows) => return Ok(rows),
+                Err(e) if should_fallback_from_fts(&e) => {
+                    warn!("FTS search unavailable, falling back to LIKE query: {}", e);
+                }
+                Err(e) => return Err(e.into()),
+            }
+        }
+    }
+
+    list_movies_with_media_like(pool, query, user_id).await
+}
+
+/// Count movies (media_items) matching the same filters as list_movies_with_media.
+/// Uses the same fixed-SQL pattern so the prepared statement is shared/cached.
+pub async fn count_movies_with_media(pool: &SqlitePool, query: &MediaQuery<'_>) -> Result<i64> {
+    let search = query.search.map(str::trim).filter(|s| !s.is_empty());
+
+    if let Some(search_term) = search {
+        if let Some(fts_query) = build_fts_match_query(search_term) {
+            match count_movies_with_media_fts(pool, query, &fts_query).await {
+                Ok(total) => return Ok(total),
+                Err(e) if should_fallback_from_fts(&e) => {
+                    warn!(
+                        "FTS count unavailable, falling back to LIKE count query: {}",
+                        e
+                    );
+                }
+                Err(e) => return Err(e.into()),
+            }
+        }
+    }
+
+    let row: (i64,) = sqlx::query_as(
+        r#"
+        SELECT COUNT(*)
+        FROM media_items mi
+        LEFT JOIN movies m ON m.media_item_id = mi.id
+        WHERE (? IS NULL OR mi.library_id = ?)
+          AND (? IS NULL OR COALESCE(m.title, mi.title) LIKE '%' || ? || '%')
+          AND (? IS NULL OR m.genres LIKE '%' || ? || '%')
+        "#,
+    )
+    .bind(query.library_id)
+    .bind(query.library_id)
+    .bind(query.search)
+    .bind(query.search)
+    .bind(query.genre)
+    .bind(query.genre)
+    .fetch_one(pool)
+    .await?;
+    Ok(row.0)
+}
+
+async fn list_movies_with_media_like(
+    pool: &SqlitePool,
+    query: &MediaQuery<'_>,
+    user_id: Option<&str>,
 ) -> Result<Vec<MovieWithMediaRow>> {
     let offset = (query.page - 1) * query.per_page;
     let order_clause = build_order_clause(query);
@@ -234,7 +301,7 @@ pub async fn list_movies_with_media(
                ep.still_path
         FROM media_items mi
         LEFT JOIN movies m ON m.media_item_id = mi.id
-        LEFT JOIN playback_progress pp ON pp.media_item_id = mi.id
+        LEFT JOIN playback_progress pp ON pp.media_item_id = mi.id AND pp.user_id IS ?
         LEFT JOIN episodes ep ON ep.media_item_id = mi.id
         LEFT JOIN seasons s ON s.id = ep.season_id
         LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id
@@ -247,38 +314,143 @@ pub async fn list_movies_with_media(
     );
 
     let rows = sqlx::query_as::<_, MovieWithMediaRow>(&sql)
-        .bind(query.library_id).bind(query.library_id)
-        .bind(query.search).bind(query.search)
-        .bind(query.genre).bind(query.genre)
+        .bind(user_id)
+        .bind(query.library_id)
+        .bind(query.library_id)
+        .bind(query.search)
+        .bind(query.search)
+        .bind(query.genre)
+        .bind(query.genre)
         .bind(query.per_page)
         .bind(offset)
         .fetch_all(pool)
         .await?;
+
     Ok(rows)
 }
 
-/// Count movies (media_items) matching the same filters as list_movies_with_media.
-/// Uses the same fixed-SQL pattern so the prepared statement is shared/cached.
-pub async fn count_movies_with_media(
+async fn list_movies_with_media_fts(
     pool: &SqlitePool,
     query: &MediaQuery<'_>,
-) -> Result<i64> {
-    let row: (i64,) = sqlx::query_as(
+    user_id: Option<&str>,
+    fts_query: &str,
+) -> std::result::Result<Vec<MovieWithMediaRow>, sqlx::Error> {
+    let offset = (query.page - 1) * query.per_page;
+    let order_clause = if query.sort_by.is_none() {
+        "ORDER BY bm25(media_fts) ASC".to_string()
+    } else {
+        build_order_clause(query)
+    };
+
+    let sql = format!(
         r#"
-        SELECT COUNT(*)
+        SELECT DISTINCT
+               mi.id, mi.library_id, mi.media_type, mi.file_path, mi.file_size, mi.duration_ms,
+               mi.container_format, mi.video_codec, mi.audio_codec, mi.width, mi.height, mi.bitrate_kbps,
+               COALESCE(m.title, mi.title) AS movie_title,
+               m.sort_title,
+               COALESCE(m.year, mi.year) AS movie_year,
+               m.overview,
+               m.tagline, m.rating, m.content_rating,
+               m.tmdb_id,
+               m.imdb_id,
+               COALESCE(ep.still_path, m.poster_path, ts.poster_path) AS poster_path,
+               m.backdrop_path,
+               COALESCE(m.genres, ts.genres) AS genres,
+               m.fetched_at,
+               mi.title, mi.year, mi.added_at, mi.updated_at,
+               pp.position_ms, pp.completed, pp.last_played_at,
+               CASE WHEN ep.media_item_id IS NOT NULL THEN 1 ELSE 0 END AS is_episode,
+               ep.episode_number,
+               ep.title AS episode_title,
+               s.season_number,
+               ts.title AS show_title,
+               ep.still_path
         FROM media_items mi
         LEFT JOIN movies m ON m.media_item_id = mi.id
+        LEFT JOIN playback_progress pp ON pp.media_item_id = mi.id AND pp.user_id IS ?
+        LEFT JOIN episodes ep ON ep.media_item_id = mi.id
+        LEFT JOIN seasons s ON s.id = ep.season_id
+        LEFT JOIN tv_shows ts ON ts.id = s.tv_show_id
+        JOIN media_fts ON media_fts.media_item_id = mi.id
         WHERE (? IS NULL OR mi.library_id = ?)
-          AND (? IS NULL OR COALESCE(m.title, mi.title) LIKE '%' || ? || '%')
           AND (? IS NULL OR m.genres LIKE '%' || ? || '%')
+          AND media_fts MATCH ?
+        {order_clause}
+        LIMIT ? OFFSET ?
+        "#
+    );
+
+    sqlx::query_as::<_, MovieWithMediaRow>(&sql)
+        .bind(user_id)
+        .bind(query.library_id)
+        .bind(query.library_id)
+        .bind(query.genre)
+        .bind(query.genre)
+        .bind(fts_query)
+        .bind(query.per_page)
+        .bind(offset)
+        .fetch_all(pool)
+        .await
+}
+
+async fn count_movies_with_media_fts(
+    pool: &SqlitePool,
+    query: &MediaQuery<'_>,
+    fts_query: &str,
+) -> std::result::Result<i64, sqlx::Error> {
+    let row: (i64,) = sqlx::query_as(
+        r#"
+        SELECT COUNT(DISTINCT mi.id)
+        FROM media_items mi
+        LEFT JOIN movies m ON m.media_item_id = mi.id
+        JOIN media_fts ON media_fts.media_item_id = mi.id
+        WHERE (? IS NULL OR mi.library_id = ?)
+          AND (? IS NULL OR m.genres LIKE '%' || ? || '%')
+          AND media_fts MATCH ?
         "#,
     )
-    .bind(query.library_id).bind(query.library_id)
-    .bind(query.search).bind(query.search)
-    .bind(query.genre).bind(query.genre)
+    .bind(query.library_id)
+    .bind(query.library_id)
+    .bind(query.genre)
+    .bind(query.genre)
+    .bind(fts_query)
     .fetch_one(pool)
     .await?;
+
     Ok(row.0)
+}
+
+fn build_fts_match_query(search: &str) -> Option<String> {
+    let tokens: Vec<String> = search
+        .split_whitespace()
+        .map(|token| {
+            token
+                .chars()
+                .filter(|c| c.is_alphanumeric() || *c == '_')
+                .collect::<String>()
+        })
+        .filter(|token| !token.is_empty())
+        .collect();
+
+    if tokens.is_empty() {
+        return None;
+    }
+
+    Some(
+        tokens
+            .into_iter()
+            .map(|token| format!("{}*", token))
+            .collect::<Vec<_>>()
+            .join(" AND "),
+    )
+}
+
+fn should_fallback_from_fts(err: &sqlx::Error) -> bool {
+    let msg = err.to_string().to_ascii_lowercase();
+    msg.contains("no such table: media_fts")
+        || msg.contains("fts5")
+        || msg.contains("malformed match")
 }
 
 /// Build ORDER BY clause from query parameters.

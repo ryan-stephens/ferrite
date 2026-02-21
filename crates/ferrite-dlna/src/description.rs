@@ -1,5 +1,9 @@
 /// Generate the UPnP device description XML for a DLNA MediaServer.
-pub fn device_description_xml(server_uuid: &str, friendly_name: &str, http_base_url: &str) -> String {
+pub fn device_description_xml(
+    server_uuid: &str,
+    friendly_name: &str,
+    http_base_url: &str,
+) -> String {
     format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
 <root xmlns="urn:schemas-upnp-org:device-1-0">

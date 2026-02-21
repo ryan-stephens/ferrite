@@ -25,9 +25,6 @@ pub async fn upsert_progress(
 ) -> Result<()> {
     let id = Uuid::new_v4().to_string();
 
-    // The original schema has UNIQUE(media_item_id) and migration 005 added
-    // UNIQUE(user_id, media_item_id). When user_id is NULL the single-column
-    // constraint fires, so we must target the right conflict column.
     match user_id {
         Some(uid) => {
             sqlx::query(
@@ -48,21 +45,33 @@ pub async fn upsert_progress(
             .await?;
         }
         None => {
-            sqlx::query(
+            let updated = sqlx::query(
                 r#"
-                INSERT INTO playback_progress (id, media_item_id, user_id, position_ms, completed, last_played_at, play_count)
-                VALUES (?, ?, NULL, ?, 0, datetime('now'), 0)
-                ON CONFLICT(media_item_id) DO UPDATE SET
-                    position_ms = excluded.position_ms,
+                UPDATE playback_progress
+                SET position_ms = ?,
                     completed = 0,
                     last_played_at = datetime('now')
+                WHERE media_item_id = ? AND user_id IS NULL
                 "#,
             )
-            .bind(&id)
-            .bind(media_item_id)
             .bind(position_ms)
+            .bind(media_item_id)
             .execute(pool)
             .await?;
+
+            if updated.rows_affected() == 0 {
+                sqlx::query(
+                    r#"
+                    INSERT INTO playback_progress (id, media_item_id, user_id, position_ms, completed, last_played_at, play_count)
+                    VALUES (?, ?, NULL, ?, 0, datetime('now'), 0)
+                    "#,
+                )
+                .bind(&id)
+                .bind(media_item_id)
+                .bind(position_ms)
+                .execute(pool)
+                .await?;
+            }
         }
     }
 
@@ -97,20 +106,31 @@ pub async fn mark_completed(
             .await?;
         }
         None => {
-            sqlx::query(
+            let updated = sqlx::query(
                 r#"
-                INSERT INTO playback_progress (id, media_item_id, user_id, position_ms, completed, last_played_at, play_count)
-                VALUES (?, ?, NULL, 0, 1, datetime('now'), 1)
-                ON CONFLICT(media_item_id) DO UPDATE SET
-                    completed = 1,
-                    play_count = playback_progress.play_count + 1,
+                UPDATE playback_progress
+                SET completed = 1,
+                    play_count = play_count + 1,
                     last_played_at = datetime('now')
+                WHERE media_item_id = ? AND user_id IS NULL
                 "#,
             )
-            .bind(&id)
             .bind(media_item_id)
             .execute(pool)
             .await?;
+
+            if updated.rows_affected() == 0 {
+                sqlx::query(
+                    r#"
+                    INSERT INTO playback_progress (id, media_item_id, user_id, position_ms, completed, last_played_at, play_count)
+                    VALUES (?, ?, NULL, 0, 1, datetime('now'), 1)
+                    "#,
+                )
+                .bind(&id)
+                .bind(media_item_id)
+                .execute(pool)
+                .await?;
+            }
         }
     }
 

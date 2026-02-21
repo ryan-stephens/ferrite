@@ -1,0 +1,55 @@
+{
+  "scenarios": {
+    "direct": {
+      "count_gte": 1,
+      "p95_ms_lte": 3000
+    },
+    "remux": {
+      "count_gte": 1,
+      "p95_ms_lte": 4000
+    },
+    "audio_transcode": {
+      "count_gte": 1,
+      "p95_ms_lte": 6000
+    },
+    "full_transcode": {
+      "count_gte": 1,
+      "p95_ms_lte": 12000
+    },
+    "hls_startup": {
+      "count_gte": 1,
+      "p95_ms_lte": 5000
+    },
+    "hls_seek": {
+      "count_gte": 1,
+      "p95_ms_lte": 7000
+    },
+    "hls_abr_switch": {
+      "count_gte": 1,
+      "p95_ms_lte": 7000,
+      "switch_count_gte": 1,
+      "switch_rate_gte": 0.5
+    }
+  },
+  "backend_metrics": {
+    "timings": {
+      "playback_ttff_ms{path=stream,stream=direct}": {
+        "count_gte": 1,
+        "avg_ms_lte": 3000
+      },
+      "playback_ttff_ms{path=hls_master,stream=hls}": {
+        "count_gte": 1,
+        "avg_ms_lte": 5000
+      },
+      "seek_latency_ms{mode=new-session,path=hls_seek}": {
+        "count_gte": 1,
+        "avg_ms_lte": 7000
+      }
+    },
+    "counters": {
+      "rebuffer_count{path=player,stream=hls}": {
+        "value_lte": 10
+      }
+    }
+  }
+}

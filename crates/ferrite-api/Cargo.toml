@@ -30,3 +30,4 @@ percent-encoding = { workspace = true }
 tokio-util = { workspace = true }
 subtle = { workspace = true }
 governor = { workspace = true }
+dashmap = { workspace = true }

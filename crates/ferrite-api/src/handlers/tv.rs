@@ -1,9 +1,14 @@
+use crate::auth::AuthUser;
 use crate::error::ApiError;
 use crate::state::AppState;
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
-use axum::Json;
+use axum::{Extension, Json};
 use ferrite_db::tv_repo;
+
+fn extract_user_id(auth_user: &Option<AuthUser>) -> Option<&str> {
+    auth_user.as_ref().map(|u| u.user_id.as_str())
+}
 
 /// GET /api/shows?library_id={id} — list all TV shows in a library
 pub async fn list_shows(
@@ -47,9 +52,12 @@ pub async fn list_seasons(
 /// GET /api/seasons/{id}/episodes — list all episodes in a season
 pub async fn list_episodes(
     State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let episodes = tv_repo::list_episodes(&state.db, &id).await?;
+    let user = auth_user.map(|e| e.0);
+    let user_id = extract_user_id(&user);
+    let episodes = tv_repo::list_episodes(&state.db, &id, user_id).await?;
     Ok(Json(episodes))
 }
 

@@ -54,18 +54,55 @@ fn default_subtitle_cache_dir() -> PathBuf {
     PathBuf::from("cache/subtitles")
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum HlsSegmentMimeMode {
+    /// Serve `.m4s` with `video/mp4` (recommended cross-client default).
+    VideoMp4,
+    /// Serve `.m4s` with `video/iso.segment` for strict ISO segment typing.
+    VideoIsoSegment,
+}
+
+impl HlsSegmentMimeMode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::VideoMp4 => "video-mp4",
+            Self::VideoIsoSegment => "video-iso-segment",
+        }
+    }
+}
+
+impl Default for HlsSegmentMimeMode {
+    fn default() -> Self {
+        Self::VideoMp4
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TranscodeConfig {
     pub ffmpeg_path: String,
     pub ffprobe_path: String,
     pub cache_dir: PathBuf,
     pub max_concurrent_transcodes: usize,
+    /// Maximum seconds to wait in the transcode queue before returning 503.
+    #[serde(default = "default_transcode_queue_timeout_secs")]
+    pub transcode_queue_timeout_secs: u64,
     /// HLS segment duration in seconds
     #[serde(default = "default_hls_segment_duration")]
     pub hls_segment_duration: u64,
+    /// Number of segments retained in each live HLS playlist window.
+    /// Older segments are deleted to cap disk usage.
+    #[serde(default = "default_hls_playlist_window_segments")]
+    pub hls_playlist_window_segments: u32,
     /// HLS session timeout — sessions idle for this many seconds are cleaned up
     #[serde(default = "default_hls_session_timeout")]
     pub hls_session_timeout_secs: u64,
+    /// MIME mode for HLS fMP4 media segments (`.m4s`).
+    ///
+    /// - `video-mp4` (default): best interoperability across web, tvOS, and Roku-like clients.
+    /// - `video-iso-segment`: explicit ISO BMFF segment MIME type.
+    #[serde(default)]
+    pub hls_segment_mime_mode: HlsSegmentMimeMode,
     /// Seconds of no segment requests before FFmpeg is killed (client paused).
     /// Increase for slow/satellite connections where segment downloads take longer.
     #[serde(default = "default_hls_ffmpeg_idle_secs")]
@@ -75,8 +112,16 @@ pub struct TranscodeConfig {
     pub hw_accel: Option<String>,
 }
 
+fn default_transcode_queue_timeout_secs() -> u64 {
+    15
+}
+
 fn default_hls_segment_duration() -> u64 {
-    6
+    2
+}
+
+fn default_hls_playlist_window_segments() -> u32 {
+    30
 }
 
 fn default_hls_session_timeout() -> u64 {
@@ -101,6 +146,10 @@ pub struct AuthConfig {
     /// Token expiration in days
     #[serde(default = "default_token_expiry_days")]
     pub token_expiry_days: u64,
+    /// If true, skip per-request DB user existence checks on /api/stream hot paths.
+    /// JWT signature + expiry are still validated.
+    #[serde(default = "default_auth_hotpath_no_db")]
+    pub auth_hotpath_no_db: bool,
     /// Optional API keys for programmatic access
     #[serde(default)]
     pub api_keys: Vec<String>,
@@ -113,6 +162,10 @@ pub struct AuthConfig {
 
 fn default_token_expiry_days() -> u64 {
     30
+}
+
+fn default_auth_hotpath_no_db() -> bool {
+    false
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -167,7 +220,11 @@ impl AppConfig {
 
         // Ensure data dir exists
         if let Err(e) = std::fs::create_dir_all(&data_dir) {
-            tracing::warn!("Failed to create data directory {}: {}", data_dir.display(), e);
+            tracing::warn!(
+                "Failed to create data directory {}: {}",
+                data_dir.display(),
+                e
+            );
         }
 
         // Resolve database path
@@ -191,7 +248,11 @@ impl AppConfig {
         }
 
         // Ensure cache directories exist
-        for dir in [&self.transcode.cache_dir, &self.metadata.image_cache_dir, &self.scanner.subtitle_cache_dir] {
+        for dir in [
+            &self.transcode.cache_dir,
+            &self.metadata.image_cache_dir,
+            &self.scanner.subtitle_cache_dir,
+        ] {
             if let Err(e) = std::fs::create_dir_all(dir) {
                 tracing::warn!("Failed to create cache directory {}: {}", dir.display(), e);
             }
@@ -243,8 +304,11 @@ impl Default for AppConfig {
                 ffprobe_path: "ffprobe".to_string(),
                 cache_dir: PathBuf::from("cache/transcode"),
                 max_concurrent_transcodes: 2,
+                transcode_queue_timeout_secs: default_transcode_queue_timeout_secs(),
                 hls_segment_duration: default_hls_segment_duration(),
+                hls_playlist_window_segments: default_hls_playlist_window_segments(),
                 hls_session_timeout_secs: default_hls_session_timeout(),
+                hls_segment_mime_mode: HlsSegmentMimeMode::default(),
                 hls_ffmpeg_idle_secs: default_hls_ffmpeg_idle_secs(),
                 hw_accel: None,
             },

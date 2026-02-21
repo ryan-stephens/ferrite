@@ -15,15 +15,13 @@ pub async fn create_library(
         .unwrap_or("movie")
         .to_string();
 
-    sqlx::query(
-        "INSERT INTO libraries (id, name, path, library_type) VALUES (?, ?, ?, ?)",
-    )
-    .bind(&id)
-    .bind(name)
-    .bind(path)
-    .bind(&lib_type)
-    .execute(pool)
-    .await?;
+    sqlx::query("INSERT INTO libraries (id, name, path, library_type) VALUES (?, ?, ?, ?)")
+        .bind(&id)
+        .bind(name)
+        .bind(path)
+        .bind(&lib_type)
+        .execute(pool)
+        .await?;
 
     get_library(pool, &id).await
 }

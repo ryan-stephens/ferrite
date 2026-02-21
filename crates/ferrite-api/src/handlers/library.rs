@@ -15,9 +15,7 @@ pub struct CreateLibraryRequest {
     pub library_type: String,
 }
 
-pub async fn list_libraries(
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, ApiError> {
+pub async fn list_libraries(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
     let libs = library_repo::list_libraries(&state.db).await?;
     Ok(Json(libs))
 }
@@ -52,7 +50,9 @@ pub async fn scan_library(
     let _library = ferrite_db::library_repo::get_library(&state.db, &id).await?;
 
     // Prevent duplicate concurrent scans for the same library
-    let scan_state = state.scan_registry.try_start(id.clone())
+    let scan_state = state
+        .scan_registry
+        .try_start(id.clone())
         .ok_or_else(|| ApiError::bad_request("Scan already in progress for this library"))?;
 
     let db = state.db.clone();
@@ -67,12 +67,11 @@ pub async fn scan_library(
 
         // Build optional TMDB provider for inline enrichment
         let (tmdb_provider, image_cache) = if let Some(ref api_key) = config.metadata.tmdb_api_key {
-            let provider: Arc<dyn ferrite_metadata::provider::MetadataProvider> = Arc::new(
-                ferrite_metadata::tmdb::TmdbProvider::new(
+            let provider: Arc<dyn ferrite_metadata::provider::MetadataProvider> =
+                Arc::new(ferrite_metadata::tmdb::TmdbProvider::new(
                     api_key.clone(),
                     config.metadata.rate_limit_per_second,
-                )
-            );
+                ));
             let cache = Arc::new(ferrite_metadata::image_cache::ImageCache::new(
                 config.metadata.image_cache_dir.clone(),
             ));
@@ -91,7 +90,9 @@ pub async fn scan_library(
             scan_state,
             tmdb_provider,
             image_cache,
-        ).await {
+        )
+        .await
+        {
             Ok(count) => {
                 tracing::info!("Scan complete for library {}: {} new items", lib_id, count);
             }
@@ -101,7 +102,10 @@ pub async fn scan_library(
         }
     });
 
-    Ok((StatusCode::ACCEPTED, Json(serde_json::json!({ "status": "scanning" }))))
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(serde_json::json!({ "status": "scanning" })),
+    ))
 }
 
 pub async fn scan_status(

@@ -4,6 +4,8 @@ use std::path::Path;
 use tokio::process::Command;
 use tracing::{debug, warn};
 
+const KEYFRAME_INDEX_MIN_GAP_MS: u64 = 2_000;
+
 /// A single stream (video, audio, or subtitle) extracted from ffprobe.
 #[derive(Debug, Clone)]
 pub struct StreamInfo {
@@ -56,14 +58,19 @@ pub struct ProbeResult {
     pub streams: Vec<StreamInfo>,
     /// Chapter markers embedded in the container.
     pub chapters: Vec<ChapterInfo>,
+    /// Coarse keyframe seek map persisted for fast runtime seeks.
+    /// `None` means keyframe extraction failed; `Some(vec![])` means no keyframes found.
+    pub keyframe_index_ms: Option<Vec<u64>>,
 }
 
 /// Run ffprobe on a file and extract stream/format info.
 pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeResult> {
     let output = Command::new(ffprobe_path)
         .args([
-            "-v", "quiet",
-            "-print_format", "json",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
             "-show_format",
             "-show_streams",
             "-show_chapters",
@@ -86,6 +93,7 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
             height: None,
             streams: Vec::new(),
             chapters: Vec::new(),
+            keyframe_index_ms: None,
         });
     }
 
@@ -100,25 +108,31 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
     });
 
     let duration_ms = json.format.as_ref().and_then(|f| {
-        f.duration.as_deref().and_then(|d| {
-            d.parse::<f64>().ok().map(|s| (s * 1000.0) as u64)
-        })
+        f.duration
+            .as_deref()
+            .and_then(|d| d.parse::<f64>().ok().map(|s| (s * 1000.0) as u64))
     });
 
     let bitrate_kbps = json.format.as_ref().and_then(|f| {
-        f.bit_rate.as_deref().and_then(|b| {
-            b.parse::<u64>().ok().map(|bps| (bps / 1000) as u32)
-        })
+        f.bit_rate
+            .as_deref()
+            .and_then(|b| b.parse::<u64>().ok().map(|bps| (bps / 1000) as u32))
     });
 
     // Find the first video stream
-    let video_stream = json.streams.iter().find(|s| s.codec_type.as_deref() == Some("video"));
+    let video_stream = json
+        .streams
+        .iter()
+        .find(|s| s.codec_type.as_deref() == Some("video"));
     let video_codec = video_stream.and_then(|s| s.codec_name.clone());
     let width = video_stream.and_then(|s| s.width);
     let height = video_stream.and_then(|s| s.height);
 
     // Find the first audio stream
-    let audio_stream = json.streams.iter().find(|s| s.codec_type.as_deref() == Some("audio"));
+    let audio_stream = json
+        .streams
+        .iter()
+        .find(|s| s.codec_type.as_deref() == Some("audio"));
     let audio_codec = audio_stream.and_then(|s| s.codec_name.clone());
 
     // Build detailed StreamInfo for every stream
@@ -149,7 +163,10 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
                 height: s.height,
                 frame_rate: s.r_frame_rate.clone(),
                 pixel_format: s.pix_fmt.clone(),
-                bit_depth: s.bits_per_raw_sample.as_deref().and_then(|b| b.parse().ok()),
+                bit_depth: s
+                    .bits_per_raw_sample
+                    .as_deref()
+                    .and_then(|b| b.parse().ok()),
                 color_space: s.color_space.clone(),
                 color_transfer: s.color_transfer.clone(),
                 color_primaries: s.color_primaries.clone(),
@@ -161,16 +178,22 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
         })
         .collect();
 
+    let keyframe_index_ms = probe_keyframe_index(ffprobe_path, file_path).await;
+
     // Parse chapter markers
     let chapters: Vec<ChapterInfo> = json
         .chapters
         .iter()
         .enumerate()
         .filter_map(|(i, c)| {
-            let start_ms = c.start_time.as_deref()
+            let start_ms = c
+                .start_time
+                .as_deref()
                 .and_then(|s| s.parse::<f64>().ok())
                 .map(|s| (s * 1000.0) as u64)?;
-            let end_ms = c.end_time.as_deref()
+            let end_ms = c
+                .end_time
+                .as_deref()
                 .and_then(|s| s.parse::<f64>().ok())
                 .map(|s| (s * 1000.0) as u64)
                 .unwrap_or(start_ms);
@@ -184,7 +207,7 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
         .collect();
 
     debug!(
-        "Probed {}: container={:?} video={:?} audio={:?} {}x{} duration={}ms streams={} chapters={}",
+        "Probed {}: container={:?} video={:?} audio={:?} {}x{} duration={}ms streams={} chapters={} keyframes={}",
         file_path.display(),
         container_format,
         video_codec,
@@ -194,6 +217,7 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
         duration_ms.unwrap_or(0),
         streams.len(),
         chapters.len(),
+        keyframe_index_ms.as_ref().map_or(0, Vec::len),
     );
 
     Ok(ProbeResult {
@@ -206,7 +230,65 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
         height,
         streams,
         chapters,
+        keyframe_index_ms,
     })
+}
+
+async fn probe_keyframe_index(ffprobe_path: &str, file_path: &Path) -> Option<Vec<u64>> {
+    let output = Command::new(ffprobe_path)
+        .args([
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-skip_frame",
+            "nokey",
+            "-show_entries",
+            "frame=pts_time",
+            "-of",
+            "csv=print_section=0",
+        ])
+        .arg(file_path)
+        .output()
+        .await
+        .ok()?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        warn!(
+            "ffprobe keyframe index extraction failed for {}: {}",
+            file_path.display(),
+            stderr
+        );
+        return None;
+    }
+
+    let mut keyframes_ms = Vec::new();
+    let mut last_kept_ms: Option<u64> = None;
+    let text = String::from_utf8_lossy(&output.stdout);
+
+    for line in text.lines() {
+        let pts_secs = match parse_pts_time(line) {
+            Some(v) => v,
+            None => continue,
+        };
+        let pts_ms = (pts_secs * 1000.0).round() as u64;
+        let keep = last_kept_ms
+            .map(|last| pts_ms >= last + KEYFRAME_INDEX_MIN_GAP_MS)
+            .unwrap_or(true);
+        if keep {
+            keyframes_ms.push(pts_ms);
+            last_kept_ms = Some(pts_ms);
+        }
+    }
+
+    Some(keyframes_ms)
+}
+
+fn parse_pts_time(line: &str) -> Option<f64> {
+    line.split(',')
+        .find_map(|token| token.trim().parse::<f64>().ok())
+        .filter(|v| *v >= 0.0)
 }
 
 #[derive(Deserialize)]

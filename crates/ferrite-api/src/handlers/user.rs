@@ -107,7 +107,9 @@ pub async fn change_password(
 
     user_repo::change_password(&state.db, &caller.user_id, &req.new_password).await?;
 
-    Ok(Json(serde_json::json!({ "message": "Password changed successfully" })))
+    Ok(Json(
+        serde_json::json!({ "message": "Password changed successfully" }),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -162,7 +164,9 @@ pub async fn admin_reset_password(
     }
 
     user_repo::change_password(&state.db, &target_id, &req.new_password).await?;
-    Ok(Json(serde_json::json!({ "message": "Password reset successfully" })))
+    Ok(Json(
+        serde_json::json!({ "message": "Password reset successfully" }),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -171,9 +175,7 @@ pub struct AdminResetPasswordRequest {
 }
 
 /// GET /api/users/setup — check if initial setup is needed (no users exist)
-pub async fn setup_status(
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, ApiError> {
+pub async fn setup_status(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
     let count = user_repo::count_users(&state.db).await?;
     Ok(Json(serde_json::json!({
         "setup_required": count == 0,

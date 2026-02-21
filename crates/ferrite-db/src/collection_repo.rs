@@ -141,18 +141,13 @@ pub async fn add_item(
 }
 
 /// Remove a media item from a collection.
-pub async fn remove_item(
-    pool: &SqlitePool,
-    collection_id: &str,
-    media_id: &str,
-) -> Result<bool> {
-    let result = sqlx::query(
-        "DELETE FROM collection_items WHERE collection_id = ? AND media_id = ?",
-    )
-    .bind(collection_id)
-    .bind(media_id)
-    .execute(pool)
-    .await?;
+pub async fn remove_item(pool: &SqlitePool, collection_id: &str, media_id: &str) -> Result<bool> {
+    let result =
+        sqlx::query("DELETE FROM collection_items WHERE collection_id = ? AND media_id = ?")
+            .bind(collection_id)
+            .bind(media_id)
+            .execute(pool)
+            .await?;
 
     if result.rows_affected() > 0 {
         sqlx::query("UPDATE collections SET updated_at = datetime('now') WHERE id = ?")
@@ -165,10 +160,7 @@ pub async fn remove_item(
 }
 
 /// List items in a collection, ordered by position for playlists.
-pub async fn list_items(
-    pool: &SqlitePool,
-    collection_id: &str,
-) -> Result<Vec<CollectionItemRow>> {
+pub async fn list_items(pool: &SqlitePool, collection_id: &str) -> Result<Vec<CollectionItemRow>> {
     let rows = sqlx::query_as::<_, CollectionItemRow>(
         "SELECT * FROM collection_items WHERE collection_id = ? ORDER BY position ASC, added_at ASC",
     )
@@ -248,11 +240,10 @@ pub async fn reorder_item(
 
 /// Count items in a collection.
 pub async fn count_items(pool: &SqlitePool, collection_id: &str) -> Result<i64> {
-    let count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM collection_items WHERE collection_id = ?",
-    )
-    .bind(collection_id)
-    .fetch_one(pool)
-    .await?;
+    let count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM collection_items WHERE collection_id = ?")
+            .bind(collection_id)
+            .fetch_one(pool)
+            .await?;
     Ok(count.0)
 }

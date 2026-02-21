@@ -532,6 +532,7 @@ dependencies = [
  "axum",
  "bcrypt",
  "chrono",
+ "dashmap",
  "ferrite-core",
  "ferrite-db",
  "ferrite-metadata",

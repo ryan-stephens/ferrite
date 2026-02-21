@@ -167,7 +167,10 @@ mod tests {
         let result = video_format_filter(Some("yuv420p10le"), Some("bt709"), Some("bt709"));
         assert!(result.is_some());
         let filter = result.unwrap();
-        assert!(!filter.contains("tonemap"), "10-bit SDR should NOT get tone-mapping");
+        assert!(
+            !filter.contains("tonemap"),
+            "10-bit SDR should NOT get tone-mapping"
+        );
         assert!(filter.contains("format=yuv420p"));
     }
 
@@ -177,7 +180,10 @@ mod tests {
         let result = video_format_filter(Some("yuv420p10le"), None, None);
         assert!(result.is_some());
         let filter = result.unwrap();
-        assert!(!filter.contains("tonemap"), "Unknown color should NOT get tone-mapping");
+        assert!(
+            !filter.contains("tonemap"),
+            "Unknown color should NOT get tone-mapping"
+        );
         assert!(filter.contains("format=yuv420p"));
     }
 

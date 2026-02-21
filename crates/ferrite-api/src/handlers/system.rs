@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::response::{Html, IntoResponse, Json};
 use axum::Extension;
 use ferrite_db::user_repo;
+use serde::Deserialize;
 use serde_json::json;
 
 pub async fn health() -> impl IntoResponse {
@@ -19,9 +20,7 @@ pub async fn info() -> impl IntoResponse {
 }
 
 /// GET /api/system/encoder — returns the active video encoder profile and backend.
-pub async fn encoder_info(
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+pub async fn encoder_info(State(state): State<AppState>) -> impl IntoResponse {
     let profile = &state.encoder_profile;
     Json(json!({
         "backend": format!("{}", profile.backend),
@@ -35,14 +34,8 @@ pub async fn list_active_streams(
     State(state): State<AppState>,
     auth_user: Option<Extension<AuthUser>>,
 ) -> Result<impl IntoResponse, ApiError> {
-    if let Some(Extension(ref user)) = auth_user {
-        let caller = user_repo::get_user_by_id(&state.db, &user.user_id)
-            .await?
-            .ok_or_else(|| ApiError::unauthorized("User not found"))?;
-        if caller.is_admin == 0 {
-            return Err(ApiError::forbidden("Admin access required"));
-        }
-    }
+    ensure_admin_if_present(&state, auth_user.as_ref()).await?;
+
     let sessions = state.hls_sessions.list_active_sessions().await;
     let count = sessions.len();
     let items: Vec<serde_json::Value> = sessions
@@ -62,6 +55,89 @@ pub async fn list_active_streams(
         })
         .collect();
     Ok(Json(json!({ "sessions": items, "count": count })))
+}
+
+#[derive(Deserialize)]
+pub struct TrackPlaybackMetricRequest {
+    pub metric: String,
+    pub value_ms: Option<f64>,
+    pub increment: Option<u64>,
+    #[serde(default)]
+    pub labels: std::collections::HashMap<String, String>,
+}
+
+/// GET /api/system/metrics — snapshot in-memory playback metrics (admin only).
+pub async fn playback_metrics(
+    State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
+) -> Result<impl IntoResponse, ApiError> {
+    ensure_admin_if_present(&state, auth_user.as_ref()).await?;
+    Ok(Json(state.playback_metrics.snapshot()))
+}
+
+/// DELETE /api/system/metrics — reset in-memory playback metrics (admin only).
+pub async fn reset_playback_metrics(
+    State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
+) -> Result<impl IntoResponse, ApiError> {
+    ensure_admin_if_present(&state, auth_user.as_ref()).await?;
+    state.playback_metrics.reset();
+    Ok(Json(json!({ "status": "ok" })))
+}
+
+/// POST /api/system/metrics/track — ingest client-side playback metrics.
+pub async fn track_playback_metric(
+    State(state): State<AppState>,
+    Json(req): Json<TrackPlaybackMetricRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    let mut labels: Vec<(String, String)> = req
+        .labels
+        .into_iter()
+        .filter(|(k, _)| matches!(k.as_str(), "stream" | "path" | "mode" | "operation"))
+        .collect();
+    labels.sort_by(|a, b| a.0.cmp(&b.0));
+    let label_refs: Vec<(&str, &str)> = labels
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+
+    match req.metric.as_str() {
+        "playback_ttff_ms" | "seek_latency_ms" | "rebuffer_ms" => {
+            let value = req
+                .value_ms
+                .ok_or_else(|| ApiError::bad_request("value_ms is required for timing metrics"))?;
+            state
+                .playback_metrics
+                .record_timing(&req.metric, &label_refs, value);
+        }
+        "rebuffer_count" => {
+            state.playback_metrics.increment_counter(
+                &req.metric,
+                &label_refs,
+                req.increment.unwrap_or(1),
+            );
+        }
+        _ => {
+            return Err(ApiError::bad_request("Unsupported metric name"));
+        }
+    }
+
+    Ok(Json(json!({ "status": "ok" })))
+}
+
+async fn ensure_admin_if_present(
+    state: &AppState,
+    auth_user: Option<&Extension<AuthUser>>,
+) -> Result<(), ApiError> {
+    if let Some(Extension(user)) = auth_user {
+        let caller = user_repo::get_user_by_id(&state.db, &user.user_id)
+            .await?
+            .ok_or_else(|| ApiError::unauthorized("User not found"))?;
+        if caller.is_admin == 0 {
+            return Err(ApiError::forbidden("Admin access required"));
+        }
+    }
+    Ok(())
 }
 
 /// Serve the embedded web UI. For M1 this is a simple inline HTML page.
@@ -963,6 +1039,14 @@ const FRONTEND_HTML: &str = r#"<!DOCTYPE html>
         let lastProgressReport = 0;
         let currentHls = null;      // hls.js instance
         let currentHlsSessionId = null;
+        let currentPlaybackSessionId = null;
+
+        function createPlaybackSessionId() {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+            return `sys-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        }
 
         function isDirectPlay(item) {
             const cOk = item.container_format && COMPAT_CONTAINER.includes(item.container_format.toLowerCase());
@@ -986,6 +1070,7 @@ const FRONTEND_HTML: &str = r#"<!DOCTYPE html>
             isSeeking = false;
             lastProgressReport = 0;
             currentHlsSessionId = null;
+            currentPlaybackSessionId = createPlaybackSessionId();
 
             // Clean up any previous hls.js instance
             if (currentHls) {
@@ -1032,7 +1117,8 @@ const FRONTEND_HTML: &str = r#"<!DOCTYPE html>
                 isHls = true;
                 hlsStartOffset = startAt;
                 const startParam = startAt > 0.5 ? `&start=${startAt.toFixed(3)}` : '';
-                const masterUrl = `/api/stream/${id}/hls/master.m3u8?_=1${startParam}`;
+                const playbackParam = `&playback_session_id=${encodeURIComponent(currentPlaybackSessionId)}`;
+                const masterUrl = `/api/stream/${id}/hls/master.m3u8?_=1${startParam}${playbackParam}`;
 
                 const hls = new Hls({
                     xhrSetup: function(xhr, url) {
@@ -1078,7 +1164,9 @@ const FRONTEND_HTML: &str = r#"<!DOCTYPE html>
             } else if (useNativeHls) {
                 // ---- Safari native HLS ----
                 isHls = true;
-                const masterUrl = authUrl(`/api/stream/${id}/hls/master.m3u8`);
+                const masterUrl = authUrl(
+                    `/api/stream/${id}/hls/master.m3u8?playback_session_id=${encodeURIComponent(currentPlaybackSessionId)}`,
+                );
                 video.src = masterUrl;
                 video.addEventListener('loadedmetadata', function onMeta() {
                     if (startAt > 1) video.currentTime = startAt;
@@ -1133,11 +1221,20 @@ const FRONTEND_HTML: &str = r#"<!DOCTYPE html>
                 currentHls = null;
             }
 
-            // Clean up HLS session on the server
-            if (currentHlsSessionId && currentItem) {
-                apiQuiet('DELETE', `/api/stream/${currentItem.id}/hls/${currentHlsSessionId}`);
-                currentHlsSessionId = null;
+            // Clean up HLS session on the server.
+            // Native HLS may not expose session IDs to JS, so fallback to owner-key cleanup.
+            if (currentItem && isHls) {
+                if (currentHlsSessionId) {
+                    apiQuiet('DELETE', `/api/stream/${currentItem.id}/hls/${currentHlsSessionId}`);
+                    currentHlsSessionId = null;
+                } else if (currentPlaybackSessionId) {
+                    apiQuiet(
+                        'DELETE',
+                        `/api/stream/${currentItem.id}/hls?playback_session_id=${encodeURIComponent(currentPlaybackSessionId)}`,
+                    );
+                }
             }
+            currentPlaybackSessionId = null;
 
             const video = document.getElementById('video');
             video.pause();
@@ -1210,7 +1307,12 @@ const FRONTEND_HTML: &str = r#"<!DOCTYPE html>
 
             try {
                 // Call the seek endpoint to create a new HLS session at targetTime
-                const seekRes = await api('POST', `/api/stream/${id}/hls/seek?start=${targetTime.toFixed(3)}`);
+                const playbackId = currentPlaybackSessionId || createPlaybackSessionId();
+                currentPlaybackSessionId = playbackId;
+                const seekRes = await api(
+                    'POST',
+                    `/api/stream/${id}/hls/seek?start=${targetTime.toFixed(3)}&playback_session_id=${encodeURIComponent(playbackId)}`,
+                );
 
                 // Destroy old hls.js instance
                 if (currentHls) {
@@ -1243,7 +1345,11 @@ const FRONTEND_HTML: &str = r#"<!DOCTYPE html>
                     }
                 });
 
-                hls.loadSource(authUrl(seekRes.playlist_url));
+                const sourceUrl = seekRes.master_url || seekRes.playlist_url;
+                if (!sourceUrl) {
+                    throw new Error('HLS seek response missing master_url');
+                }
+                hls.loadSource(sourceUrl);
                 hls.attachMedia(video);
             } catch (e) {
                 console.error('HLS seek failed:', e);

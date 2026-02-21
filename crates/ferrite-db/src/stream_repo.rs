@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sqlx::{SqlitePool, SqliteConnection};
+use sqlx::{SqliteConnection, SqlitePool};
 
 /// Data for a single media stream to insert into the database.
 #[derive(Debug)]
@@ -134,16 +134,21 @@ pub struct VideoMeta {
 /// Replaces the three separate `get_video_pixel_format`, `get_video_frame_rate`,
 /// and `get_video_color_metadata` calls that were previously made sequentially.
 pub async fn get_video_meta(pool: &SqlitePool, media_item_id: &str) -> Result<Option<VideoMeta>> {
-    let row: Option<(Option<String>, Option<String>, Option<String>, Option<String>, Option<String>)> =
-        sqlx::query_as(
-            "SELECT pixel_format, frame_rate, color_space, color_transfer, color_primaries \
+    let row: Option<(
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    )> = sqlx::query_as(
+        "SELECT pixel_format, frame_rate, color_space, color_transfer, color_primaries \
              FROM media_streams \
              WHERE media_item_id = ? AND stream_type = 'video' \
              ORDER BY stream_index LIMIT 1",
-        )
-        .bind(media_item_id)
-        .fetch_optional(pool)
-        .await?;
+    )
+    .bind(media_item_id)
+    .fetch_optional(pool)
+    .await?;
     Ok(row.map(|r| VideoMeta {
         pixel_format: r.0,
         frame_rate: r.1,
@@ -155,7 +160,10 @@ pub async fn get_video_meta(pool: &SqlitePool, media_item_id: &str) -> Result<Op
 
 /// Get the pixel format of the first video stream for a media item.
 /// Returns `None` if no video stream exists or pixel_format is not set.
-pub async fn get_video_pixel_format(pool: &SqlitePool, media_item_id: &str) -> Result<Option<String>> {
+pub async fn get_video_pixel_format(
+    pool: &SqlitePool,
+    media_item_id: &str,
+) -> Result<Option<String>> {
     let row: Option<(Option<String>,)> = sqlx::query_as(
         "SELECT pixel_format FROM media_streams WHERE media_item_id = ? AND stream_type = 'video' ORDER BY stream_index LIMIT 1",
     )
@@ -167,7 +175,10 @@ pub async fn get_video_pixel_format(pool: &SqlitePool, media_item_id: &str) -> R
 
 /// Get the frame rate of the first video stream for a media item.
 /// Returns the raw string (e.g. "24000/1001", "30/1") or `None`.
-pub async fn get_video_frame_rate(pool: &SqlitePool, media_item_id: &str) -> Result<Option<String>> {
+pub async fn get_video_frame_rate(
+    pool: &SqlitePool,
+    media_item_id: &str,
+) -> Result<Option<String>> {
     let row: Option<(Option<String>,)> = sqlx::query_as(
         "SELECT frame_rate FROM media_streams WHERE media_item_id = ? AND stream_type = 'video' ORDER BY stream_index LIMIT 1",
     )
@@ -186,7 +197,10 @@ pub struct VideoColorMeta {
 }
 
 /// Get color metadata (color_space, color_transfer, color_primaries) for the first video stream.
-pub async fn get_video_color_metadata(pool: &SqlitePool, media_item_id: &str) -> Result<Option<VideoColorMeta>> {
+pub async fn get_video_color_metadata(
+    pool: &SqlitePool,
+    media_item_id: &str,
+) -> Result<Option<VideoColorMeta>> {
     let row: Option<(Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
         "SELECT color_space, color_transfer, color_primaries FROM media_streams WHERE media_item_id = ? AND stream_type = 'video' ORDER BY stream_index LIMIT 1",
     )

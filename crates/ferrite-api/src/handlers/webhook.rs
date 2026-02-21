@@ -51,7 +51,9 @@ pub async fn create_webhook(
     }
 
     if !body.url.starts_with("http://") && !body.url.starts_with("https://") {
-        return Err(ApiError::bad_request("Webhook URL must start with http:// or https://"));
+        return Err(ApiError::bad_request(
+            "Webhook URL must start with http:// or https://",
+        ));
     }
 
     let user_id = extract_user_id(&state).await;
@@ -71,9 +73,7 @@ pub async fn create_webhook(
 }
 
 /// GET /api/webhooks — List all webhooks for the current user.
-pub async fn list_webhooks(
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, ApiError> {
+pub async fn list_webhooks(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
     let user_id = extract_user_id(&state).await;
 
     let webhooks = webhook_repo::list_webhooks(&state.db, &user_id)
@@ -106,7 +106,9 @@ pub async fn update_webhook(
     }
 
     if !body.url.starts_with("http://") && !body.url.starts_with("https://") {
-        return Err(ApiError::bad_request("Webhook URL must start with http:// or https://"));
+        return Err(ApiError::bad_request(
+            "Webhook URL must start with http:// or https://",
+        ));
     }
 
     let updated = webhook_repo::update_webhook(

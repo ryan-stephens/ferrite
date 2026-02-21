@@ -70,6 +70,13 @@ function createHls(): Hls {
   });
 }
 
+function createPlaybackSessionId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `ps-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export default function Player(props: PlayerProps) {
   let playerRef!: HTMLDivElement;
   let videoRef!: HTMLVideoElement;
@@ -119,9 +126,11 @@ export default function Player(props: PlayerProps) {
   const isTranscoded = () => stream() !== 'direct';
   const isFullTranscode = () => stream() === 'full-transcode';
   const knownDuration = () => item().duration_ms ? item().duration_ms! / 1000 : 0;
+  let playbackSessionId: string | null = null;
 
   let hlsInstance: Hls | null = null;
   let hlsSessionId: string | null = null;
+  let hlsHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
   let seekOffset = 0;
   let hlsStartOffset = 0;
   let isSeeking = false;
@@ -140,6 +149,8 @@ export default function Player(props: PlayerProps) {
   // FFmpeg session for the final destination, not one per button press.
   let seekDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingSeekTarget: number | null = null;
+  let firstPlaybackStarted = false;
+  let rebufferStartPerfMs: number | null = null;
   // AbortController for in-flight subtitle fetch — aborted on each new applySubtitle() call
   let subtitleFetchController: AbortController | null = null;
   // Session-expired recovery: shared across initial playback and post-seek HLS instances
@@ -150,6 +161,42 @@ export default function Player(props: PlayerProps) {
   function actualTime(): number {
     if (!videoRef) return 0;
     return isHls ? hlsStartOffset + videoRef.currentTime : seekOffset + videoRef.currentTime;
+  }
+
+  function recordSeekMetric(mode: string, durationMs: number) {
+    if (durationMs <= 0) return;
+    api.trackPlaybackMetric({
+      metric: 'seek_latency_ms',
+      value_ms: durationMs,
+      labels: {
+        path: 'player_seek',
+        mode,
+        stream: isHls ? 'hls' : stream(),
+      },
+    });
+  }
+
+  function beginRebuffer() {
+    if (!firstPlaybackStarted || isSeeking || rebufferStartPerfMs !== null) return;
+    rebufferStartPerfMs = performance.now();
+  }
+
+  function endRebuffer() {
+    if (rebufferStartPerfMs === null) return;
+    const rebufferMs = performance.now() - rebufferStartPerfMs;
+    rebufferStartPerfMs = null;
+    if (rebufferMs <= 0) return;
+
+    api.trackPlaybackMetric({
+      metric: 'rebuffer_count',
+      increment: 1,
+      labels: { path: 'player', stream: isHls ? 'hls' : stream() },
+    });
+    api.trackPlaybackMetric({
+      metric: 'rebuffer_ms',
+      value_ms: rebufferMs,
+      labels: { path: 'player', stream: isHls ? 'hls' : stream() },
+    });
   }
 
   function progressPct(): number {
@@ -167,6 +214,12 @@ export default function Player(props: PlayerProps) {
       lastConfirmedTime = posMs;
       api.updateProgress(item().id, posMs);
     }
+  }
+
+  function authMasterUrl(url: string): string {
+    // hls_session_start may already include ?token=... when called with auth headers.
+    // Avoid adding a duplicate token query parameter.
+    return url.includes('token=') ? url : authUrl(url);
   }
 
   // ---- Controls visibility ----
@@ -209,11 +262,64 @@ export default function Player(props: PlayerProps) {
     videoRef.load();
   }
 
+  function stopHlsHeartbeat() {
+    if (hlsHeartbeatTimer) {
+      clearInterval(hlsHeartbeatTimer);
+      hlsHeartbeatTimer = null;
+    }
+  }
+
+  function startHlsHeartbeat(mediaId: string) {
+    stopHlsHeartbeat();
+    if (!playbackSessionId) return;
+
+    api.hlsSessionHeartbeat(mediaId, playbackSessionId);
+    hlsHeartbeatTimer = setInterval(() => {
+      if (!playbackSessionId) return;
+      api.hlsSessionHeartbeat(mediaId, playbackSessionId);
+    }, 15000);
+  }
+
+  async function initializeHlsLifecycle(mediaId: string, startAt: number): Promise<string> {
+    const requestedStart = startAt > 0.5 ? startAt : undefined;
+
+    try {
+      const started = await api.hlsSessionStart(mediaId, requestedStart);
+      playbackSessionId = started.playback_session_id;
+      return started.master_url;
+    } catch {
+      // Fallback for older servers that don't expose explicit lifecycle endpoints yet.
+      const fallbackPlaybackSessionId = createPlaybackSessionId();
+      playbackSessionId = fallbackPlaybackSessionId;
+      const startParam = requestedStart != null ? `&start=${requestedStart.toFixed(3)}` : '';
+      return `/api/stream/${mediaId}/hls/master.m3u8?_=1${startParam}&playback_session_id=${encodeURIComponent(fallbackPlaybackSessionId)}`;
+    }
+  }
+
   function destroyHls() {
     destroyHlsLocal();
-    if (hlsSessionId && item()) {
-      api.hlsStop(item().id, hlsSessionId);
+    stopHlsHeartbeat();
+    const wasHls = isHls;
+    isHls = false;
+
+    const mediaId = item()?.id;
+    if (!mediaId) return;
+
+    if (playbackSessionId) {
+      api.hlsSessionStop(mediaId, playbackSessionId);
+      api.hlsStopMedia(mediaId, playbackSessionId);
+      playbackSessionId = null;
       hlsSessionId = null;
+      return;
+    }
+
+    if (hlsSessionId) {
+      api.hlsStop(mediaId, hlsSessionId);
+      hlsSessionId = null;
+    } else if (wasHls) {
+      // Native HLS may not expose session-id headers to JS.
+      // Fall back to media-level cleanup endpoint.
+      api.hlsStopMedia(mediaId);
     }
   }
 
@@ -328,8 +434,16 @@ export default function Player(props: PlayerProps) {
 
     // Track time-to-first-frame
     const onFirstPlay = () => {
+      const ttffMs = perf.endSpan('init/first-frame');
       perf.endSpan('init/total');
-      perf.endSpan('init/first-frame');
+      firstPlaybackStarted = true;
+      if (ttffMs > 0) {
+        api.trackPlaybackMetric({
+          metric: 'playback_ttff_ms',
+          value_ms: ttffMs,
+          labels: { path: 'player', stream: stream() },
+        });
+      }
       video.removeEventListener('playing', onFirstPlay);
     };
     video.addEventListener('playing', onFirstPlay);
@@ -341,8 +455,8 @@ export default function Player(props: PlayerProps) {
     if (useHlsJs) {
       isHls = true;
       hlsStartOffset = startAt;
-      const startParam = startAt > 0.5 ? `&start=${startAt.toFixed(3)}` : '';
-      const masterUrl = `/api/stream/${id}/hls/master.m3u8?_=1${startParam}`;
+      const masterUrl = await initializeHlsLifecycle(id, startAt);
+      startHlsHeartbeat(id);
 
       perf.startSpan('init/hls-setup', 'frontend');
       const hls = createHls();
@@ -449,12 +563,14 @@ export default function Player(props: PlayerProps) {
         }
       });
 
-      hls.loadSource(authUrl(masterUrl));
+      hls.loadSource(authMasterUrl(masterUrl));
       hls.attachMedia(video);
     } else if (useNativeHls) {
       isHls = true;
       hlsStartOffset = startAt;
-      video.src = authUrl(`/api/stream/${id}/hls/master.m3u8`);
+      const masterUrl = await initializeHlsLifecycle(id, startAt);
+      startHlsHeartbeat(id);
+      video.src = authMasterUrl(masterUrl);
       video.addEventListener('loadedmetadata', function onMeta() {
         if (startAt > 1) video.currentTime = startAt;
         video.removeEventListener('loadedmetadata', onMeta);
@@ -610,10 +726,25 @@ export default function Player(props: PlayerProps) {
       api.markCompleted(item().id);
     }
   }
-  function onPlay() { setPlaying(true); setBuffering(false); hideControlsDelayed(); }
-  function onPause() { setPlaying(false); showControls(); }
-  function onWaiting() { setBuffering(true); }
-  function onCanPlay() { setBuffering(false); }
+  function onPlay() {
+    firstPlaybackStarted = true;
+    setPlaying(true);
+    setBuffering(false);
+    hideControlsDelayed();
+  }
+  function onPause() {
+    endRebuffer();
+    setPlaying(false);
+    showControls();
+  }
+  function onWaiting() {
+    setBuffering(true);
+    beginRebuffer();
+  }
+  function onCanPlay() {
+    setBuffering(false);
+    endRebuffer();
+  }
 
   // ---- Controls ----
   function togglePlay() {
@@ -810,7 +941,12 @@ export default function Player(props: PlayerProps) {
       perf.startSpan('seek/hls-api', 'network');
       const audioIdx = selectedAudioTrack();
       console.log('[seek] calling hlsSeek API, target:', targetTime);
-      const seekRes = await api.hlsSeek(item().id, targetTime, audioIdx > 0 ? audioIdx : undefined);
+      const seekRes = await api.hlsSeek(
+        item().id,
+        targetTime,
+        audioIdx > 0 ? audioIdx : undefined,
+        playbackSessionId ?? undefined,
+      );
 
       // If another seek was initiated while we were waiting, abandon this one
       if (gen !== seekGeneration) return;
@@ -830,7 +966,8 @@ export default function Player(props: PlayerProps) {
           if (gen !== seekGeneration) return;
           isSeeking = false;
           setBuffering(false);
-          perf.endSpan('seek/hls-total');
+          const seekMs = perf.endSpan('seek/hls-total');
+          recordSeekMetric('hls-reused', seekMs);
           lastConfirmedTime = Math.floor(targetTime * 1000);
         }, 100);
         return;
@@ -869,8 +1006,20 @@ export default function Player(props: PlayerProps) {
         console.log('[seek] MANIFEST_LOADING fired');
       });
 
-      hls.on(Hls.Events.MANIFEST_LOADED, () => {
+      hls.on(Hls.Events.MANIFEST_LOADED, (_e: any, data: any) => {
         console.log('[seek] MANIFEST_LOADED fired');
+
+        const xhr: XMLHttpRequest | undefined = data.networkDetails;
+        if (xhr) {
+          const ids = xhr.getResponseHeader('x-hls-session-ids');
+          if (ids) hlsSessionId = ids.split(',')[0];
+
+          const startHdr = xhr.getResponseHeader('x-hls-start-secs');
+          if (startHdr) hlsStartOffset = parseFloat(startHdr);
+
+          const copiedHdr = xhr.getResponseHeader('x-hls-video-copied');
+          if (copiedHdr === '1') hlsStartOffset = 0;
+        }
       });
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_e: any, data: any) => {
@@ -915,7 +1064,8 @@ export default function Player(props: PlayerProps) {
           if (gen !== seekGeneration) return;
           isSeeking = false;
           setBuffering(false);
-          perf.endSpan('seek/hls-total');
+          const seekMs = perf.endSpan('seek/hls-total');
+          recordSeekMetric('hls-new', seekMs);
           // Use targetTime (the user's requested position), not hlsStartOffset
           // (the keyframe-snapped start). The keyframe can be 10-12s earlier,
           // which would cause the resume position to regress on close.
@@ -1030,7 +1180,8 @@ export default function Player(props: PlayerProps) {
       videoRef.src = authUrl(`/api/stream/${item().id}?start=${actualStart.toFixed(3)}${audioParam}`);
       videoRef.addEventListener('canplay', function onCan() {
         perf.endSpan('seek/stream-load');
-        perf.endSpan('seek/transcode-total');
+        const seekMs = perf.endSpan('seek/transcode-total');
+        recordSeekMetric('transcode', seekMs);
         videoRef.removeEventListener('canplay', onCan);
       }, { once: true });
       videoRef.play();
@@ -1039,7 +1190,8 @@ export default function Player(props: PlayerProps) {
       perf.startSpan('seek/direct', 'frontend', { target: Math.round(targetTime) });
       videoRef.currentTime = targetTime;
       videoRef.addEventListener('seeked', function onSeeked() {
-        perf.endSpan('seek/direct');
+        const seekMs = perf.endSpan('seek/direct');
+        recordSeekMetric('direct', seekMs);
         videoRef.removeEventListener('seeked', onSeeked);
       }, { once: true });
     }
@@ -1213,7 +1365,9 @@ export default function Player(props: PlayerProps) {
     if (seekIndicatorTimer) clearTimeout(seekIndicatorTimer);
     if (clickDebounceTimer) { clearTimeout(clickDebounceTimer); clickDebounceTimer = null; }
     if (upNextTimer) { clearInterval(upNextTimer); upNextTimer = null; }
+    stopHlsHeartbeat();
     if (subtitleFetchController) { subtitleFetchController.abort(); subtitleFetchController = null; }
+    rebufferStartPerfMs = null;
     subtitleCues = [];
     destroyHls();
   });

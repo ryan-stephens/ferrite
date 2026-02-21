@@ -181,13 +181,13 @@ pub struct PlaybackProgress {
 
 /// Known media file extensions.
 pub const VIDEO_EXTENSIONS: &[&str] = &[
-    "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "m4v", "mpg", "mpeg", "ts", "m2ts",
-    "vob", "ogv", "3gp",
+    "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "m4v", "mpg", "mpeg", "ts", "m2ts", "vob",
+    "ogv", "3gp",
 ];
 
 pub const AUDIO_EXTENSIONS: &[&str] = &[
-    "mp3", "flac", "aac", "ogg", "opus", "wav", "wma", "m4a", "alac", "aiff", "ape", "dsf",
-    "dff", "wv",
+    "mp3", "flac", "aac", "ogg", "opus", "wav", "wma", "m4a", "alac", "aiff", "ape", "dsf", "dff",
+    "wv",
 ];
 
 pub const SUBTITLE_EXTENSIONS: &[&str] = &["srt", "ass", "ssa", "vtt", "sub", "idx", "sup"];

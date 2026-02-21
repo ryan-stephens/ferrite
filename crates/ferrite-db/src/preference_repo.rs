@@ -2,11 +2,7 @@ use anyhow::Result;
 use sqlx::SqlitePool;
 
 /// Get a single preference value for a user.
-pub async fn get_preference(
-    pool: &SqlitePool,
-    user_id: &str,
-    key: &str,
-) -> Result<Option<String>> {
+pub async fn get_preference(pool: &SqlitePool, user_id: &str, key: &str) -> Result<Option<String>> {
     let row = sqlx::query_scalar::<_, String>(
         "SELECT value FROM user_preferences WHERE user_id = ? AND key = ?",
     )

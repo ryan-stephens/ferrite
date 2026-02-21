@@ -55,7 +55,9 @@ pub async fn create_collection(
     }
 
     if body.kind != "collection" && body.kind != "playlist" {
-        return Err(ApiError::bad_request("Kind must be 'collection' or 'playlist'"));
+        return Err(ApiError::bad_request(
+            "Kind must be 'collection' or 'playlist'",
+        ));
     }
 
     // Use a default user ID for now (multi-user support uses auth middleware to extract user)
@@ -81,13 +83,9 @@ pub async fn list_collections(
 ) -> Result<impl IntoResponse, ApiError> {
     let user_id = extract_user_id(&state).await;
 
-    let collections = collection_repo::list_collections(
-        &state.db,
-        &user_id,
-        query.kind.as_deref(),
-    )
-    .await
-    .map_err(|e| ApiError::internal(format!("Failed to list collections: {}", e)))?;
+    let collections = collection_repo::list_collections(&state.db, &user_id, query.kind.as_deref())
+        .await
+        .map_err(|e| ApiError::internal(format!("Failed to list collections: {}", e)))?;
 
     // Enrich with item counts
     let mut result = Vec::with_capacity(collections.len());
@@ -226,17 +224,14 @@ pub async fn reorder_item(
         .ok_or_else(|| ApiError::not_found(format!("Collection '{id}' not found")))?;
 
     if collection.kind != "playlist" {
-        return Err(ApiError::bad_request("Reordering is only supported for playlists"));
+        return Err(ApiError::bad_request(
+            "Reordering is only supported for playlists",
+        ));
     }
 
-    let reordered = collection_repo::reorder_item(
-        &state.db,
-        &id,
-        &body.media_id,
-        body.position,
-    )
-    .await
-    .map_err(|e| ApiError::internal(format!("Failed to reorder item: {}", e)))?;
+    let reordered = collection_repo::reorder_item(&state.db, &id, &body.media_id, body.position)
+        .await
+        .map_err(|e| ApiError::internal(format!("Failed to reorder item: {}", e)))?;
 
     if !reordered {
         return Err(ApiError::not_found("Item not found in playlist"));

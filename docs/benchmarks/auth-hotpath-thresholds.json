@@ -1,0 +1,25 @@
+{
+  "auth_hotpath": {
+    "count_gte": 1,
+    "p95_ms_lte": 500,
+    "avg_ms_lte": 300,
+    "max_ms_lte": 2500
+  },
+  "backend_metrics": {
+    "required_timings": [
+      {
+        "label": "stream_auth_ok",
+        "name_contains": [
+          "auth_hotpath_ms{",
+          "path=stream",
+          "outcome=ok"
+        ],
+        "constraints": {
+          "count_gte": 1,
+          "avg_ms_lte": 100,
+          "max_ms_lte": 1000
+        }
+      }
+    ]
+  }
+}

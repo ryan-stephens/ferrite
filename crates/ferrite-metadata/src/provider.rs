@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use anyhow::Result;
+use async_trait::async_trait;
 
 #[derive(Debug, Clone)]
 pub struct MovieSearchResult {
@@ -69,5 +69,9 @@ pub trait MetadataProvider: Send + Sync {
     async fn get_movie_details(&self, tmdb_id: i64) -> Result<MovieDetails>;
     async fn search_tv(&self, title: &str, year: Option<i32>) -> Result<Vec<TvSearchResult>>;
     async fn get_tv_details(&self, tmdb_id: i64) -> Result<TvShowDetails>;
-    async fn get_season_episodes(&self, tmdb_id: i64, season_number: i64) -> Result<Vec<EpisodeMetadata>>;
+    async fn get_season_episodes(
+        &self,
+        tmdb_id: i64,
+        season_number: i64,
+    ) -> Result<Vec<EpisodeMetadata>>;
 }

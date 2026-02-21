@@ -80,15 +80,11 @@ pub async fn get_subtitles(
 }
 
 /// Get a single subtitle by ID.
-pub async fn get_subtitle_by_id(
-    pool: &SqlitePool,
-    id: i64,
-) -> Result<Option<ExternalSubtitleRow>> {
-    let row = sqlx::query_as::<_, ExternalSubtitleRow>(
-        "SELECT * FROM external_subtitles WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_optional(pool)
-    .await?;
+pub async fn get_subtitle_by_id(pool: &SqlitePool, id: i64) -> Result<Option<ExternalSubtitleRow>> {
+    let row =
+        sqlx::query_as::<_, ExternalSubtitleRow>("SELECT * FROM external_subtitles WHERE id = ?")
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
     Ok(row)
 }

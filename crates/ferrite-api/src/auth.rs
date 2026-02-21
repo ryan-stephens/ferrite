@@ -7,6 +7,7 @@ use chrono::{Duration, Utc};
 use ferrite_db::user_repo;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
+use std::time::Instant;
 use subtle::ConstantTimeEq;
 
 use crate::state::AppState;
@@ -53,16 +54,25 @@ fn create_token(
     )
 }
 
-fn validate_token(
-    token: &str,
-    jwt_secret: &str,
-) -> Result<Claims, jsonwebtoken::errors::Error> {
+fn validate_token(token: &str, jwt_secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     let data = decode::<Claims>(
         token,
         &DecodingKey::from_secret(jwt_secret.as_bytes()),
         &Validation::default(),
     )?;
     Ok(data.claims)
+}
+
+fn is_stream_hot_path(path: &str) -> bool {
+    path.starts_with("/api/stream/")
+}
+
+async fn token_user_exists(state: &AppState, user_id: &str) -> bool {
+    user_repo::get_user_by_id(&state.db, user_id)
+        .await
+        .ok()
+        .flatten()
+        .is_some()
 }
 
 // ---------------------------------------------------------------------------
@@ -81,20 +91,28 @@ pub async fn require_auth(
 
     // Try to extract AuthUser from various auth methods.
     // If successful, insert into request extensions so handlers can access it.
+    let is_stream_path = is_stream_hot_path(request.uri().path());
+    let skip_db_user_check = auth_config.auth_hotpath_no_db && is_stream_path;
+    let auth_started = Instant::now();
+
+    let record_auth_metric = |method: &'static str, outcome: &'static str| {
+        if !is_stream_path {
+            return;
+        }
+        state.playback_metrics.record_timing(
+            "auth_hotpath_ms",
+            &[("path", "stream"), ("method", method), ("outcome", outcome)],
+            auth_started.elapsed().as_secs_f64() * 1000.0,
+        );
+    };
 
     // 1. Bearer token
     if let Some(val) = request.headers().get(header::AUTHORIZATION) {
         if let Ok(s) = val.to_str() {
             if let Some(token) = s.strip_prefix("Bearer ") {
                 if let Ok(claims) = validate_token(token, &auth_config.jwt_secret) {
-                    // Verify the user still exists in the DB (guards against stale
-                    // JWTs after a DB reset where the user_id is gone).
-                    if user_repo::get_user_by_id(&state.db, &claims.sub)
-                        .await
-                        .ok()
-                        .flatten()
-                        .is_some()
-                    {
+                    if skip_db_user_check || token_user_exists(&state, &claims.sub).await {
+                        record_auth_metric("bearer", "ok");
                         request.extensions_mut().insert(AuthUser {
                             user_id: claims.sub,
                             username: claims.username,
@@ -110,6 +128,7 @@ pub async fn require_auth(
     if let Some(val) = request.headers().get("X-API-Key") {
         if let Ok(key) = val.to_str() {
             if api_key_matches(key, &auth_config.api_keys) {
+                record_auth_metric("api_key_header", "ok");
                 return next.run(request).await;
             }
         }
@@ -121,12 +140,8 @@ pub async fn require_auth(
             if let Some(token) = pair.strip_prefix("token=") {
                 let decoded = percent_decode(token);
                 if let Ok(claims) = validate_token(&decoded, &auth_config.jwt_secret) {
-                    if user_repo::get_user_by_id(&state.db, &claims.sub)
-                        .await
-                        .ok()
-                        .flatten()
-                        .is_some()
-                    {
+                    if skip_db_user_check || token_user_exists(&state, &claims.sub).await {
+                        record_auth_metric("token_query", "ok");
                         request.extensions_mut().insert(AuthUser {
                             user_id: claims.sub,
                             username: claims.username,
@@ -144,11 +159,14 @@ pub async fn require_auth(
             if let Some(key) = pair.strip_prefix("api_key=") {
                 let decoded = percent_decode(key);
                 if api_key_matches(&decoded, &auth_config.api_keys) {
+                    record_auth_metric("api_key_query", "ok");
                     return next.run(request).await;
                 }
             }
         }
     }
+
+    record_auth_metric("none", "unauthorized");
 
     (
         StatusCode::UNAUTHORIZED,
@@ -173,9 +191,7 @@ fn api_key_matches(candidate: &str, valid_keys: &[String]) -> bool {
         let key_bytes = key.as_bytes();
         // Only compare if lengths match (length itself leaks, but that's acceptable
         // since API keys should all be the same length in practice)
-        if candidate_bytes.len() == key_bytes.len()
-            && candidate_bytes.ct_eq(key_bytes).into()
-        {
+        if candidate_bytes.len() == key_bytes.len() && candidate_bytes.ct_eq(key_bytes).into() {
             found = true;
         }
     }
@@ -275,7 +291,9 @@ pub async fn login(
 }
 
 pub async fn auth_status(State(state): State<AppState>) -> impl IntoResponse {
-    let user_count = ferrite_db::user_repo::count_users(&state.db).await.unwrap_or(0);
+    let user_count = ferrite_db::user_repo::count_users(&state.db)
+        .await
+        .unwrap_or(0);
     Json(serde_json::json!({
         "auth_required": state.config.auth.is_some(),
         "has_users": user_count > 0,

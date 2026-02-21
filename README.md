@@ -103,6 +103,7 @@ cache_dir = "cache/transcode"
 max_concurrent_transcodes = 2
 hls_segment_duration = 6
 hls_session_timeout_secs = 1800
+hls_segment_mime_mode = "video-mp4"  # or "video-iso-segment"
 # hw_accel = "nvenc"  # or "qsv", "vaapi", "software"
 
 [metadata]

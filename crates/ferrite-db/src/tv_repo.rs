@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sqlx::{SqlitePool, SqliteConnection};
+use sqlx::{SqliteConnection, SqlitePool};
 use uuid::Uuid;
 
 // ── Upsert helpers (called during scanning) ──────────────────────────────────
@@ -52,13 +52,12 @@ pub async fn upsert_tv_show(
     title: &str,
 ) -> Result<String> {
     // 1. Exact match first (fast path — covered by primary key / unique index)
-    let row: Option<(String,)> = sqlx::query_as(
-        "SELECT id FROM tv_shows WHERE library_id = ? AND title = ?",
-    )
-    .bind(library_id)
-    .bind(title)
-    .fetch_optional(&mut *executor)
-    .await?;
+    let row: Option<(String,)> =
+        sqlx::query_as("SELECT id FROM tv_shows WHERE library_id = ? AND title = ?")
+            .bind(library_id)
+            .bind(title)
+            .fetch_optional(&mut *executor)
+            .await?;
 
     if let Some((id,)) = row {
         return Ok(id);
@@ -105,27 +104,24 @@ pub async fn upsert_season(
     tv_show_id: &str,
     season_number: u32,
 ) -> Result<String> {
-    let row: Option<(String,)> = sqlx::query_as(
-        "SELECT id FROM seasons WHERE tv_show_id = ? AND season_number = ?",
-    )
-    .bind(tv_show_id)
-    .bind(season_number as i64)
-    .fetch_optional(&mut *executor)
-    .await?;
+    let row: Option<(String,)> =
+        sqlx::query_as("SELECT id FROM seasons WHERE tv_show_id = ? AND season_number = ?")
+            .bind(tv_show_id)
+            .bind(season_number as i64)
+            .fetch_optional(&mut *executor)
+            .await?;
 
     if let Some((id,)) = row {
         return Ok(id);
     }
 
     let id = Uuid::new_v4().to_string();
-    sqlx::query(
-        "INSERT INTO seasons (id, tv_show_id, season_number) VALUES (?, ?, ?)",
-    )
-    .bind(&id)
-    .bind(tv_show_id)
-    .bind(season_number as i64)
-    .execute(&mut *executor)
-    .await?;
+    sqlx::query("INSERT INTO seasons (id, tv_show_id, season_number) VALUES (?, ?, ?)")
+        .bind(&id)
+        .bind(tv_show_id)
+        .bind(season_number as i64)
+        .execute(&mut *executor)
+        .await?;
 
     Ok(id)
 }
@@ -212,10 +208,7 @@ pub struct EpisodeRow {
 // ── Query functions ──────────────────────────────────────────────────────────
 
 /// List all TV shows in a library, with season and episode counts.
-pub async fn list_shows(
-    pool: &SqlitePool,
-    library_id: &str,
-) -> Result<Vec<TvShowRow>> {
+pub async fn list_shows(pool: &SqlitePool, library_id: &str) -> Result<Vec<TvShowRow>> {
     let rows = sqlx::query_as::<_, TvShowRow>(
         r#"SELECT ts.*,
                   (SELECT COUNT(*) FROM seasons s WHERE s.tv_show_id = ts.id) AS season_count,
@@ -234,10 +227,7 @@ pub async fn list_shows(
 }
 
 /// Get a single TV show by ID with counts.
-pub async fn get_show(
-    pool: &SqlitePool,
-    show_id: &str,
-) -> Result<Option<TvShowRow>> {
+pub async fn get_show(pool: &SqlitePool, show_id: &str) -> Result<Option<TvShowRow>> {
     let row = sqlx::query_as::<_, TvShowRow>(
         r#"SELECT ts.*,
                   (SELECT COUNT(*) FROM seasons s WHERE s.tv_show_id = ts.id) AS season_count,
@@ -255,10 +245,7 @@ pub async fn get_show(
 }
 
 /// List all seasons for a TV show, with episode counts, ordered by season number.
-pub async fn list_seasons(
-    pool: &SqlitePool,
-    show_id: &str,
-) -> Result<Vec<SeasonRow>> {
+pub async fn list_seasons(pool: &SqlitePool, show_id: &str) -> Result<Vec<SeasonRow>> {
     let rows = sqlx::query_as::<_, SeasonRow>(
         r#"SELECT s.*,
                   (SELECT COUNT(*) FROM episodes e WHERE e.season_id = s.id) AS episode_count
@@ -277,6 +264,7 @@ pub async fn list_seasons(
 pub async fn list_episodes(
     pool: &SqlitePool,
     season_id: &str,
+    user_id: Option<&str>,
 ) -> Result<Vec<EpisodeRow>> {
     let rows = sqlx::query_as::<_, EpisodeRow>(
         r#"SELECT e.media_item_id, e.season_id, e.episode_number,
@@ -286,10 +274,11 @@ pub async fn list_episodes(
                   pp.position_ms, pp.completed, pp.last_played_at
            FROM episodes e
            JOIN media_items mi ON mi.id = e.media_item_id
-           LEFT JOIN playback_progress pp ON pp.media_item_id = e.media_item_id
+           LEFT JOIN playback_progress pp ON pp.media_item_id = e.media_item_id AND pp.user_id IS ?
            WHERE e.season_id = ?
            ORDER BY e.episode_number ASC"#,
     )
+    .bind(user_id)
     .bind(season_id)
     .fetch_all(pool)
     .await?;
@@ -472,10 +461,7 @@ pub async fn update_episode_metadata_tx(
 }
 
 /// Return (season_id, season_number) pairs for all seasons of a show.
-pub async fn get_seasons_for_show(
-    pool: &SqlitePool,
-    show_id: &str,
-) -> Result<Vec<(String, i64)>> {
+pub async fn get_seasons_for_show(pool: &SqlitePool, show_id: &str) -> Result<Vec<(String, i64)>> {
     let rows: Vec<(String, i64)> = sqlx::query_as(
         "SELECT id, season_number FROM seasons WHERE tv_show_id = ? ORDER BY season_number ASC",
     )

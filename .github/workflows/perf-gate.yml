@@ -1,0 +1,78 @@
+name: Perf Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/benchmarks/playback-baseline-*.json'
+      - 'docs/benchmarks/playback-baseline-template.json'
+      - 'docs/benchmarks/perf-thresholds.json'
+      - 'scripts/playback-benchmark.mjs'
+      - 'scripts/check-playback-thresholds.mjs'
+      - '.github/workflows/perf-gate.yml'
+  workflow_dispatch:
+    inputs:
+      benchmark_path:
+        description: Benchmark JSON path to validate
+        required: true
+        type: string
+      thresholds_path:
+        description: Threshold JSON path
+        required: false
+        default: docs/benchmarks/perf-thresholds.json
+        type: string
+
+jobs:
+  threshold-gate:
+    name: Playback Perf Thresholds
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Resolve benchmark path
+        id: resolve
+        shell: bash
+        run: |
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            benchmark_path="${{ github.event.inputs.benchmark_path }}"
+            thresholds_path="${{ github.event.inputs.thresholds_path }}"
+          else
+            benchmark_path=$(ls docs/benchmarks/playback-baseline-*.json 2>/dev/null | grep -v 'template' | sort | tail -n 1)
+            thresholds_path="docs/benchmarks/perf-thresholds.json"
+          fi
+
+          if [ -z "$benchmark_path" ]; then
+            echo "No non-template playback benchmark snapshot found. Skipping gate."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ ! -f "$benchmark_path" ]; then
+            echo "Benchmark file does not exist: $benchmark_path"
+            exit 1
+          fi
+
+          if [ ! -f "$thresholds_path" ]; then
+            echo "Threshold file does not exist: $thresholds_path"
+            exit 1
+          fi
+
+          echo "benchmark_path=$benchmark_path" >> "$GITHUB_OUTPUT"
+          echo "thresholds_path=$thresholds_path" >> "$GITHUB_OUTPUT"
+          echo "Using benchmark: $benchmark_path"
+          echo "Using thresholds: $thresholds_path"
+
+      - name: Validate playback perf thresholds
+        if: steps.resolve.outputs.skip != 'true'
+        run: |
+          node scripts/check-playback-thresholds.mjs \
+            --benchmark "${{ steps.resolve.outputs.benchmark_path }}" \
+            --thresholds "${{ steps.resolve.outputs.thresholds_path }}"

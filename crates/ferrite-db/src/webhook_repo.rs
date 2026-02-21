@@ -100,7 +100,10 @@ pub async fn delete_webhook(pool: &SqlitePool, id: &str) -> Result<bool> {
 }
 
 /// Get all enabled webhooks that subscribe to a given event type.
-pub async fn get_webhooks_for_event(pool: &SqlitePool, event_type: &str) -> Result<Vec<WebhookRow>> {
+pub async fn get_webhooks_for_event(
+    pool: &SqlitePool,
+    event_type: &str,
+) -> Result<Vec<WebhookRow>> {
     // Match webhooks that subscribe to '*' (all events) or contain the specific event type
     let rows = sqlx::query_as::<_, WebhookRow>(
         "SELECT * FROM webhooks WHERE enabled = 1 AND (events = '*' OR events LIKE '%' || ? || '%')",

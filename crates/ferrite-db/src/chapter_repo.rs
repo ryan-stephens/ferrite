@@ -1,5 +1,5 @@
 use anyhow::Result;
-use sqlx::{SqlitePool, SqliteConnection};
+use sqlx::{SqliteConnection, SqlitePool};
 
 /// Data for a single chapter to insert into the database.
 #[derive(Debug)]
@@ -51,10 +51,7 @@ pub async fn replace_chapters(
 }
 
 /// Get all chapters for a media item, ordered by start time.
-pub async fn get_chapters(
-    pool: &SqlitePool,
-    media_item_id: &str,
-) -> Result<Vec<ChapterRow>> {
+pub async fn get_chapters(pool: &SqlitePool, media_item_id: &str) -> Result<Vec<ChapterRow>> {
     let rows = sqlx::query_as::<_, ChapterRow>(
         "SELECT * FROM chapters WHERE media_item_id = ? ORDER BY chapter_index",
     )

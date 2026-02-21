@@ -24,40 +24,32 @@ pub enum ParsedFilename {
 // -- TV episode patterns (checked first) --
 
 /// Matches `Show Name S01E05` or `show.name.s01e05` (case-insensitive).
-static RE_EPISODE_SXXEXX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)^(.+?)[.\s_-]+s(\d{1,2})e(\d{1,2})").unwrap()
-});
+static RE_EPISODE_SXXEXX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^(.+?)[.\s_-]+s(\d{1,2})e(\d{1,2})").unwrap());
 
 /// Matches `Show Name 1x05`.
-static RE_EPISODE_NX_NN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)^(.+?)[.\s_-]+(\d{1,2})x(\d{2,3})").unwrap()
-});
+static RE_EPISODE_NX_NN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^(.+?)[.\s_-]+(\d{1,2})x(\d{2,3})").unwrap());
 
 // -- Movie patterns --
 
 /// Matches `The Matrix (1999)`.
-static RE_MOVIE_PAREN_YEAR: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(.+?)\s*\((\d{4})\)").unwrap()
-});
+static RE_MOVIE_PAREN_YEAR: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(.+?)\s*\((\d{4})\)").unwrap());
 
 /// Matches `Movie Title [2020]`.
-static RE_MOVIE_BRACKET_YEAR: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(.+?)\s*\[(\d{4})\]").unwrap()
-});
+static RE_MOVIE_BRACKET_YEAR: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(.+?)\s*\[(\d{4})\]").unwrap());
 
 /// Matches `The.Matrix.1999.BluRay` — dot/underscore/space separated with a 4-digit year
 /// followed by end-of-string or another separator token.
-static RE_MOVIE_DOT_YEAR: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(.+?)[.\s_-]+((?:19|20)\d{2})(?:[.\s_-]|$)").unwrap()
-});
+static RE_MOVIE_DOT_YEAR: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(.+?)[.\s_-]+((?:19|20)\d{2})(?:[.\s_-]|$)").unwrap());
 
 /// Replace dots and underscores with spaces, collapse runs of whitespace, and trim.
 pub fn clean_title(raw: &str) -> String {
     let replaced = raw.replace(['.', '_'], " ");
-    let collapsed: String = replaced
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ");
+    let collapsed: String = replaced.split_whitespace().collect::<Vec<_>>().join(" ");
     collapsed.trim().to_string()
 }
 

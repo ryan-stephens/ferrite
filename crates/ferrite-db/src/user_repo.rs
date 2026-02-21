@@ -64,11 +64,9 @@ pub async fn get_user_by_username(pool: &SqlitePool, username: &str) -> Result<O
 
 /// List all users (admin view).
 pub async fn list_users(pool: &SqlitePool) -> Result<Vec<UserRow>> {
-    let rows = sqlx::query_as::<_, UserRow>(
-        "SELECT * FROM users ORDER BY created_at ASC",
-    )
-    .fetch_all(pool)
-    .await?;
+    let rows = sqlx::query_as::<_, UserRow>("SELECT * FROM users ORDER BY created_at ASC")
+        .fetch_all(pool)
+        .await?;
     Ok(rows)
 }
 

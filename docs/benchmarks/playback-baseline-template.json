@@ -1,0 +1,104 @@
+{
+  "generated_at": "2026-02-20T00:00:00Z",
+  "base_url": "http://127.0.0.1:8080",
+  "benchmark": {
+    "iterations": 3,
+    "concurrency": 1,
+    "abr_throttle_kbps": 300,
+    "seek_secs": 600,
+    "media_ids": {
+      "direct": "<media-id>",
+      "remux": "<media-id>",
+      "audio": "<media-id>",
+      "full": "<media-id>",
+      "hls": "<media-id>"
+    }
+  },
+  "scenarios": {
+    "direct": {
+      "count": 3,
+      "min_ms": 0,
+      "avg_ms": 0,
+      "p50_ms": 0,
+      "p95_ms": 0,
+      "max_ms": 0,
+      "samples_ms": []
+    },
+    "remux": {
+      "count": 3,
+      "min_ms": 0,
+      "avg_ms": 0,
+      "p50_ms": 0,
+      "p95_ms": 0,
+      "max_ms": 0,
+      "samples_ms": []
+    },
+    "audio_transcode": {
+      "count": 3,
+      "min_ms": 0,
+      "avg_ms": 0,
+      "p50_ms": 0,
+      "p95_ms": 0,
+      "max_ms": 0,
+      "samples_ms": []
+    },
+    "full_transcode": {
+      "count": 3,
+      "min_ms": 0,
+      "avg_ms": 0,
+      "p50_ms": 0,
+      "p95_ms": 0,
+      "max_ms": 0,
+      "samples_ms": []
+    },
+    "hls_startup": {
+      "count": 3,
+      "min_ms": 0,
+      "avg_ms": 0,
+      "p50_ms": 0,
+      "p95_ms": 0,
+      "max_ms": 0,
+      "samples_ms": []
+    },
+    "hls_seek": {
+      "count": 3,
+      "min_ms": 0,
+      "avg_ms": 0,
+      "p50_ms": 0,
+      "p95_ms": 0,
+      "max_ms": 0,
+      "samples_ms": []
+    },
+    "hls_abr_switch": {
+      "count": 3,
+      "min_ms": 0,
+      "avg_ms": 0,
+      "p50_ms": 0,
+      "p95_ms": 0,
+      "max_ms": 0,
+      "samples_ms": [],
+      "switch_count": 0,
+      "switch_rate": 0,
+      "min_selected_bandwidth_bps": 0,
+      "max_selected_bandwidth_bps": 0
+    }
+  },
+  "backend_metrics": {
+    "timings": [
+      {
+        "name": "playback_ttff_ms{path=stream,stream=direct}",
+        "count": 0,
+        "avg_ms": 0,
+        "min_ms": 0,
+        "max_ms": 0,
+        "last_ms": 0
+      }
+    ],
+    "counters": [
+      {
+        "name": "rebuffer_count{path=player,stream=hls}",
+        "value": 0
+      }
+    ]
+  }
+}

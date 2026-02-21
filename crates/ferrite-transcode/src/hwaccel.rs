@@ -48,11 +48,16 @@ impl EncoderProfile {
             backend: HwAccelBackend::Software,
             encoder_name: "libx264".to_string(),
             encoder_args: vec![
-                "-preset".into(), "veryfast".into(),
-                "-crf".into(), "23".into(),
-                "-profile:v".into(), "high".into(),
-                "-level".into(), "4.1".into(),
-                "-pix_fmt".into(), "yuv420p".into(),
+                "-preset".into(),
+                "veryfast".into(),
+                "-crf".into(),
+                "23".into(),
+                "-profile:v".into(),
+                "high".into(),
+                "-level".into(),
+                "4.1".into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
             ],
             hw_decode_args: vec![],
         }
@@ -64,17 +69,26 @@ impl EncoderProfile {
             backend: HwAccelBackend::Nvenc,
             encoder_name: "h264_nvenc".to_string(),
             encoder_args: vec![
-                "-preset".into(), "p4".into(),       // balanced speed/quality
-                "-tune".into(), "ll".into(),          // low latency for streaming
-                "-rc".into(), "vbr".into(),           // variable bitrate
-                "-cq".into(), "23".into(),            // constant quality (like CRF)
-                "-profile:v".into(), "high".into(),
-                "-level".into(), "4.1".into(),
-                "-pix_fmt".into(), "yuv420p".into(),
+                "-preset".into(),
+                "p4".into(), // balanced speed/quality
+                "-tune".into(),
+                "ll".into(), // low latency for streaming
+                "-rc".into(),
+                "vbr".into(), // variable bitrate
+                "-cq".into(),
+                "23".into(), // constant quality (like CRF)
+                "-profile:v".into(),
+                "high".into(),
+                "-level".into(),
+                "4.1".into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
             ],
             hw_decode_args: vec![
-                "-hwaccel".into(), "cuda".into(),
-                "-hwaccel_output_format".into(), "cuda".into(),
+                "-hwaccel".into(),
+                "cuda".into(),
+                "-hwaccel_output_format".into(),
+                "cuda".into(),
             ],
         }
     }
@@ -85,14 +99,20 @@ impl EncoderProfile {
             backend: HwAccelBackend::Qsv,
             encoder_name: "h264_qsv".to_string(),
             encoder_args: vec![
-                "-preset".into(), "veryfast".into(),
-                "-global_quality".into(), "23".into(),
-                "-profile:v".into(), "high".into(),
-                "-level".into(), "4.1".into(),
+                "-preset".into(),
+                "veryfast".into(),
+                "-global_quality".into(),
+                "23".into(),
+                "-profile:v".into(),
+                "high".into(),
+                "-level".into(),
+                "4.1".into(),
             ],
             hw_decode_args: vec![
-                "-hwaccel".into(), "qsv".into(),
-                "-hwaccel_output_format".into(), "qsv".into(),
+                "-hwaccel".into(),
+                "qsv".into(),
+                "-hwaccel_output_format".into(),
+                "qsv".into(),
             ],
         }
     }
@@ -103,14 +123,20 @@ impl EncoderProfile {
             backend: HwAccelBackend::Vaapi,
             encoder_name: "h264_vaapi".to_string(),
             encoder_args: vec![
-                "-qp".into(), "23".into(),
-                "-profile:v".into(), "high".into(),
-                "-level".into(), "4.1".into(),
+                "-qp".into(),
+                "23".into(),
+                "-profile:v".into(),
+                "high".into(),
+                "-level".into(),
+                "4.1".into(),
             ],
             hw_decode_args: vec![
-                "-hwaccel".into(), "vaapi".into(),
-                "-hwaccel_output_format".into(), "vaapi".into(),
-                "-vaapi_device".into(), "/dev/dri/renderD128".into(),
+                "-hwaccel".into(),
+                "vaapi".into(),
+                "-hwaccel_output_format".into(),
+                "vaapi".into(),
+                "-vaapi_device".into(),
+                "/dev/dri/renderD128".into(),
             ],
         }
     }

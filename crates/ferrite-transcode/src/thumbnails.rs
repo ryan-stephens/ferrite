@@ -164,10 +164,14 @@ async fn probe_image_dimensions(ffmpeg_path: &str, image_path: &Path) -> Result<
 
     let output = tokio::process::Command::new(&ffprobe_path)
         .args([
-            "-v", "error",
-            "-select_streams", "v:0",
-            "-show_entries", "stream=width,height",
-            "-of", "csv=p=0:s=x",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height",
+            "-of",
+            "csv=p=0:s=x",
         ])
         .arg(image_path)
         .stdout(std::process::Stdio::piped())
@@ -187,7 +191,10 @@ async fn probe_image_dimensions(ffmpeg_path: &str, image_path: &Path) -> Result<
     }
 
     // Fallback: estimate from thumb_width and 16:9 aspect ratio
-    Err(anyhow!("Could not probe image dimensions from: {}", stdout.trim()))
+    Err(anyhow!(
+        "Could not probe image dimensions from: {}",
+        stdout.trim()
+    ))
 }
 
 /// Generate a WebVTT file mapping time ranges to sprite sheet coordinates.
@@ -227,7 +234,11 @@ fn generate_vtt(
             "{} --> {}\n{}#xywh={},{},{},{}\n\n",
             format_vtt_time(start_secs),
             format_vtt_time(end_secs),
-            sprite_filename, x, y, thumb_width, thumb_height,
+            sprite_filename,
+            x,
+            y,
+            thumb_width,
+            thumb_height,
         ));
     }
 
