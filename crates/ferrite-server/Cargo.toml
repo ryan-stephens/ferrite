@@ -12,6 +12,7 @@ path = "src/main.rs"
 ferrite-core = { workspace = true }
 ferrite-db = { workspace = true }
 ferrite-scanner = { workspace = true }
+ferrite-metadata = { workspace = true }
 ferrite-stream = { workspace = true }
 ferrite-transcode = { workspace = true }
 ferrite-api = { workspace = true }

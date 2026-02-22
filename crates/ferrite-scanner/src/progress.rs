@@ -170,4 +170,9 @@ impl ScanRegistry {
     pub fn get(&self, library_id: &str) -> Option<Arc<ScanState>> {
         self.0.get(library_id).map(|r| r.clone())
     }
+
+    /// Remove a library's scan state from the registry (e.g. on library deletion).
+    pub fn remove(&self, library_id: &str) {
+        self.0.remove(library_id);
+    }
 }

@@ -193,6 +193,46 @@ async fn main() -> Result<()> {
     // Keep a reference for graceful shutdown cleanup (before state is moved into the router)
     let shutdown_hls_manager = hls_manager.clone();
 
+    // Build TMDB provider + image cache for the filesystem watcher so that
+    // incrementally discovered media gets metadata without a manual rescan.
+    let (watcher_tmdb, watcher_img_cache) = if let Some(ref api_key) = config.metadata.tmdb_api_key
+    {
+        let provider: std::sync::Arc<dyn ferrite_metadata::provider::MetadataProvider> =
+            std::sync::Arc::new(ferrite_metadata::tmdb::TmdbProvider::new(
+                api_key.clone(),
+                config.metadata.rate_limit_per_second,
+            ));
+        let cache = std::sync::Arc::new(ferrite_metadata::image_cache::ImageCache::new(
+            config.metadata.image_cache_dir.clone(),
+        ));
+        (Some(provider), Some(cache))
+    } else {
+        (None, None)
+    };
+
+    // Start filesystem watcher for auto-rescan (before AppState so the handle
+    // can be stored for dynamic library registration from API handlers).
+    let watcher = ferrite_scanner::watcher::LibraryWatcher::new(
+        pool.clone(),
+        config.transcode.ffprobe_path.clone(),
+        config.transcode.ffmpeg_path.clone(),
+        config.scanner.watch_debounce_seconds,
+        config.scanner.concurrent_probes,
+        config.scanner.subtitle_cache_dir.clone(),
+        watcher_tmdb,
+        watcher_img_cache,
+    );
+    let watcher_handle = match watcher.start().await {
+        Ok(handle) => {
+            info!("Filesystem watcher started");
+            Some(handle)
+        }
+        Err(e) => {
+            tracing::warn!("Filesystem watcher failed to start: {}", e);
+            None
+        }
+    };
+
     let state = AppState {
         db: pool.clone(),
         config: Arc::new(config.clone()),
@@ -202,6 +242,7 @@ async fn main() -> Result<()> {
         encoder_profile,
         webhook_dispatcher,
         scan_registry: ferrite_scanner::ScanRegistry::new(),
+        watcher_handle,
         playback_metrics: Arc::new(ferrite_api::metrics::PlaybackMetrics::default()),
     };
 
@@ -239,20 +280,6 @@ async fn main() -> Result<()> {
         });
 
         info!("DLNA server enabled ({})", config.dlna.friendly_name);
-    }
-
-    // Start filesystem watcher for auto-rescan
-    let watcher = ferrite_scanner::watcher::LibraryWatcher::new(
-        pool,
-        config.transcode.ffprobe_path.clone(),
-        config.transcode.ffmpeg_path.clone(),
-        config.scanner.watch_debounce_seconds,
-        config.scanner.concurrent_probes,
-        config.scanner.subtitle_cache_dir.clone(),
-    );
-    match watcher.start().await {
-        Ok(_handle) => info!("Filesystem watcher started"),
-        Err(e) => tracing::warn!("Filesystem watcher failed to start: {}", e),
     }
 
     info!("Ferrite starting on http://{}", addr);

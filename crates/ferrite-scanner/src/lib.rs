@@ -7,7 +7,6 @@ pub mod walker;
 pub mod watcher;
 
 use anyhow::Result;
-use dashmap::DashSet;
 use ferrite_core::media::{LibraryType, AUDIO_EXTENSIONS, VIDEO_EXTENSIONS};
 use ferrite_db::chapter_repo::ChapterInsert;
 use ferrite_db::library_repo;
@@ -26,6 +25,7 @@ use tokio::sync::Semaphore;
 use tracing::{debug, info, warn};
 
 pub use progress::{ScanProgress, ScanRegistry};
+pub use watcher::WatcherHandle;
 
 /// Scan a single library using a per-item concurrent pipeline.
 ///
@@ -94,9 +94,6 @@ pub async fn scan_library(
     // ffprobe and ffmpeg work still proceed concurrently.
     let write_sem = Arc::new(Semaphore::new(1));
 
-    // Track which TV shows have been enriched this scan to avoid duplicate TMDB calls
-    let enriched_shows: Arc<DashSet<String>> = Arc::new(DashSet::new());
-
     let mut count = 0u32;
 
     let phase1_results = stream::iter(files)
@@ -109,9 +106,6 @@ pub async fn scan_library(
             let library_uuid = library.id;
             let media_type = media_type.to_string();
             let scan_state = scan_state.clone();
-            let enriched_shows = enriched_shows.clone();
-            let tmdb_provider = tmdb_provider.clone();
-            let image_cache = image_cache.clone();
             let existing = existing.clone(); // cheap Arc clone
 
             async move {
@@ -239,7 +233,7 @@ pub async fn scan_library(
                     }
                 }
 
-                let show_id_for_enrich: Option<String> = if is_tv_library {
+                let _show_id: Option<String> = if is_tv_library {
                     if let ParsedFilename::Episode(ParsedEpisode { show_name, season, episode }) = &parsed {
                         match tv_repo::upsert_tv_show(&mut *tx, &library_id, show_name).await {
                             Ok(show_id) => {
@@ -262,42 +256,7 @@ pub async fn scan_library(
                 drop(_write_permit);
                 scan_state.inc_inserted();
 
-                // Spawn TMDB enrichment as a detached task so it doesn't occupy a
-                // buffer_unordered slot while waiting on HTTP responses.
-                if let (Some(provider), Some(img_cache)) = (tmdb_provider.clone(), image_cache.clone()) {
-                    if is_tv_library {
-                        if let (Some(show_id), ParsedFilename::Episode(ParsedEpisode { show_name, .. })) = (show_id_for_enrich, &parsed) {
-                            if enriched_shows.insert(show_id.clone()) {
-                                let pool2 = pool.clone();
-                                let show_name2 = show_name.clone();
-                                let scan_state2 = scan_state.clone();
-                                let write_sem2 = write_sem.clone();
-                                tokio::spawn(async move {
-                                    match ferrite_metadata::enrichment::enrich_single_show(&pool2, &show_id, &show_name2, provider.as_ref(), img_cache.as_ref(), &write_sem2).await {
-                                        Ok(true) => { scan_state2.inc_enriched(); }
-                                        Ok(false) => {}
-                                        Err(e) => { warn!("TMDB enrichment failed for '{}': {}", show_name2, e); }
-                                    }
-                                });
-                            }
-                        }
-                    } else if is_movie_library {
-                        let pool2 = pool.clone();
-                        let title2 = title.clone();
-                        let mid2 = mid.clone();
-                        let scan_state2 = scan_state.clone();
-                        let write_sem2 = write_sem.clone();
-                        tokio::spawn(async move {
-                            match ferrite_metadata::enrichment::enrich_single_movie(&pool2, &mid2, &title2, year.map(|y| y as i32), provider.as_ref(), img_cache.as_ref(), &write_sem2).await {
-                                Ok(true) => { scan_state2.inc_enriched(); }
-                                Ok(false) => {}
-                                Err(e) => { warn!("TMDB enrichment failed for '{}': {}", title2, e); }
-                            }
-                        });
-                    }
-                }
-
-                // Collect embedded subtitle stream descriptors for Phase 2
+                // Collect embedded subtitle stream descriptors for subtitle phase
                 let embedded_streams: Vec<extract::EmbeddedSubtitleStream> = streams
                     .iter()
                     .filter(|s| s.stream_type == "subtitle")
@@ -344,6 +303,56 @@ pub async fn scan_library(
         }
     }
 
+    info!(
+        "Phase 1 complete for '{}': {} new items indexed",
+        library.name, count
+    );
+
+    // ── Phase 2: metadata enrichment (runs AFTER all files are committed) ─────
+    // This is critical: enrichment must happen after all episodes are in the DB
+    // so that enrich_library_shows sees every season and episode for each show.
+    // Previously, enrichment was fire-and-forget during Phase 1, causing a race
+    // where shows were enriched before all their episodes were committed.
+    if let (Some(provider), Some(img_cache)) = (tmdb_provider.as_ref(), image_cache.as_ref()) {
+        scan_state.set_status(ScanStatus::Enriching).await;
+
+        if is_tv_library {
+            scan_state.set_current("Enriching TV show metadata...").await;
+            match ferrite_metadata::enrichment::enrich_library_shows(
+                pool,
+                library_id,
+                provider.as_ref(),
+                img_cache.as_ref(),
+            )
+            .await
+            {
+                Ok(n) => {
+                    if n > 0 {
+                        info!("Enriched {} TV show(s) in '{}'", n, library.name);
+                    }
+                }
+                Err(e) => warn!("TV enrichment failed for '{}': {}", library.name, e),
+            }
+        } else if is_movie_library {
+            scan_state.set_current("Enriching movie metadata...").await;
+            match ferrite_metadata::enrichment::enrich_library_movies(
+                pool,
+                library_id,
+                provider.as_ref(),
+                img_cache.as_ref(),
+            )
+            .await
+            {
+                Ok(n) => {
+                    if n > 0 {
+                        info!("Enriched {} movie(s) in '{}'", n, library.name);
+                    }
+                }
+                Err(e) => warn!("Movie enrichment failed for '{}': {}", library.name, e),
+            }
+        }
+    }
+
     // Mark library as fully indexed — items are now visible in the UI.
     scan_state.set_status(ScanStatus::Complete).await;
     info!(
@@ -351,7 +360,7 @@ pub async fn scan_library(
         library.name, count
     );
 
-    // ── Phase 2: subtitle extraction (runs after library is fully visible) ────
+    // ── Phase 3: subtitle extraction (runs after library is fully visible) ────
     // Collect items that need subtitle work (new/changed files only).
     let subtitle_items: Vec<(String, String, String, Vec<extract::EmbeddedSubtitleStream>)> =
         phase1_results

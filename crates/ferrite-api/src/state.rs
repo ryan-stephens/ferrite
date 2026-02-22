@@ -1,7 +1,7 @@
 use crate::metrics::PlaybackMetrics;
 use crate::webhooks::WebhookDispatcher;
 use ferrite_core::config::AppConfig;
-use ferrite_scanner::ScanRegistry;
+use ferrite_scanner::{ScanRegistry, WatcherHandle};
 use ferrite_stream::hls::HlsSessionManager;
 use ferrite_transcode::hwaccel::EncoderProfile;
 use governor::clock::DefaultClock;
@@ -32,6 +32,9 @@ pub struct AppState {
     pub webhook_dispatcher: Arc<WebhookDispatcher>,
     /// Registry of active library scan progress states.
     pub scan_registry: ScanRegistry,
+    /// Handle to the filesystem watcher for dynamic library registration.
+    /// `None` if the watcher failed to start (non-fatal).
+    pub watcher_handle: Option<WatcherHandle>,
     /// In-memory playback and hot-path metrics (WS0 observability).
     pub playback_metrics: Arc<PlaybackMetrics>,
 }

@@ -1,14 +1,62 @@
 use anyhow::Result;
+use ferrite_core::media::LibraryType;
 use ferrite_db::library_repo;
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use sqlx::SqlitePool;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
 const MAX_INCREMENTAL_BATCH_PATHS: usize = 256;
+
+/// Commands sent to the running watcher task for dynamic library management.
+pub enum WatcherCmd {
+    /// Start watching a new library directory.
+    Watch {
+        library_id: String,
+        path: PathBuf,
+    },
+    /// Stop watching a library directory (e.g. on library deletion).
+    Unwatch {
+        library_id: String,
+    },
+}
+
+/// Handle returned by `LibraryWatcher::start()` that allows callers to
+/// dynamically register or unregister library directories at runtime.
+#[derive(Clone)]
+pub struct WatcherHandle {
+    cmd_tx: mpsc::Sender<WatcherCmd>,
+}
+
+impl WatcherHandle {
+    /// Register a new library directory for filesystem watching.
+    /// This is safe to call from any async context (e.g. an API handler).
+    pub async fn watch_library(&self, library_id: String, path: PathBuf) {
+        if let Err(e) = self
+            .cmd_tx
+            .send(WatcherCmd::Watch { library_id, path })
+            .await
+        {
+            warn!("Failed to send watch command to watcher task: {}", e);
+        }
+    }
+
+    /// Unregister a library directory so it is no longer watched.
+    /// Also drains any pending filesystem events for this library.
+    pub async fn unwatch_library(&self, library_id: String) {
+        if let Err(e) = self
+            .cmd_tx
+            .send(WatcherCmd::Unwatch { library_id })
+            .await
+        {
+            warn!("Failed to send unwatch command to watcher task: {}", e);
+        }
+    }
+}
 
 pub struct LibraryWatcher {
     pool: SqlitePool,
@@ -17,6 +65,8 @@ pub struct LibraryWatcher {
     debounce_seconds: u64,
     concurrent_probes: usize,
     subtitle_cache_dir: PathBuf,
+    tmdb_provider: Option<Arc<dyn ferrite_metadata::provider::MetadataProvider>>,
+    image_cache: Option<Arc<ferrite_metadata::image_cache::ImageCache>>,
 }
 
 impl LibraryWatcher {
@@ -27,6 +77,8 @@ impl LibraryWatcher {
         debounce_seconds: u64,
         concurrent_probes: usize,
         subtitle_cache_dir: PathBuf,
+        tmdb_provider: Option<Arc<dyn ferrite_metadata::provider::MetadataProvider>>,
+        image_cache: Option<Arc<ferrite_metadata::image_cache::ImageCache>>,
     ) -> Self {
         Self {
             pool,
@@ -35,14 +87,19 @@ impl LibraryWatcher {
             debounce_seconds,
             concurrent_probes,
             subtitle_cache_dir,
+            tmdb_provider,
+            image_cache,
         }
     }
 
-    pub async fn start(self) -> Result<tokio::task::JoinHandle<()>> {
+    pub async fn start(self) -> Result<WatcherHandle> {
         let libraries = library_repo::list_libraries(&self.pool).await?;
 
         // Bridge from notify's std::sync::mpsc to tokio's async mpsc.
         let (async_tx, mut async_rx) = mpsc::channel::<PathBuf>(256);
+
+        // Command channel for dynamic library registration/unregistration at runtime.
+        let (cmd_tx, mut cmd_rx) = mpsc::channel::<WatcherCmd>(16);
 
         let (sync_tx, sync_rx) = std::sync::mpsc::channel::<Result<Event, notify::Error>>();
         let mut watcher = RecommendedWatcher::new(sync_tx, notify::Config::default())?;
@@ -106,10 +163,14 @@ impl LibraryWatcher {
         let debounce = Duration::from_secs(self.debounce_seconds);
         let concurrent_probes = self.concurrent_probes;
         let subtitle_cache_dir = self.subtitle_cache_dir;
+        let tmdb_provider = self.tmdb_provider;
+        let image_cache = self.image_cache;
 
-        let handle = tokio::spawn(async move {
+        tokio::spawn(async move {
             // Keep the watcher alive for the lifetime of this task.
-            let _watcher = watcher;
+            // Moved into the closure so we can mutably borrow it for
+            // dynamic watch registration via commands.
+            let mut watcher = watcher;
 
             let mut pending_libraries: HashMap<String, HashSet<PathBuf>> = HashMap::new();
 
@@ -129,6 +190,38 @@ impl LibraryWatcher {
                             );
                         }
                     }
+                    Some(cmd) = cmd_rx.recv() => {
+                        match cmd {
+                            WatcherCmd::Watch { library_id, path } => {
+                                if path.exists() {
+                                    match watcher.watch(&path, RecursiveMode::Recursive) {
+                                        Ok(()) => {
+                                            info!("Now watching new library '{}' at {:?}", library_id, path);
+                                            lib_paths.push((path, library_id));
+                                        }
+                                        Err(e) => {
+                                            warn!("Failed to watch new library '{}' at {:?}: {}", library_id, path, e);
+                                        }
+                                    }
+                                } else {
+                                    warn!("New library path does not exist, skipping watch: {:?}", path);
+                                }
+                            }
+                            WatcherCmd::Unwatch { library_id } => {
+                                // Remove from lib_paths and unwatch the directory.
+                                if let Some(pos) = lib_paths.iter().position(|(_, id)| id == &library_id) {
+                                    let (path, _) = lib_paths.remove(pos);
+                                    if let Err(e) = watcher.unwatch(&path) {
+                                        warn!("Failed to unwatch library '{}' at {:?}: {}", library_id, path, e);
+                                    } else {
+                                        info!("Stopped watching deleted library '{}' at {:?}", library_id, path);
+                                    }
+                                }
+                                // Drain any pending events for this library.
+                                pending_libraries.remove(&library_id);
+                            }
+                        }
+                    }
                     _ = tokio::time::sleep(debounce), if !pending_libraries.is_empty() => {
                         // Debounce period elapsed with pending changes — process batched path sets.
                         let batches: Vec<(String, Vec<PathBuf>)> = pending_libraries
@@ -143,8 +236,9 @@ impl LibraryWatcher {
                                 paths.len()
                             );
                             let mut incremental_failed = false;
+                            let mut indexed_total = 0u32;
                             for chunk in paths.chunks(MAX_INCREMENTAL_BATCH_PATHS) {
-                                if let Err(e) = crate::scan_library_incremental(
+                                match crate::scan_library_incremental(
                                     &pool,
                                     &lib_id,
                                     &ffprobe_path,
@@ -155,13 +249,16 @@ impl LibraryWatcher {
                                 )
                                 .await
                                 {
-                                    warn!(
-                                        "Incremental scan failed for '{}': {}. Falling back to full rescan.",
-                                        lib_id,
-                                        e
-                                    );
-                                    incremental_failed = true;
-                                    break;
+                                    Ok(n) => indexed_total += n,
+                                    Err(e) => {
+                                        warn!(
+                                            "Incremental scan failed for '{}': {}. Falling back to full rescan.",
+                                            lib_id,
+                                            e
+                                        );
+                                        incremental_failed = true;
+                                        break;
+                                    }
                                 }
                             }
 
@@ -175,8 +272,8 @@ impl LibraryWatcher {
                                     concurrent_probes,
                                     &subtitle_cache_dir,
                                     scan_state,
-                                    None,
-                                    None,
+                                    tmdb_provider.clone(),
+                                    image_cache.clone(),
                                 )
                                 .await
                                 {
@@ -186,6 +283,15 @@ impl LibraryWatcher {
                                         full_err
                                     );
                                 }
+                            } else if indexed_total > 0 {
+                                // Enrich newly added items after incremental scan
+                                enrich_library_after_scan(
+                                    &pool,
+                                    &lib_id,
+                                    tmdb_provider.as_ref(),
+                                    image_cache.as_ref(),
+                                )
+                                .await;
                             }
                         }
                     }
@@ -199,7 +305,63 @@ impl LibraryWatcher {
             }
         });
 
-        Ok(handle)
+        Ok(WatcherHandle { cmd_tx })
+    }
+}
+
+/// Run metadata enrichment for a library after an incremental scan indexed new items.
+/// Determines the library type and calls the appropriate enrichment function.
+async fn enrich_library_after_scan(
+    pool: &SqlitePool,
+    library_id: &str,
+    tmdb_provider: Option<&Arc<dyn ferrite_metadata::provider::MetadataProvider>>,
+    image_cache: Option<&Arc<ferrite_metadata::image_cache::ImageCache>>,
+) {
+    let (provider, cache) = match (tmdb_provider, image_cache) {
+        (Some(p), Some(c)) => (p, c),
+        _ => return, // No metadata provider configured
+    };
+
+    let library = match library_repo::get_library(pool, library_id).await {
+        Ok(lib) => lib,
+        Err(e) => {
+            warn!("Failed to load library '{}' for enrichment: {}", library_id, e);
+            return;
+        }
+    };
+
+    match library.library_type {
+        LibraryType::Tv => {
+            info!("Enriching TV metadata after incremental scan for '{}'", library.name);
+            match ferrite_metadata::enrichment::enrich_library_shows(
+                pool,
+                library_id,
+                provider.as_ref(),
+                cache.as_ref(),
+            )
+            .await
+            {
+                Ok(n) if n > 0 => info!("Enriched {} TV show(s) in '{}'", n, library.name),
+                Ok(_) => {}
+                Err(e) => warn!("TV enrichment failed for '{}': {}", library.name, e),
+            }
+        }
+        LibraryType::Movie => {
+            info!("Enriching movie metadata after incremental scan for '{}'", library.name);
+            match ferrite_metadata::enrichment::enrich_library_movies(
+                pool,
+                library_id,
+                provider.as_ref(),
+                cache.as_ref(),
+            )
+            .await
+            {
+                Ok(n) if n > 0 => info!("Enriched {} movie(s) in '{}'", n, library.name),
+                Ok(_) => {}
+                Err(e) => warn!("Movie enrichment failed for '{}': {}", library.name, e),
+            }
+        }
+        LibraryType::Music => {} // No metadata enrichment for music libraries yet
     }
 }
 

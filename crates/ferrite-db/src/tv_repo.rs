@@ -502,9 +502,10 @@ pub async fn get_shows_needing_metadata(
 }
 
 /// Get TV shows that have show-level metadata (tmdb_id set) but still have
-/// episodes missing title, still_path, or overview — used to backfill episode
-/// metadata for shows enriched before episode fetching was implemented, and
-/// for shows that gained new seasons after initial enrichment.
+/// episodes that were never enriched — i.e. episodes where title AND air_date
+/// are both NULL, indicating they were inserted during scanning but never
+/// received TMDB metadata. This avoids re-processing episodes where TMDB
+/// legitimately has no still_path or overview.
 pub async fn get_shows_needing_episode_metadata(
     pool: &SqlitePool,
     library_id: &str,
@@ -516,7 +517,8 @@ pub async fn get_shows_needing_episode_metadata(
            JOIN episodes e ON e.season_id = s.id
            WHERE ts.library_id = ?
              AND ts.tmdb_id IS NOT NULL
-             AND (e.title IS NULL OR e.still_path IS NULL OR e.overview IS NULL)"#,
+             AND e.title IS NULL
+             AND e.air_date IS NULL"#,
     )
     .bind(library_id)
     .fetch_all(pool)

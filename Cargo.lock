@@ -526,7 +526,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-api"
-version = "0.1.35"
+version = "0.1.36"
 dependencies = [
  "anyhow",
  "axum",
@@ -558,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-core"
-version = "0.1.35"
+version = "0.1.36"
 dependencies = [
  "chrono",
  "serde",
@@ -570,7 +570,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-db"
-version = "0.1.35"
+version = "0.1.36"
 dependencies = [
  "anyhow",
  "bcrypt",
@@ -587,7 +587,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-dlna"
-version = "0.1.35"
+version = "0.1.36"
 dependencies = [
  "anyhow",
  "axum",
@@ -605,7 +605,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-metadata"
-version = "0.1.35"
+version = "0.1.36"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -627,7 +627,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-scanner"
-version = "0.1.35"
+version = "0.1.36"
 dependencies = [
  "anyhow",
  "chrono",
@@ -648,7 +648,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-server"
-version = "0.1.35"
+version = "0.1.36"
 dependencies = [
  "anyhow",
  "axum",
@@ -658,6 +658,7 @@ dependencies = [
  "ferrite-core",
  "ferrite-db",
  "ferrite-dlna",
+ "ferrite-metadata",
  "ferrite-scanner",
  "ferrite-stream",
  "ferrite-transcode",
@@ -671,7 +672,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-stream"
-version = "0.1.35"
+version = "0.1.36"
 dependencies = [
  "anyhow",
  "axum",
@@ -691,7 +692,7 @@ dependencies = [
 
 [[package]]
 name = "ferrite-transcode"
-version = "0.1.35"
+version = "0.1.36"
 dependencies = [
  "anyhow",
  "dashmap",

@@ -31,6 +31,69 @@ pub async fn create_library(
     };
 
     let lib = library_repo::create_library(&state.db, &req.name, &req.path, lib_type).await?;
+
+    // Register the new library path with the filesystem watcher so future
+    // file changes are detected automatically.
+    if let Some(ref handle) = state.watcher_handle {
+        handle
+            .watch_library(lib.id.to_string(), std::path::PathBuf::from(&lib.path))
+            .await;
+    }
+
+    // Auto-trigger an initial scan so the library's existing content is
+    // discovered immediately without requiring a separate manual scan.
+    let lib_id = lib.id.to_string();
+    if let Some(scan_state) = state.scan_registry.try_start(lib_id.clone()) {
+        let db = state.db.clone();
+        let config = state.config.clone();
+        tokio::spawn(async move {
+            let ffprobe_path = config.transcode.ffprobe_path.clone();
+            let ffmpeg_path = config.transcode.ffmpeg_path.clone();
+            let concurrent_probes = config.scanner.concurrent_probes;
+            let subtitle_cache_dir = config.scanner.subtitle_cache_dir.clone();
+
+            let (tmdb_provider, image_cache) =
+                if let Some(ref api_key) = config.metadata.tmdb_api_key {
+                    let provider: Arc<dyn ferrite_metadata::provider::MetadataProvider> =
+                        Arc::new(ferrite_metadata::tmdb::TmdbProvider::new(
+                            api_key.clone(),
+                            config.metadata.rate_limit_per_second,
+                        ));
+                    let cache = Arc::new(ferrite_metadata::image_cache::ImageCache::new(
+                        config.metadata.image_cache_dir.clone(),
+                    ));
+                    (Some(provider), Some(cache))
+                } else {
+                    (None, None)
+                };
+
+            match ferrite_scanner::scan_library(
+                &db,
+                &lib_id,
+                &ffprobe_path,
+                &ffmpeg_path,
+                concurrent_probes,
+                &subtitle_cache_dir,
+                scan_state,
+                tmdb_provider,
+                image_cache,
+            )
+            .await
+            {
+                Ok(count) => {
+                    tracing::info!(
+                        "Initial scan complete for new library {}: {} items",
+                        lib_id,
+                        count
+                    );
+                }
+                Err(e) => {
+                    tracing::error!("Initial scan failed for new library {}: {}", lib_id, e);
+                }
+            }
+        });
+    }
+
     Ok((StatusCode::CREATED, Json(lib)))
 }
 
@@ -38,8 +101,49 @@ pub async fn delete_library(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
+    // 1. Stop watching the library directory so no new scan events fire.
+    if let Some(ref handle) = state.watcher_handle {
+        handle.unwatch_library(id.clone()).await;
+    }
+
+    // 2. Clear any in-progress or completed scan state for this library.
+    state.scan_registry.remove(&id);
+
+    // 3. Collect media item IDs *before* deleting rows — needed for cache cleanup.
+    let media_ids = media_repo::list_media_item_ids_for_library(&state.db, &id)
+        .await
+        .unwrap_or_default();
+
+    // 4. Delete DB rows. CASCADE handles: media_streams, external_subtitles,
+    //    playback_progress, movies, episodes, seasons, tv_shows, media_keyframes,
+    //    chapters, and FTS triggers clean media_fts.
     media_repo::delete_media_items_for_library(&state.db, &id).await?;
     library_repo::delete_library(&state.db, &id).await?;
+
+    // 5. Clean up extracted subtitle cache directories in the background.
+    if !media_ids.is_empty() {
+        let subtitle_cache_dir = state.config.scanner.subtitle_cache_dir.clone();
+        tokio::spawn(async move {
+            let mut removed = 0u32;
+            for mid in &media_ids {
+                let dir = subtitle_cache_dir.join(mid);
+                if dir.exists() {
+                    if let Err(e) = tokio::fs::remove_dir_all(&dir).await {
+                        tracing::warn!("Failed to remove subtitle cache dir {}: {}", dir.display(), e);
+                    } else {
+                        removed += 1;
+                    }
+                }
+            }
+            if removed > 0 {
+                tracing::info!(
+                    "Cleaned up {} subtitle cache directories for deleted library",
+                    removed
+                );
+            }
+        });
+    }
+
     Ok(StatusCode::NO_CONTENT)
 }
 

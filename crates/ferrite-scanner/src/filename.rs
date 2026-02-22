@@ -23,13 +23,22 @@ pub enum ParsedFilename {
 
 // -- TV episode patterns (checked first) --
 
-/// Matches `Show Name S01E05` or `show.name.s01e05` (case-insensitive).
+/// Matches Sonarr standard: `Show Name - S01E05 - Episode Title` and
+/// multi-episode: `S01E05E06`, `S01E05-E06`. Also matches the simpler
+/// `show.name.s01e05` and `Show Name S01E05` forms.
+/// Captures: (1) show name, (2) season, (3) first episode number.
 static RE_EPISODE_SXXEXX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)^(.+?)[.\s_-]+s(\d{1,2})e(\d{1,2})").unwrap());
+    LazyLock::new(|| Regex::new(r"(?i)^(.+?)[.\s_-]+s(\d{1,4})e(\d{1,4})").unwrap());
 
 /// Matches `Show Name 1x05`.
 static RE_EPISODE_NX_NN: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)^(.+?)[.\s_-]+(\d{1,2})x(\d{2,3})").unwrap());
+
+/// Matches absolute episode numbering common in anime:
+/// `Show Name - 05`, `show.name.-.05`, `[Group] Show Name - 05`
+/// Only matches when the number is 2-4 digits (to avoid matching years).
+static RE_EPISODE_ABSOLUTE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^(?:\[.+?\]\s*)?(.+?)\s+-\s+(\d{2,4})(?:[\s._v]|$)").unwrap());
 
 // -- Movie patterns --
 
@@ -46,11 +55,14 @@ static RE_MOVIE_BRACKET_YEAR: LazyLock<Regex> =
 static RE_MOVIE_DOT_YEAR: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(.+?)[.\s_-]+((?:19|20)\d{2})(?:[.\s_-]|$)").unwrap());
 
-/// Replace dots and underscores with spaces, collapse runs of whitespace, and trim.
+/// Replace dots and underscores with spaces, collapse runs of whitespace,
+/// strip trailing hyphens/dashes (left by Sonarr-style " - " delimiters), and trim.
 pub fn clean_title(raw: &str) -> String {
     let replaced = raw.replace(['.', '_'], " ");
     let collapsed: String = replaced.split_whitespace().collect::<Vec<_>>().join(" ");
-    collapsed.trim().to_string()
+    // Strip trailing " -" or " –" left after regex capture stops before " - S01E05"
+    let trimmed = collapsed.trim().trim_end_matches(|c: char| c == '-' || c == '–' || c == '—').trim();
+    trimmed.to_string()
 }
 
 /// Strip a trailing 4-digit year (19xx or 20xx) from a show name.
@@ -104,6 +116,19 @@ pub fn parse_filename(file_stem: &str) -> ParsedFilename {
         return ParsedFilename::Episode(ParsedEpisode {
             show_name,
             season,
+            episode,
+        });
+    }
+
+    // Absolute episode numbering (anime): "Show Name - 05"
+    if let Some(caps) = RE_EPISODE_ABSOLUTE.captures(file_stem) {
+        let raw = clean_title(&caps[1]);
+        let show_name = strip_trailing_year(&raw).to_string();
+        let episode: u32 = caps[2].parse().unwrap_or(0);
+        // Absolute episodes go into season 1 by convention
+        return ParsedFilename::Episode(ParsedEpisode {
+            show_name,
+            season: 1,
             episode,
         });
     }
@@ -237,6 +262,89 @@ mod tests {
                 assert_eq!(e.show_name, "Show Name");
                 assert_eq!(e.season, 2);
                 assert_eq!(e.episode, 10);
+            }
+            other => panic!("Expected Episode, got {:?}", other),
+        }
+    }
+
+    // ---- Sonarr standard naming tests ----
+
+    #[test]
+    fn sonarr_standard_naming() {
+        // Sonarr default: "Show Name - S01E05 - Episode Title [quality]"
+        let result = parse_filename("Breaking Bad - S03E05 - Mas");
+        match result {
+            ParsedFilename::Episode(e) => {
+                assert_eq!(e.show_name, "Breaking Bad");
+                assert_eq!(e.season, 3);
+                assert_eq!(e.episode, 5);
+            }
+            other => panic!("Expected Episode, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn sonarr_with_year_in_name() {
+        // Sonarr: "Star Trek Lower Decks (2020) - S01E01 - Strange Energies"
+        let result = parse_filename("Star Trek Lower Decks (2020) - S01E01 - Strange Energies");
+        match result {
+            ParsedFilename::Episode(e) => {
+                assert_eq!(e.show_name, "Star Trek Lower Decks (2020)");
+                assert_eq!(e.season, 1);
+                assert_eq!(e.episode, 1);
+            }
+            other => panic!("Expected Episode, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn sonarr_with_quality_tags() {
+        let result = parse_filename("The Mandalorian - S02E08 - Chapter 16 [WEBDL-1080p][EAC3 5.1][h265]");
+        match result {
+            ParsedFilename::Episode(e) => {
+                assert_eq!(e.show_name, "The Mandalorian");
+                assert_eq!(e.season, 2);
+                assert_eq!(e.episode, 8);
+            }
+            other => panic!("Expected Episode, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn sonarr_multi_episode() {
+        // Multi-episode: first episode number is captured
+        let result = parse_filename("Show Name - S01E05E06 - Double Feature");
+        match result {
+            ParsedFilename::Episode(e) => {
+                assert_eq!(e.show_name, "Show Name");
+                assert_eq!(e.season, 1);
+                assert_eq!(e.episode, 5);
+            }
+            other => panic!("Expected Episode, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn anime_absolute_numbering() {
+        let result = parse_filename("Naruto Shippuden - 05");
+        match result {
+            ParsedFilename::Episode(e) => {
+                assert_eq!(e.show_name, "Naruto Shippuden");
+                assert_eq!(e.season, 1);
+                assert_eq!(e.episode, 5);
+            }
+            other => panic!("Expected Episode, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn anime_with_group_tag() {
+        let result = parse_filename("[SubGroup] Show Name - 12");
+        match result {
+            ParsedFilename::Episode(e) => {
+                assert_eq!(e.show_name, "Show Name");
+                assert_eq!(e.season, 1);
+                assert_eq!(e.episode, 12);
             }
             other => panic!("Expected Episode, got {:?}", other),
         }

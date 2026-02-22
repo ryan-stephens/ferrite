@@ -28,8 +28,7 @@ async function loadMedia(libraryId?: string | null): Promise<void> {
 }
 
 async function addLibrary(name: string, path: string, type: string): Promise<void> {
-  const lib = await api.createLibrary(name, path, type);
-  await api.scanLibrary(lib.id);
+  await api.createLibrary(name, path, type);
   await loadLibraries();
 }
 
