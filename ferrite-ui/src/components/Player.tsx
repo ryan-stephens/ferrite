@@ -46,13 +46,15 @@ function savePrefs(libraryId: string, prefs: PlaybackPrefs): void {
   } catch {}
 }
 
-/** HLS.js config tuned for low-latency live-like playback from a local server */
+/** HLS.js config tuned for fast TTFF and smooth playback from a local server */
 const HLS_CONFIG = {
-  maxBufferLength: 60,
-  maxMaxBufferLength: 120,
-  maxBufferSize: 120 * 1000 * 1000,
-  backBufferLength: 30,
+  maxBufferLength: 30,
+  maxMaxBufferLength: 60,
+  maxBufferSize: 60 * 1000 * 1000,
+  backBufferLength: 15,
   maxBufferHole: 0.5,
+  highBufferWatchdogPeriod: 3,
+  detectStallWithCurrentTimeMs: 2500,
   lowLatencyMode: false,
   startFragPrefetch: true,
   testBandwidth: false,
@@ -1087,6 +1089,10 @@ export default function Player(props: PlayerProps) {
 
       hls.on(Hls.Events.ERROR, (_e: any, d: any) => {
         if (gen !== seekGeneration) return;
+        // Non-fatal bufferStalledError is a known false positive: HLS.js starts
+        // its stall detector on MEDIA_ATTACHED before play() resolves, sees
+        // currentTime=0 with buffer available, and reports a stall. Ignore it.
+        if (!d.fatal && d.details === 'bufferStalledError') return;
         console.error('[seek] HLS error:', d.type, d.details, 'fatal:', d.fatal, d);
 
         // Detect session-expired 404 on the post-seek HLS instance — same

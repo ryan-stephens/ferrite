@@ -89,9 +89,10 @@ pub async fn scan_library(
 
     let probe_sem = Arc::new(Semaphore::new(concurrent_probes));
     let sub_sem = Arc::new(Semaphore::new(concurrent_probes));
-    // Limit concurrent DB write transactions to avoid SQLite write-lock contention.
-    // ffprobe and ffmpeg work proceeds freely; only the DB commit is gated.
-    let write_sem = Arc::new(Semaphore::new(2));
+    // SQLite effectively allows one writer at a time; serializing write
+    // transactions avoids lock-wait thrash during full-library scans.
+    // ffprobe and ffmpeg work still proceed concurrently.
+    let write_sem = Arc::new(Semaphore::new(1));
 
     // Track which TV shows have been enriched this scan to avoid duplicate TMDB calls
     let enriched_shows: Arc<DashSet<String>> = Arc::new(DashSet::new());

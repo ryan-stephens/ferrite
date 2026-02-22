@@ -1,223 +1,393 @@
-# Ferrite Comprehensive Codebase Review (Temp)
+# Ferrite Codebase Review (Performance + Streaming Focus)
 
-_Date:_ 2026-02-20
+Date: 2026-02-20
 
-## Scope
+## Scope and lens
 
-This review covered backend (Rust workspace), database/query layer, scanner/enrichment, streaming/transcode path, and frontend (SolidJS) with a focus on your stated goal: **be a more performant alternative to Plex** while preserving reliability and UX iteration velocity.
+This review focuses on what most impacts your stated goals:
 
----
+1. **Fast playback start (low TTFF)**
+2. **High quality playback with minimal unnecessary transcode loss**
+3. **Fast buffering + fast seeking**
+4. **Platform-agnostic evolution (web, iOS, Android, Roku, Apple TV, etc.)**
 
-## Executive Summary
-
-Ferrite has a strong technical foundation (Rust + SQLite WAL + FFmpeg orchestration + clear crate separation), and many good performance-oriented decisions are already in place.
-
-The largest remaining risks are mostly **scale and UX consistency issues**, not architectural blockers:
-
-1. **Frontend data-loading pattern will bottleneck first** on larger libraries (global load + client-side sort/filter + hard page cap).
-2. **Auto-rescan currently skips metadata enrichment**, so TV/movie metadata freshness can drift over time.
-3. **Scan status semantics are slightly misleading** in edge cases due detached enrichment tasks and percent calculation strategy.
-4. **Metadata provider request construction is fragile** (manual URL concatenation, no encoded query params).
-5. **Search/filter SQL path is not index-friendly for large libraries** (`LIKE '%...%'`), so query latency will climb as data grows.
+I reviewed backend stream/transcode/session code, frontend player behavior, DB/auth hot paths, and related config/migrations.
 
 ---
 
-## What’s Working Well (Keep)
+## Executive verdict
 
-- Strong modular architecture across crates and clear ownership boundaries (`ferrite-server`, `ferrite-api`, `ferrite-scanner`, `ferrite-stream`, etc.).
-- Good SQLite tuning for WAL workloads (`synchronous=NORMAL`, `busy_timeout`, mmap, cache sizing).
-- Practical HLS session lifecycle controls: idle FFmpeg kill + cleanup loop + graceful shutdown.
-- Good streaming strategy split (direct/remux/audio/full) and thoughtful seek logic around keyframes.
-- Useful scan progress model and scan de-duplication guard for same library.
+Ferrite has a strong foundation (Rust, explicit stream strategy tiers, HLS session manager, WAL tuning), but in its current shape it is **optimized for a narrower single-client flow**, not yet for **Plex-class multi-device / multi-client high-performance streaming**.
 
-References:
-- `crates/ferrite-db/src/lib.rs`
-- `crates/ferrite-stream/src/hls.rs`
-- `crates/ferrite-api/src/handlers/library.rs`
-- `crates/ferrite-api/src/handlers/stream.rs`
+Your biggest blockers are architectural and hot-path issues, not syntax-level inefficiencies:
 
----
+- session model is media-global (clients can interfere)
+- ABR is effectively disabled in production path
+- HLS playlist/segment strategy scales poorly over long sessions
+- auth middleware performs DB reads on segment requests
+- seek path repeatedly invokes ffprobe and often re-encodes
 
-## Findings (Prioritized)
-
-## High Priority
-
-### 1) Frontend only requests first 500 media items (functional + performance issue)
-
-- API client hardcodes `per_page=500` and does not auto-paginate (`ferrite-ui/src/api.ts`, `listMedia`).
-- Multiple pages rely on the global `allMedia()` store and then perform client-side sorting/filtering.
-- For large libraries, users will see incomplete catalogs and increasingly expensive client-side operations.
-
-References:
-- `ferrite-ui/src/api.ts` (listMedia default params)
-- `ferrite-ui/src/stores/media.ts` (global all-media loading)
-- `ferrite-ui/src/pages/HomePage.tsx` (client-side sort/filter slices)
-- `ferrite-ui/src/pages/LibraryPage.tsx` (client-side sort/filter)
-
-Recommendation:
-- Move to **server-driven pagination/filter/sort** per page/view.
-- Keep `allMedia` only for narrowly scoped features (e.g., lightweight search cache), not primary rendering.
+If those are fixed first, you’ll unlock disproportionate gains.
 
 ---
 
-### 2) Watcher-triggered rescans do not run metadata enrichment
+## Findings (ordered by severity)
 
-- `LibraryWatcher` calls `scan_library(..., None, None)` for provider/cache.
-- This means auto-rescan discovers files but does not enrich TMDB metadata for those runs.
+## P0 (Critical)
 
-Reference:
-- `crates/ferrite-scanner/src/watcher.rs` (rescan call passing `None, None`)
+### 1) Per-media singleton HLS sessions cause cross-client interference
 
-Recommendation:
-- Build provider/cache in watcher path (same logic used by manual scan endpoint), or queue enrichment as a separate background job.
+**Why this hurts**
+- Two clients watching the same media can affect each other’s session lifecycle and seek behavior.
+- This is a hard blocker for true multi-device usage and horizontal scaling.
 
----
+**Evidence**
+- Session mappings are keyed by `media_id`, not playback instance: @crates/ferrite-stream/src/hls.rs#137-143
+- Master endpoint reuses any existing media variant session, regardless of caller/session identity: @crates/ferrite-api/src/handlers/stream.rs#310-322
+- Seek path destroys/recreates media sessions (global for that media): @crates/ferrite-api/src/handlers/stream.rs#584-605 and @crates/ferrite-stream/src/hls.rs#505-520
 
-### 3) Scan lifecycle/status can report “complete” while detached enrichment tasks may still be running
-
-- Inline enrichment tasks are spawned detached during phase-1 indexing.
-- Status is set to `Complete` before/around later phases and can oscillate between stages, depending on detached task timing.
-
-References:
-- `crates/ferrite-scanner/src/lib.rs` (detached `tokio::spawn` enrichment tasks)
-- `crates/ferrite-scanner/src/lib.rs` (multiple `set_status(Complete)` transitions)
-
-Recommendation:
-- Track detached enrichment task handles and await/join before final terminal `Complete`, or explicitly model as separate async phase in progress schema.
+**Recommendation**
+- Introduce a **playback_session_id** (per user/device/play action), and scope FFmpeg session ownership to it.
+- Keep optional dedup/caching at segment level, not by force-sharing one active transcode process per media item.
 
 ---
 
-### 4) TMDB requests are manually URL-constructed without query encoding
+### 2) ABR ladder exists, but runtime path uses single-variant only
 
-- Query strings include raw title interpolation (`query={title}`).
-- Titles with symbols/Unicode/edge punctuation can degrade match quality or break requests.
+**Why this hurts**
+- No real adaptive bitrate under fluctuating network/CPU conditions.
+- Prevents robust cross-device experience and increases buffering risk.
 
-References:
-- `crates/ferrite-metadata/src/tmdb.rs` (`search_movie`, `search_tv` URL formatting)
+**Evidence**
+- `create_variant_sessions` exists but is not called from stream handlers: @crates/ferrite-stream/src/hls.rs#372-439
+- Handlers call `create_single_variant_session` for both initial load and seek: @crates/ferrite-api/src/handlers/stream.rs#334-355 and #584-605
 
-Recommendation:
-- Use `reqwest` URL/query builder (`.query(&[("query", title), ...])`) instead of string concatenation.
-
----
-
-## Medium Priority
-
-### 5) “Refresh All” UX state is timer-based, not actual scan-state-based
-
-- Global scanning indicator resets after 3 seconds regardless of real scan progress.
-- Settings page has real polling via `scanStatus`, but global store uses optimistic timeout.
-
-References:
-- `ferrite-ui/src/stores/media.ts` (`refreshAll`)
-- `ferrite-ui/src/pages/SettingsPage.tsx` (actual scan polling implementation)
-
-Recommendation:
-- Consolidate on one truth source: use scan-status polling and derive status globally.
+**Recommendation**
+- Enable true multi-variant ABR for normal playback.
+- Option: keep fast-start single variant for first seconds, then upgrade to full ladder.
 
 ---
 
-### 6) Scan percent is based only on `files_probed`, not full lifecycle
+### 3) HLS playlist mode and flags create unbounded growth (CPU, disk, latency pressure)
 
-- During `enriching` and `subtitles`, percent can stay at 100 while still actively processing.
+**Why this hurts**
+- Long sessions keep appending playlist history.
+- Playlist rewrite/parsing costs grow over time.
+- Segment storage growth can become large under concurrency.
 
-Reference:
-- `crates/ferrite-scanner/src/progress.rs` (`percent` calculation)
+**Evidence**
+- FFmpeg HLS args use `append_list` + `playlist_type event`: @crates/ferrite-stream/src/hls.rs#781-785
+- Variant playlist is read and rewritten every request: @crates/ferrite-stream/src/hls.rs#846-869
+- Segment readiness polling repeatedly reads playlist: @crates/ferrite-stream/src/hls.rs#917-954
 
-Recommendation:
-- Either:
-  - add phase-specific progress fields, or
-  - present phase-aware percent (`probe`, `enrich`, `subtitle`) instead of a single scalar.
-
----
-
-### 7) Query strategy for title/genre search will slow with growth
-
-- `LIKE '%...%'` on joined fields is not index-friendly.
-- Acceptable now, but this path will become a noticeable bottleneck on larger datasets.
-
-Reference:
-- `crates/ferrite-db/src/movie_repo.rs` (`list_movies_with_media`, `count_movies_with_media` WHERE filters)
-
-Recommendation:
-- Add FTS5 virtual table for title/overview/genres search (or tokenized search table + triggers).
+**Recommendation**
+- For VOD streaming, use a bounded strategy (`hls_list_size`, delete policy) and avoid unbounded EVENT growth.
+- Reduce repeated full playlist parsing in hot path.
 
 ---
 
-### 8) “Other” library type silently maps to Movie backend type
+### 4) Auth middleware does DB existence checks on streaming requests
 
-- UI offers `other`, backend default branch maps unknown types to `Movie`.
-- This can create hidden misconfiguration and confusing behavior.
+**Why this hurts**
+- HLS can generate frequent request volume (manifest + segments).
+- Per-request DB lookups add latency and contention for no direct playback value.
 
-References:
-- `ferrite-ui/src/pages/SettingsPage.tsx` (library type options)
-- `crates/ferrite-api/src/handlers/library.rs` (library_type mapping)
+**Evidence**
+- DB user check for Bearer token path: @crates/ferrite-api/src/auth.rs#89-104
+- DB user check for token query path: @crates/ferrite-api/src/auth.rs#123-136
+- Streaming routes are under auth middleware layer: @crates/ferrite-api/src/router.rs#65-74 and #91-94
 
-Recommendation:
-- Remove `other` from UI or add explicit backend support/validation error.
-
----
-
-## Lower Priority / Hardening
-
-### 9) Metadata image cache lacks resilience controls
-
-- No explicit timeout/retry/backoff/circuit behavior on image downloads.
-- Transient CDN/API errors can reduce metadata completeness over time.
-
-Reference:
-- `crates/ferrite-metadata/src/image_cache.rs`
-
-Recommendation:
-- Add short timeout, bounded retries with jitter, and lightweight error counters/metrics.
+**Recommendation**
+- Validate JWT signature + expiry in middleware without DB on every segment.
+- If revocation is needed, use in-memory revocation/version cache with TTL.
 
 ---
 
-### 10) Some expensive list/count patterns in TV queries may need optimization later
+### 5) Progressive transcode/remux pipe stderr is not drained (possible FFmpeg stall)
 
-- Correlated count subqueries are fine now, but could be replaced with pre-aggregated counts or indexed/materialized strategy when library scale grows.
+**Why this hurts**
+- If ffmpeg writes enough stderr output and nobody consumes it, process can block.
+- This manifests as random stalls/buffering freezes in long-running streams.
 
-Reference:
-- `crates/ferrite-db/src/tv_repo.rs` (`list_shows`, `get_show`)
+**Evidence**
+- Child spawned with `stderr(Stdio::piped())` in remux/audio/full transcode: @crates/ferrite-stream/src/transcode.rs#210-214, #381-385, #574-578
+- No stderr consumer attached in these paths; only stdout is streamed.
 
----
-
-## Performance Strategy Recommendations (Roadmap)
-
-## Phase 1 (Immediate, highest ROI)
-
-1. Server-side pagination/filter/sort end-to-end for all list pages.
-2. Unify scan status model in frontend and remove timer-based faux completion.
-3. Fix watcher rescans to include enrichment path.
-4. Move TMDB URL generation to encoded query builder.
-
-## Phase 2 (Scale preparedness)
-
-1. Introduce FTS5-backed search.
-2. Add lightweight telemetry around:
-   - scan duration per phase,
-   - enrichment success/failure rates,
-   - stream startup latency (TTFF),
-   - HLS session churn.
-3. Add API-level caching hints for frequently requested list endpoints.
-
-## Phase 3 (Advanced)
-
-1. Background job queue abstraction for enrichment/image fetch/retry.
-2. Optional Redis/memory cache layer for hot metadata and search responses.
-3. Benchmark suite for large synthetic libraries (10k, 50k, 100k items).
+**Recommendation**
+- Either consume stderr asynchronously, or force very quiet ffmpeg logging and redirect stderr to null.
 
 ---
 
-## Suggested Test Coverage Additions
+### 16) Multi-user playback progress schema still enforces global-per-media uniqueness
 
-1. **Watcher integration test**: file add/change triggers scan + enrichment.
-2. **Pagination contract tests**: frontend retrieves full result set across pages.
-3. **Scan status correctness tests**: transitions for scanning/enriching/subtitles/complete.
-4. **TMDB query encoding tests**: punctuation/unicode-heavy titles.
-5. **Large dataset query perf smoke test**: regression guard for list/search latency.
+**Why this hurts**
+- The schema still enforces one `playback_progress` row per media item globally, which conflicts with per-user progress expectations.
+- Under multiple users/devices, updates can overwrite/fail and downstream list queries can become semantically wrong.
+
+**Evidence**
+- Original unique constraint remains: `UNIQUE(media_item_id)`: @migrations/001_initial_schema.sql#34-42
+- Later migration adds composite uniqueness, but does not remove original constraint: @migrations/005_users.sql#17-22
+- Media/episode queries join playback progress only by `media_item_id` (no user filter): @crates/ferrite-db/src/movie_repo.rs#173-174 and @crates/ferrite-db/src/tv_repo.rs#287-290
+
+**Recommendation**
+- Migrate `playback_progress` to strict `(user_id, media_item_id)` uniqueness only.
+- Ensure all API-facing media list/detail queries filter/join progress by the authenticated user.
 
 ---
 
-## Closing Notes
+## P1 (High)
 
-You are already far ahead of most self-hosted media projects in architecture quality and runtime fundamentals. The biggest win now is reducing **data-plane friction at scale** (querying, pagination, enrichment consistency, and state accuracy), which directly supports your “faster-than-Plex” goal in real-world libraries.
+### 6) Seek path is expensive (ffprobe per seek + frequent re-encode path)
+
+**Why this hurts**
+- Seek responsiveness degrades under rapid scrubbing and concurrent users.
+- CPU spikes from repeated keyframe probing and re-encoding workflows.
+
+**Evidence**
+- `find_keyframe_before()` executes ffprobe process per call: @crates/ferrite-stream/src/transcode.rs#61-101
+- Called in HLS master and HLS seek handlers: @crates/ferrite-api/src/handlers/stream.rs#290-297 and #553-560
+- Video copy in HLS only allowed for near-zero start (`start_secs < 0.5`): @crates/ferrite-stream/src/hls.rs#643-647
+
+**Recommendation**
+- Precompute/store keyframe index during scan.
+- Offer two seek modes: **fast keyframe seek** (copy-friendly) vs **precise seek** (re-encode).
+
+---
+
+### 7) Native HLS (Safari/iOS path) has start/session lifecycle gaps
+
+**Why this hurts**
+- Resume/seek behavior can be slower and less deterministic on native HLS clients.
+- Session cleanup can lag/leak until timeout.
+
+**Evidence**
+- Native HLS source does not pass `start` in URL: @ferrite-ui/src/components/Player.tsx#454-463
+- Session stop depends on `hlsSessionId`, which native branch does not set from headers/events: @ferrite-ui/src/components/Player.tsx#212-217
+
+**Recommendation**
+- Unify startup flow so native HLS also obtains explicit session/start metadata and session id.
+- Ensure explicit stop endpoint call on close for native HLS sessions.
+
+---
+
+### 8) HLS segment wait path uses polling + full playlist reads
+
+**Why this hurts**
+- Adds avoidable latency and CPU overhead under load.
+
+**Evidence**
+- Poll loop every 500ms + playlist read/parsing in wait path: @crates/ferrite-stream/src/hls.rs#917-954
+
+**Recommendation**
+- Switch to more event-driven segment readiness strategy (or lower-overhead state tracking).
+
+---
+
+### 9) Multi-user playback schema/query model is inconsistent and can leak/wrongly merge progress
+
+**Why this hurts**
+- Incorrect resume states and duplicate joins in user scenarios.
+- Performance degradation due over-join cardinality.
+
+**Evidence**
+- Old unique constraint remains on `playback_progress(media_item_id)`: @migrations/001_initial_schema.sql#34-42
+- New composite unique index added later: @migrations/005_users.sql#21-22
+- Media queries join playback_progress by media_item_id only (no user filter): @crates/ferrite-db/src/movie_repo.rs#173-174 and #237-238
+- TV episodes query also joins on media_item_id only: @crates/ferrite-db/src/tv_repo.rs#287-290
+
+**Recommendation**
+- Migrate `playback_progress` uniqueness to `(user_id, media_item_id)` only.
+- Always join/filter by current user_id in API-facing media queries.
+
+---
+
+### 10) Static codec/container compatibility model is not client-aware
+
+**Why this hurts**
+- You’ll over-transcode for capable devices and under-serve incompatible ones.
+- This undermines both quality and performance at platform scale.
+
+**Evidence**
+- Backend compatibility lists are fixed/global: @crates/ferrite-stream/src/compat.rs#1-46
+- Frontend duplicates separate compatibility logic: @ferrite-ui/src/utils.ts#39-57
+
+**Recommendation**
+- Introduce **client capability profiles** (web-chrome, safari-ios, tvOS, Android, Roku, etc.)
+- Make strategy decisions per request/profile, not globally.
+
+---
+
+### 11) HLS master playlist lacks richer signaling needed for broad client compatibility
+
+**Why this hurts**
+- Some clients and heuristics perform better with explicit CODECS/AUDIO metadata.
+
+**Evidence**
+- Stream-INF generation includes BANDWIDTH/NAME/RESOLUTION, but not CODECS: @crates/ferrite-stream/src/hls.rs#837-840
+
+**Recommendation**
+- Emit CODECS and related attributes in master playlists.
+
+---
+
+### 12) 6-second segment default trades startup/seek speed for throughput stability
+
+**Why this hurts**
+- Longer segments increase startup and seek granularity latency.
+- Contradicts “fast as possible seek/buffer” target.
+
+**Evidence**
+- Default segment duration is 6 seconds: @crates/ferrite-core/src/config.rs#78-80
+
+**Recommendation**
+- For VOD low-latency feel, target 2s segments (and tune startup buffer policy).
+
+---
+
+### 17) Transcode admission is fail-fast (`try_acquire`) instead of queued
+
+**Why this hurts**
+- During spikes, users get immediate `503` instead of bounded queueing/backpressure.
+- This harms perceived reliability and causes avoidable playback retries.
+
+**Evidence**
+- Remux/audio/full/HLS session creation all use `try_acquire()` and reject when saturated: @crates/ferrite-api/src/handlers/stream.rs#76-81, #105-110, #133-138, #324-330, #574-580
+
+**Recommendation**
+- Introduce queued admission with timeout (or class-based scheduling) so short bursts do not hard-fail playback.
+
+---
+
+### 18) File watcher rescans entire library on any filesystem change
+
+**Why this hurts**
+- A single file event can trigger full-library scan work.
+- On busy libraries this can create sustained DB/transcode contention that degrades playback responsiveness.
+
+**Evidence**
+- Changed path is mapped to library id, then full `scan_library()` is invoked for that library: @crates/ferrite-scanner/src/watcher.rs#103-124
+
+**Recommendation**
+- Move to incremental path-scoped rescans (changed-file pipeline) instead of whole-library rescans.
+- Keep full scans for explicit/manual operations only.
+
+---
+
+## P2 (Medium)
+
+### 13) HLS segment content type for `.m4s` may be suboptimal for some clients
+
+**Evidence**
+- `video/iso.segment` used for `.m4s`: @crates/ferrite-api/src/handlers/stream.rs#464-470
+
+**Recommendation**
+- Validate against target clients (Roku/tvOS/etc.) and consider standardized serving semantics.
+
+---
+
+### 14) Search scalability work is partially landed but not fully integrated
+
+**Evidence**
+- FTS table exists in migration: @migrations/013_fts5_search.sql#4-35
+- Current listing path still uses LIKE filtering: @crates/ferrite-db/src/movie_repo.rs#241-244 and #271-273
+
+**Recommendation**
+- Route high-cardinality title search to FTS for large libraries.
+
+---
+
+### 15) Automated test coverage for playback-critical integration is minimal
+
+**Evidence**
+- `tests/integration/` is empty.
+
+**Recommendation**
+- Add regression tests for seek/reuse/session teardown/auth hot path behavior.
+
+---
+
+## What Ferrite is already doing well
+
+- Good direct/remux/audio/full strategy model baseline: @crates/ferrite-stream/src/compat.rs#27-70
+- WAL-mode and practical SQLite pragmas: @crates/ferrite-db/src/lib.rs#25-43
+- HLS process lifecycle cleanup loop and idle-kill controls: @crates/ferrite-stream/src/hls.rs#1040-1075
+- Thoughtful tone-mapping path for HDR/10-bit sources: @crates/ferrite-transcode/src/tonemap.rs#53-106
+
+---
+
+## Recommended architecture direction for platform-agnostic high performance
+
+### 1) Move to explicit playback sessions (not media-global sessions)
+
+- Session key should include playback identity (user/device/session UUID).
+- Maintain independent seek/timeline per client.
+- Optional segment cache can still deduplicate compute.
+
+### 2) Introduce client capability profiles
+
+Per client family, negotiate:
+- max resolution / bitrate
+- codec/container support (H264/H265/AV1/VP9)
+- audio support (AAC/AC3/EAC3/Opus/etc.)
+- HDR support
+
+This unlocks both **quality** and **CPU efficiency**.
+
+### 3) Implement true ABR ladder and startup strategy
+
+- Re-enable multi-variant sessions for normal playback.
+- Keep quick start path if desired, but switch to full ladder quickly.
+
+### 4) Fix hot path auth and playlist scaling
+
+- Eliminate DB checks per segment request.
+- Bound playlists/segment retention and reduce polling overhead.
+
+### 5) Add hard playback SLOs + telemetry
+
+Track per playback session:
+- TTFF (time to first frame)
+- startup failure rate
+- rebuffer ratio + count
+- median/95p seek completion time
+- segment generation latency
+- transcode queue wait time
+
+Without this, optimization is guesswork.
+
+---
+
+## Suggested execution order (implementation roadmap)
+
+### Phase 0 (1-2 days): instrumentation + guardrails
+- Add metrics around startup, rebuffer, seek, transcode queue, auth latency.
+- Add synthetic playback benchmark script.
+
+### Phase 1 (1 week): remove major bottlenecks
+- Fix stderr drain issue in progressive transcode paths.
+- Remove per-segment DB auth checks.
+- Bound HLS playlist/segment growth.
+- Reduce segment duration for latency-oriented profile.
+
+### Phase 2 (1-2 weeks): session architecture correctness
+- Convert to per-playback session ownership.
+- Ensure seek/stop cannot disrupt other clients.
+- Normalize native HLS lifecycle behavior.
+
+### Phase 3 (2-4 weeks): quality + cross-platform maturity
+- Turn on true ABR ladder.
+- Add client profile negotiation and codec-aware decisions.
+- Add CODECS-rich manifests and platform validation matrix (web/iOS/Android/Roku/tvOS).
+
+---
+
+## Bottom line
+
+If your target is truly “extremely high performing Plex alternative,” your current biggest gains will come from:
+
+1. **session model redesign**
+2. **real ABR activation**
+3. **hot-path auth + HLS scaling fixes**
+4. **client capability-driven strategy decisions**
+
+Those four areas are the difference between “works on my browser” and “fast, reliable, multi-device streaming platform.”

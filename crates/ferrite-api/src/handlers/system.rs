@@ -36,7 +36,7 @@ pub async fn list_active_streams(
 ) -> Result<impl IntoResponse, ApiError> {
     ensure_admin_if_present(&state, auth_user.as_ref()).await?;
 
-    let sessions = state.hls_sessions.list_active_sessions().await;
+    let sessions = state.hls_sessions.list_active_sessions();
     let count = sessions.len();
     let items: Vec<serde_json::Value> = sessions
         .into_iter()

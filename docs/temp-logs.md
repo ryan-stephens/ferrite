@@ -1,1532 +1,1040 @@
-badchiefy@charon ~/ferrite $ screen -S 112204.ferrite -X quit
-badchiefy@charon ~/ferrite $ curl -L https://github.com/ryan-stephens/ferrite/releases/download/v0.1.31/ferrite-x86_64-linux-musl.tar.gz -o ferrite-new.tar.gz
-% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-Dload  Upload   Total   Spent    Left  Speed
-0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-100 7694k  100 7694k    0     0  35.6M      0 --:--:-- --:--:-- --:--:-- 93.9M
-badchiefy@charon ~/ferrite $ tar -xzf ferrite-new.tar.gz                                                                                                     badchiefy@charon ~/ferrite $ rm ferrite-new.tar.gz
-badchiefy@charon ~/ferrite $ screen -S ferrite
-badchiefy@charon ~/ferrite $ ./ferrite 2>&1 | tee -a ferrite.log
-2026-02-20T18:13:01.728960Z  INFO ferrite: Loaded config from config/ferrite.toml
-2026-02-20T18:13:01.729118Z  INFO ferrite_core::config: Data directory: /mnt/mpathj/badchiefy/ferrite/data
-2026-02-20T18:13:01.749924Z  INFO ferrite_transcode::hwaccel: HW encoder detection: nvenc=false, qsv=false, vaapi=false
-2026-02-20T18:13:01.749947Z  INFO ferrite_transcode::hwaccel: No HW encoders available, using software (libx264)
-2026-02-20T18:13:01.749951Z  INFO ferrite: Video encoder: libx264 (backend=software)
-2026-02-20T18:13:01.756666Z  INFO ferrite_db: Database connected at /mnt/mpathj/badchiefy/ferrite/data/ferrite.db
-2026-02-20T18:13:01.756948Z  INFO ferrite_db: Database migrations applied
-2026-02-20T18:13:01.758521Z  INFO ferrite_api::router: Serving SPA from: /mnt/mpathj/badchiefy/ferrite/static
-2026-02-20T18:13:01.759092Z  INFO ferrite: DLNA server enabled (Ferrite Media Server)
-2026-02-20T18:13:01.759145Z  WARN ferrite: SSDP server stopped (DLNA discovery unavailable): Operation not permitted (os error 1). On Linux, binding port 1900 requires CAP_NET_BIND_SERVICE or running as root.
-2026-02-20T18:13:01.788034Z  INFO ferrite_scanner::watcher: Watching 1 library directories for changes
-2026-02-20T18:13:01.788111Z  INFO ferrite: Filesystem watcher started
-2026-02-20T18:13:01.788114Z  INFO ferrite: Ferrite starting on http://0.0.0.0:12345
-2026-02-20T18:13:01.788118Z  INFO ferrite: Open http://localhost:12345 in your browser
-^C
-badchiefy@charon ~/ferrite $
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-[detached from 116380.ferrite]
-badchiefy@charon ~/ferrite $ rm -rf /mnt/mpathj/badchiefy/ferrite/data/cache/                                                                                badchiefy@charon ~/ferrite $ screen -ls
-There is a screen on:
-116380.ferrite  (Multi, detached)
-1 Socket in /tmp/screen/S-badchiefy.
-badchiefy@charon ~/ferrite $ screen -r 116380
-badchiefy@charon ~/ferrite $ ./ferrite 2>&1 | tee -a ferrite.log
-2026-02-20T18:13:01.728960Z  INFO ferrite: Loaded config from config/ferrite.toml
-2026-02-20T18:13:01.729118Z  INFO ferrite_core::config: Data directory: /mnt/mpathj/badchiefy/ferrite/data
-2026-02-20T18:13:01.749924Z  INFO ferrite_transcode::hwaccel: HW encoder detection: nvenc=false, qsv=false, vaapi=false
-2026-02-20T18:13:01.749947Z  INFO ferrite_transcode::hwaccel: No HW encoders available, using software (libx264)
-2026-02-20T18:13:01.749951Z  INFO ferrite: Video encoder: libx264 (backend=software)
-2026-02-20T18:13:01.756666Z  INFO ferrite_db: Database connected at /mnt/mpathj/badchiefy/ferrite/data/ferrite.db
-2026-02-20T18:13:01.756948Z  INFO ferrite_db: Database migrations applied
-2026-02-20T18:13:01.758521Z  INFO ferrite_api::router: Serving SPA from: /mnt/mpathj/badchiefy/ferrite/static
-2026-02-20T18:13:01.759092Z  INFO ferrite: DLNA server enabled (Ferrite Media Server)
-2026-02-20T18:13:01.759145Z  WARN ferrite: SSDP server stopped (DLNA discovery unavailable): Operation not permitted (os error 1). On Linux, binding port 1900 requires CAP_NET_BIND_SERVICE or running as root.
-2026-02-20T18:13:01.788034Z  INFO ferrite_scanner::watcher: Watching 1 library directories for changes
-2026-02-20T18:13:01.788111Z  INFO ferrite: Filesystem watcher started
-2026-02-20T18:13:01.788114Z  INFO ferrite: Ferrite starting on http://0.0.0.0:12345
-2026-02-20T18:13:01.788118Z  INFO ferrite: Open http://localhost:12345 in your browser
-^C
-badchiefy@charon ~/ferrite $ clear
-badchiefy@charon ~/ferrite $ ./ferrite 2>&1 | tee -a ferrite.log
-2026-02-20T18:14:46.467546Z  INFO ferrite: Loaded config from config/ferrite.toml
-2026-02-20T18:14:46.467776Z  INFO ferrite_core::config: Data directory: /mnt/mpathj/badchiefy/ferrite/data
-2026-02-20T18:14:46.479760Z  INFO ferrite_transcode::hwaccel: HW encoder detection: nvenc=false, qsv=false, vaapi=false
-2026-02-20T18:14:46.479779Z  INFO ferrite_transcode::hwaccel: No HW encoders available, using software (libx264)
-2026-02-20T18:14:46.479783Z  INFO ferrite: Video encoder: libx264 (backend=software)
-2026-02-20T18:14:46.481791Z  INFO ferrite_db: Database connected at /mnt/mpathj/badchiefy/ferrite/data/ferrite.db
-2026-02-20T18:14:46.482217Z  INFO ferrite_db: Database migrations applied
-2026-02-20T18:14:46.483946Z  INFO ferrite_api::router: Serving SPA from: /mnt/mpathj/badchiefy/ferrite/static
-2026-02-20T18:14:46.484957Z  INFO ferrite: DLNA server enabled (Ferrite Media Server)
-2026-02-20T18:14:46.485021Z  WARN ferrite: SSDP server stopped (DLNA discovery unavailable): Operation not permitted (os error 1). On Linux, binding port 1900 requires CAP_NET_BIND_SERVICE or running as root.
-2026-02-20T18:14:46.485250Z  INFO ferrite_scanner::watcher: Watching 0 library directories for changes
-2026-02-20T18:14:46.485346Z  INFO ferrite: Filesystem watcher started
-2026-02-20T18:14:46.485352Z  INFO ferrite: Ferrite starting on http://0.0.0.0:12345
-2026-02-20T18:14:46.485358Z  INFO ferrite: Open http://localhost:12345 in your browser
-2026-02-20T18:15:03.348353Z  INFO ferrite_scanner: Scanning library 'TV Shows' at /home/badchiefy/files/tv
-2026-02-20T18:15:03.544070Z  INFO ferrite_scanner: Found 3224 media files in 'TV Shows'
-2026-02-20T18:15:03.724560Z  INFO ferrite_metadata::image_cache: Cached poster image: 224372_poster.jpg (67509 bytes)
-2026-02-20T18:15:03.774612Z  INFO ferrite_metadata::image_cache: Cached poster image: 63726_poster.jpg (98313 bytes)
-2026-02-20T18:15:03.777798Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 224372_backdrop.jpg (147068 bytes)
-2026-02-20T18:15:03.831032Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 63726_backdrop.jpg (168646 bytes)
-2026-02-20T18:15:04.106968Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e1_still.jpg (13524 bytes)
-2026-02-20T18:15:04.133812Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e2_still.jpg (8099 bytes)
-2026-02-20T18:15:04.159969Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e3_still.jpg (21355 bytes)
-2026-02-20T18:15:04.184081Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e4_still.jpg (12006 bytes)
-2026-02-20T18:15:04.207944Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e5_still.jpg (15719 bytes)
-2026-02-20T18:15:04.231809Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e6_still.jpg (10245 bytes)
-2026-02-20T18:15:04.255222Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e7_still.jpg (14524 bytes)
-2026-02-20T18:15:04.277816Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e8_still.jpg (7480 bytes)
-2026-02-20T18:15:04.300849Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e9_still.jpg (14986 bytes)
-2026-02-20T18:15:04.324247Z  INFO ferrite_metadata::image_cache: Cached still image: 63726_s12_e10_still.jpg (7955 bytes)
-2026-02-20T18:15:04.529299Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Alone' -> TMDB 63726 (Alone)
-2026-02-20T18:15:04.858071Z  INFO ferrite_metadata::image_cache: Cached poster image: 283215_poster.jpg (49165 bytes)
-2026-02-20T18:15:04.892543Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 283215_backdrop.jpg (192659 bytes)
-2026-02-20T18:15:05.106687Z  INFO ferrite_metadata::image_cache: Cached still image: 224372_s1_e1_still.jpg (10050 bytes)
-2026-02-20T18:15:05.131322Z  INFO ferrite_metadata::image_cache: Cached still image: 224372_s1_e2_still.jpg (14561 bytes)
-2026-02-20T18:15:05.155847Z  INFO ferrite_metadata::image_cache: Cached still image: 224372_s1_e3_still.jpg (9400 bytes)
-2026-02-20T18:15:05.184770Z  INFO ferrite_metadata::image_cache: Cached still image: 224372_s1_e4_still.jpg (5268 bytes)
-2026-02-20T18:15:05.208519Z  INFO ferrite_metadata::image_cache: Cached still image: 224372_s1_e5_still.jpg (8209 bytes)
-2026-02-20T18:15:05.340699Z  INFO ferrite_metadata::enrichment: Enriched TV: 'A Knight of the Seven Kingdoms' -> TMDB 224372 (A Knight of the Seven Kingdoms)
-2026-02-20T18:15:05.345926Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Survivor AU' -> TMDB 283215 (Auschwitz, survivors tell their stories)
-2026-02-20T18:15:05.885831Z  INFO ferrite_metadata::image_cache: Cached poster image: 271144_poster.jpg (56591 bytes)
-2026-02-20T18:15:05.918494Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 271144_backdrop.jpg (180638 bytes)
-2026-02-20T18:15:06.109766Z  INFO ferrite_metadata::image_cache: Cached poster image: 10957_poster.jpg (108664 bytes)
-2026-02-20T18:15:06.142278Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 10957_backdrop.jpg (178582 bytes)
-2026-02-20T18:15:06.359666Z  INFO ferrite_metadata::image_cache: Cached still image: 271144_s1_e1_still.jpg (16754 bytes)
-2026-02-20T18:15:06.382703Z  INFO ferrite_metadata::image_cache: Cached still image: 271144_s1_e2_still.jpg (15704 bytes)
-2026-02-20T18:15:06.405938Z  INFO ferrite_metadata::image_cache: Cached still image: 271144_s1_e3_still.jpg (12900 bytes)
-2026-02-20T18:15:06.428546Z  INFO ferrite_metadata::image_cache: Cached still image: 271144_s1_e4_still.jpg (15724 bytes)
-2026-02-20T18:15:06.451726Z  INFO ferrite_metadata::image_cache: Cached still image: 271144_s1_e5_still.jpg (16395 bytes)
-2026-02-20T18:15:06.474327Z  INFO ferrite_metadata::image_cache: Cached still image: 271144_s1_e6_still.jpg (12004 bytes)
-2026-02-20T18:15:06.497200Z  INFO ferrite_metadata::image_cache: Cached still image: 271144_s1_e7_still.jpg (15108 bytes)
-2026-02-20T18:15:06.541976Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Asia' -> TMDB 271144 (Asia)
-2026-02-20T18:15:06.582467Z  WARN ferrite_scanner: TMDB enrichment failed for 'Survivor Australia': error returned from database: (code: 2067) UNIQUE constraint failed: tv_shows.library_id, tv_shows.title
-2026-02-20T18:15:07.357253Z  INFO ferrite_metadata::image_cache: Cached poster image: 82728_poster.jpg (56283 bytes)
-2026-02-20T18:15:07.391013Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 82728_backdrop.jpg (135899 bytes)
-2026-02-20T18:15:07.858514Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e1_still.jpg (22465 bytes)
-2026-02-20T18:15:07.882392Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e2_still.jpg (22018 bytes)
-2026-02-20T18:15:07.908485Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e3_still.jpg (23047 bytes)
-2026-02-20T18:15:07.931996Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e4_still.jpg (21313 bytes)
-2026-02-20T18:15:07.957055Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e5_still.jpg (19679 bytes)
-2026-02-20T18:15:07.980614Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e6_still.jpg (18141 bytes)
-2026-02-20T18:15:08.004063Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e7_still.jpg (17854 bytes)
-2026-02-20T18:15:08.027211Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e8_still.jpg (16820 bytes)
-2026-02-20T18:15:08.050889Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e9_still.jpg (25512 bytes)
-2026-02-20T18:15:08.074264Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e10_still.jpg (23333 bytes)
-2026-02-20T18:15:08.097691Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e11_still.jpg (21499 bytes)
-2026-02-20T18:15:08.116411Z  INFO ferrite_metadata::image_cache: Cached poster image: 42009_poster.jpg (127658 bytes)
-2026-02-20T18:15:08.121556Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e12_still.jpg (25293 bytes)
-2026-02-20T18:15:08.146875Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e13_still.jpg (18864 bytes)
-2026-02-20T18:15:08.161389Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 42009_backdrop.jpg (283174 bytes)
-2026-02-20T18:15:08.171772Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e14_still.jpg (19268 bytes)
-2026-02-20T18:15:08.195010Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e15_still.jpg (19032 bytes)
-2026-02-20T18:15:08.221481Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e16_still.jpg (22227 bytes)
-2026-02-20T18:15:08.244718Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e17_still.jpg (19132 bytes)
-2026-02-20T18:15:08.270011Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e18_still.jpg (14194 bytes)
-2026-02-20T18:15:08.293147Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e19_still.jpg (16956 bytes)
-2026-02-20T18:15:08.328893Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e20_still.jpg (9415 bytes)
-2026-02-20T18:15:08.353948Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e21_still.jpg (21874 bytes)
-2026-02-20T18:15:08.368468Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e1_still.jpg (15555 bytes)
-2026-02-20T18:15:08.377781Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e22_still.jpg (20618 bytes)
-2026-02-20T18:15:08.400798Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e2_still.jpg (14359 bytes)
-2026-02-20T18:15:08.409513Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e23_still.jpg (11542 bytes)
-2026-02-20T18:15:08.422700Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e3_still.jpg (15304 bytes)
-2026-02-20T18:15:08.441275Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e24_still.jpg (12421 bytes)
-2026-02-20T18:15:08.446541Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e4_still.jpg (17173 bytes)
-2026-02-20T18:15:08.467429Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e25_still.jpg (13319 bytes)
-2026-02-20T18:15:08.468577Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e5_still.jpg (10249 bytes)
-2026-02-20T18:15:08.490208Z  INFO ferrite_metadata::image_cache: Cached still image: 10957_s1_e26_still.jpg (12187 bytes)
-2026-02-20T18:15:08.491645Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e6_still.jpg (14151 bytes)
-2026-02-20T18:15:08.514252Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e7_still.jpg (14891 bytes)
-2026-02-20T18:15:08.540498Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e8_still.jpg (8446 bytes)
-2026-02-20T18:15:08.563262Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e9_still.jpg (14095 bytes)
-2026-02-20T18:15:08.612148Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e10_still.jpg (15956 bytes)
-2026-02-20T18:15:08.613500Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s1_e1_still.jpg (7895 bytes)
-2026-02-20T18:15:08.638297Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e11_still.jpg (15118 bytes)
-2026-02-20T18:15:08.639458Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s1_e2_still.jpg (12176 bytes)
-2026-02-20T18:15:08.661287Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e12_still.jpg (14650 bytes)
-2026-02-20T18:15:08.662968Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s1_e3_still.jpg (7921 bytes)
-2026-02-20T18:15:08.688495Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e13_still.jpg (16313 bytes)
-2026-02-20T18:15:08.711163Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e14_still.jpg (15642 bytes)
-2026-02-20T18:15:08.735318Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e15_still.jpg (11965 bytes)
-2026-02-20T18:15:08.759705Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e16_still.jpg (12661 bytes)
-2026-02-20T18:15:08.782362Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e17_still.jpg (18385 bytes)
-2026-02-20T18:15:08.805048Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e18_still.jpg (13681 bytes)
-2026-02-20T18:15:08.827171Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e19_still.jpg (16020 bytes)
-2026-02-20T18:15:08.835863Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Australian Survivor' -> TMDB 10957 (Australian Survivor)
-2026-02-20T18:15:08.861872Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e20_still.jpg (16811 bytes)
-2026-02-20T18:15:08.886352Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e21_still.jpg (13032 bytes)
-2026-02-20T18:15:08.908460Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e22_still.jpg (13662 bytes)
-2026-02-20T18:15:08.931122Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e23_still.jpg (16073 bytes)
-2026-02-20T18:15:08.954025Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e24_still.jpg (16856 bytes)
-2026-02-20T18:15:08.976701Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e25_still.jpg (16267 bytes)
-2026-02-20T18:15:09.005407Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e26_still.jpg (12567 bytes)
-2026-02-20T18:15:09.031881Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e27_still.jpg (13279 bytes)
-2026-02-20T18:15:09.054368Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e28_still.jpg (16222 bytes)
-2026-02-20T18:15:09.081869Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e29_still.jpg (16363 bytes)
-2026-02-20T18:15:09.107244Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e30_still.jpg (13930 bytes)
-2026-02-20T18:15:09.112617Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s2_e1_still.jpg (5492 bytes)
-2026-02-20T18:15:09.139562Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s2_e2_still.jpg (14109 bytes)
-2026-02-20T18:15:09.160179Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e31_still.jpg (13434 bytes)
-2026-02-20T18:15:09.172848Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s2_e3_still.jpg (13911 bytes)
-2026-02-20T18:15:09.182332Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e32_still.jpg (13878 bytes)
-2026-02-20T18:15:09.220164Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e33_still.jpg (12234 bytes)
-2026-02-20T18:15:09.244111Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e34_still.jpg (17640 bytes)
-2026-02-20T18:15:09.268614Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e35_still.jpg (16027 bytes)
-2026-02-20T18:15:09.291455Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e36_still.jpg (16005 bytes)
-2026-02-20T18:15:09.314007Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e37_still.jpg (14555 bytes)
-2026-02-20T18:15:09.343654Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e38_still.jpg (15574 bytes)
-2026-02-20T18:15:09.366615Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e39_still.jpg (14078 bytes)
-2026-02-20T18:15:09.408270Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e40_still.jpg (16970 bytes)
-2026-02-20T18:15:09.435186Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e41_still.jpg (14052 bytes)
-2026-02-20T18:15:09.457341Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e42_still.jpg (15043 bytes)
-2026-02-20T18:15:09.487240Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e43_still.jpg (13298 bytes)
-2026-02-20T18:15:09.509560Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e44_still.jpg (13585 bytes)
-2026-02-20T18:15:09.533033Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e45_still.jpg (18211 bytes)
-2026-02-20T18:15:09.564937Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e46_still.jpg (17589 bytes)
-2026-02-20T18:15:09.587133Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e47_still.jpg (16016 bytes)
-2026-02-20T18:15:09.610140Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e48_still.jpg (14470 bytes)
-2026-02-20T18:15:09.622541Z  INFO ferrite_metadata::image_cache: Cached poster image: 74313_poster.jpg (53032 bytes)
-2026-02-20T18:15:09.633627Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e49_still.jpg (16782 bytes)
-2026-02-20T18:15:09.656087Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e50_still.jpg (13416 bytes)
-2026-02-20T18:15:09.672375Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 74313_backdrop.jpg (114347 bytes)
-2026-02-20T18:15:09.684035Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e51_still.jpg (12636 bytes)
-2026-02-20T18:15:09.707182Z  INFO ferrite_metadata::image_cache: Cached still image: 82728_s1_e52_still.jpg (18690 bytes)
-2026-02-20T18:15:09.804876Z  INFO ferrite_metadata::enrichment: Enriched TV: 'bluey' -> TMDB 82728 (Bluey)
-2026-02-20T18:15:09.854670Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s3_e1_still.jpg (10975 bytes)
-2026-02-20T18:15:09.876540Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s3_e2_still.jpg (10587 bytes)
-2026-02-20T18:15:09.900280Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s3_e3_still.jpg (10843 bytes)
-2026-02-20T18:15:09.922751Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s3_e4_still.jpg (7341 bytes)
-2026-02-20T18:15:09.945339Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s3_e5_still.jpg (6831 bytes)
-2026-02-20T18:15:09.969888Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s3_e6_still.jpg (13172 bytes)
-2026-02-20T18:15:10.108587Z  INFO ferrite_metadata::image_cache: Cached still image: 74313_s1_e1_still.jpg (12206 bytes)
-2026-02-20T18:15:10.135902Z  INFO ferrite_metadata::image_cache: Cached still image: 74313_s1_e2_still.jpg (10222 bytes)
-2026-02-20T18:15:10.158237Z  INFO ferrite_metadata::image_cache: Cached still image: 74313_s1_e3_still.jpg (15136 bytes)
-2026-02-20T18:15:10.180750Z  INFO ferrite_metadata::image_cache: Cached still image: 74313_s1_e4_still.jpg (11393 bytes)
-2026-02-20T18:15:10.203284Z  INFO ferrite_metadata::image_cache: Cached still image: 74313_s1_e5_still.jpg (13706 bytes)
-2026-02-20T18:15:10.230556Z  INFO ferrite_metadata::image_cache: Cached still image: 74313_s1_e6_still.jpg (19468 bytes)
-2026-02-20T18:15:10.279893Z  INFO ferrite_metadata::image_cache: Cached still image: 74313_s1_e7_still.jpg (18858 bytes)
-2026-02-20T18:15:10.355276Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s4_e1_still.jpg (13584 bytes)
-2026-02-20T18:15:10.377265Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s4_e2_still.jpg (8726 bytes)
-2026-02-20T18:15:10.400378Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s4_e3_still.jpg (12048 bytes)
-2026-02-20T18:15:10.423339Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s4_e4_still.jpg (11341 bytes)
-2026-02-20T18:15:10.445864Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s4_e5_still.jpg (10134 bytes)
-2026-02-20T18:15:10.468235Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s4_e6_still.jpg (8250 bytes)
-2026-02-20T18:15:10.505046Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Blue Planet II' -> TMDB 74313 (Blue Planet II)
-2026-02-20T18:15:10.605006Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s5_e1_still.jpg (12019 bytes)
-2026-02-20T18:15:10.631984Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s5_e2_still.jpg (14705 bytes)
-2026-02-20T18:15:10.653891Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s5_e3_still.jpg (14947 bytes)
-2026-02-20T18:15:10.858119Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s6_e1_still.jpg (7162 bytes)
-2026-02-20T18:15:10.887805Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s6_e2_still.jpg (12636 bytes)
-2026-02-20T18:15:10.911118Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s6_e3_still.jpg (7201 bytes)
-2026-02-20T18:15:10.933241Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s6_e4_still.jpg (7862 bytes)
-2026-02-20T18:15:10.958271Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s6_e5_still.jpg (9493 bytes)
-2026-02-20T18:15:11.105632Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s7_e1_still.jpg (11878 bytes)
-2026-02-20T18:15:11.128255Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s7_e2_still.jpg (10181 bytes)
-2026-02-20T18:15:11.151908Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s7_e3_still.jpg (8151 bytes)
-2026-02-20T18:15:11.182243Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s7_e4_still.jpg (9859 bytes)
-2026-02-20T18:15:11.204956Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s7_e5_still.jpg (9196 bytes)
-2026-02-20T18:15:11.227845Z  INFO ferrite_metadata::image_cache: Cached still image: 42009_s7_e6_still.jpg (14439 bytes)
-2026-02-20T18:15:11.512433Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Black Mirror' -> TMDB 42009 (Black Mirror)
-2026-02-20T18:15:12.941665Z  INFO ferrite_metadata::image_cache: Cached poster image: 58474_poster.jpg (73585 bytes)
-2026-02-20T18:15:12.969959Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 58474_backdrop.jpg (126266 bytes)
-2026-02-20T18:15:13.052047Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e1_still.jpg (10539 bytes)
-2026-02-20T18:15:13.077477Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e2_still.jpg (11670 bytes)
-2026-02-20T18:15:13.099527Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e3_still.jpg (8849 bytes)
-2026-02-20T18:15:13.121870Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e4_still.jpg (9114 bytes)
-2026-02-20T18:15:13.156923Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e5_still.jpg (8380 bytes)
-2026-02-20T18:15:13.179852Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e6_still.jpg (13850 bytes)
-2026-02-20T18:15:13.202872Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e7_still.jpg (16333 bytes)
-2026-02-20T18:15:13.225589Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e8_still.jpg (8084 bytes)
-2026-02-20T18:15:13.248714Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e9_still.jpg (11699 bytes)
-2026-02-20T18:15:13.270740Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e10_still.jpg (11157 bytes)
-2026-02-20T18:15:13.294440Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e11_still.jpg (10343 bytes)
-2026-02-20T18:15:13.316826Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e12_still.jpg (8401 bytes)
-2026-02-20T18:15:13.339507Z  INFO ferrite_metadata::image_cache: Cached still image: 58474_s1_e13_still.jpg (12338 bytes)
-2026-02-20T18:15:13.406957Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Cosmos (2014)' -> TMDB 58474 (Cosmos)
-2026-02-20T18:15:13.522562Z  INFO ferrite_metadata::image_cache: Cached poster image: 40026_poster.jpg (50036 bytes)
-2026-02-20T18:15:13.551373Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 40026_backdrop.jpg (118518 bytes)
-2026-02-20T18:15:13.581780Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e1_still.jpg (14097 bytes)
-2026-02-20T18:15:13.604373Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e2_still.jpg (12694 bytes)
-2026-02-20T18:15:13.627107Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e3_still.jpg (8792 bytes)
-2026-02-20T18:15:13.651469Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e4_still.jpg (11540 bytes)
-2026-02-20T18:15:13.673519Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e5_still.jpg (16369 bytes)
-2026-02-20T18:15:13.696795Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e6_still.jpg (8956 bytes)
-2026-02-20T18:15:13.719071Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e7_still.jpg (12636 bytes)
-2026-02-20T18:15:13.744491Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e8_still.jpg (13858 bytes)
-2026-02-20T18:15:13.768541Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e9_still.jpg (16174 bytes)
-2026-02-20T18:15:13.794163Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e10_still.jpg (12167 bytes)
-2026-02-20T18:15:13.816177Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e11_still.jpg (11214 bytes)
-2026-02-20T18:15:13.841127Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e12_still.jpg (17008 bytes)
-2026-02-20T18:15:13.864008Z  INFO ferrite_metadata::image_cache: Cached still image: 40026_s1_e13_still.jpg (10259 bytes)
-2026-02-20T18:15:13.973081Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Dance Moms' -> TMDB 40026 (Dance Moms)
-2026-02-20T18:15:17.709279Z  INFO ferrite_metadata::image_cache: Cached poster image: 106379_poster.jpg (60366 bytes)
-2026-02-20T18:15:17.738213Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 106379_backdrop.jpg (129991 bytes)
-2026-02-20T18:15:17.828496Z  INFO ferrite_metadata::image_cache: Cached still image: 106379_s1_e1_still.jpg (8612 bytes)
-2026-02-20T18:15:17.851648Z  INFO ferrite_metadata::image_cache: Cached still image: 106379_s1_e2_still.jpg (14875 bytes)
-2026-02-20T18:15:17.873230Z  INFO ferrite_metadata::image_cache: Cached still image: 106379_s1_e3_still.jpg (8484 bytes)
-2026-02-20T18:15:17.895233Z  INFO ferrite_metadata::image_cache: Cached still image: 106379_s1_e4_still.jpg (8035 bytes)
-2026-02-20T18:15:17.917743Z  INFO ferrite_metadata::image_cache: Cached still image: 106379_s1_e5_still.jpg (14583 bytes)
-2026-02-20T18:15:17.939843Z  INFO ferrite_metadata::image_cache: Cached still image: 106379_s1_e6_still.jpg (11657 bytes)
-2026-02-20T18:15:17.962468Z  INFO ferrite_metadata::image_cache: Cached still image: 106379_s1_e7_still.jpg (6726 bytes)
-2026-02-20T18:15:17.985227Z  INFO ferrite_metadata::image_cache: Cached still image: 106379_s1_e8_still.jpg (8537 bytes)
-2026-02-20T18:15:17.986495Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Fallout' -> TMDB 106379 (Fallout)
-2026-02-20T18:15:17.996670Z  INFO ferrite_metadata::image_cache: Cached poster image: 116155_poster.jpg (64125 bytes)
-2026-02-20T18:15:18.041736Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 116155_backdrop.jpg (229971 bytes)
-2026-02-20T18:15:18.453287Z  INFO ferrite_metadata::image_cache: Cached still image: 116155_s1_e1_still.jpg (8275 bytes)
-2026-02-20T18:15:18.538867Z  INFO ferrite_metadata::image_cache: Cached still image: 116155_s1_e2_still.jpg (13315 bytes)
-2026-02-20T18:15:18.603540Z  INFO ferrite_metadata::image_cache: Cached still image: 116155_s1_e3_still.jpg (10146 bytes)
-2026-02-20T18:15:18.650003Z  INFO ferrite_metadata::image_cache: Cached still image: 116155_s1_e4_still.jpg (9181 bytes)
-2026-02-20T18:15:18.694653Z  INFO ferrite_metadata::image_cache: Cached still image: 116155_s1_e5_still.jpg (16362 bytes)
-2026-02-20T18:15:18.706700Z  INFO ferrite_metadata::image_cache: Cached poster image: 615_poster.jpg (89449 bytes)
-2026-02-20T18:15:18.723863Z  INFO ferrite_metadata::image_cache: Cached still image: 116155_s1_e6_still.jpg (7274 bytes)
-2026-02-20T18:15:18.738366Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 615_backdrop.jpg (187882 bytes)
-2026-02-20T18:15:18.828038Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Frozen Planet II' -> TMDB 116155 (Frozen Planet II)
-2026-02-20T18:15:18.958003Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s1_e1_still.jpg (16747 bytes)
-2026-02-20T18:15:18.980424Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s1_e2_still.jpg (14827 bytes)
-2026-02-20T18:15:19.003346Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s1_e3_still.jpg (13268 bytes)
-2026-02-20T18:15:19.026935Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s1_e4_still.jpg (19100 bytes)
-2026-02-20T18:15:19.048986Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s1_e5_still.jpg (8723 bytes)
-2026-02-20T18:15:20.315203Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s1_e6_still.jpg (15778 bytes)
-2026-02-20T18:15:20.349671Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s1_e7_still.jpg (12300 bytes)
-2026-02-20T18:15:20.374312Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s1_e8_still.jpg (16889 bytes)
-2026-02-20T18:15:20.406646Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s1_e9_still.jpg (18705 bytes)
-2026-02-20T18:15:20.434786Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e1_still.jpg (12673 bytes)
-2026-02-20T18:15:20.478868Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e2_still.jpg (11918 bytes)
-2026-02-20T18:15:20.500930Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e3_still.jpg (16059 bytes)
-2026-02-20T18:15:20.523918Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e4_still.jpg (22749 bytes)
-2026-02-20T18:15:20.546942Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e5_still.jpg (19233 bytes)
-2026-02-20T18:15:20.569507Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e6_still.jpg (15344 bytes)
-2026-02-20T18:15:20.593238Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e7_still.jpg (11729 bytes)
-2026-02-20T18:15:20.621133Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e8_still.jpg (20897 bytes)
-2026-02-20T18:15:20.644924Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e9_still.jpg (15554 bytes)
-2026-02-20T18:15:20.666800Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e10_still.jpg (14479 bytes)
-2026-02-20T18:15:20.689654Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e11_still.jpg (14934 bytes)
-2026-02-20T18:15:20.712698Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e12_still.jpg (15623 bytes)
-2026-02-20T18:15:20.738343Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e13_still.jpg (13265 bytes)
-2026-02-20T18:15:20.762723Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e14_still.jpg (21552 bytes)
-2026-02-20T18:15:20.797387Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e15_still.jpg (16930 bytes)
-2026-02-20T18:15:20.833071Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e16_still.jpg (17396 bytes)
-2026-02-20T18:15:20.858143Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e17_still.jpg (17657 bytes)
-2026-02-20T18:15:20.880517Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e18_still.jpg (12648 bytes)
-2026-02-20T18:15:20.903871Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e19_still.jpg (23469 bytes)
-2026-02-20T18:15:20.926843Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s2_e20_still.jpg (15375 bytes)
-2026-02-20T18:15:20.956772Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e1_still.jpg (8681 bytes)
-2026-02-20T18:15:20.979760Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e2_still.jpg (16233 bytes)
-2026-02-20T18:15:21.002323Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e3_still.jpg (11857 bytes)
-2026-02-20T18:15:21.026180Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e4_still.jpg (17746 bytes)
-2026-02-20T18:15:21.050130Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e5_still.jpg (12789 bytes)
-2026-02-20T18:15:21.077928Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e6_still.jpg (11608 bytes)
-2026-02-20T18:15:21.100926Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e7_still.jpg (17323 bytes)
-2026-02-20T18:15:21.123584Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e8_still.jpg (15586 bytes)
-2026-02-20T18:15:21.146038Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e9_still.jpg (12046 bytes)
-2026-02-20T18:15:21.168746Z  INFO ferrite_metadata::image_cache: Cached still image: 615_s10_e10_still.jpg (15117 bytes)
-2026-02-20T18:15:21.293647Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Futurama' -> TMDB 615 (Futurama)
-2026-02-20T18:15:22.535146Z  INFO ferrite_metadata::image_cache: Cached poster image: 1399_poster.jpg (53684 bytes)
-2026-02-20T18:15:22.562850Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 1399_backdrop.jpg (121009 bytes)
-2026-02-20T18:15:22.597800Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e1_still.jpg (10584 bytes)
-2026-02-20T18:15:22.621761Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e2_still.jpg (15087 bytes)
-2026-02-20T18:15:22.660808Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e3_still.jpg (11813 bytes)
-2026-02-20T18:15:22.686139Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e4_still.jpg (21744 bytes)
-2026-02-20T18:15:22.709459Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e5_still.jpg (12441 bytes)
-2026-02-20T18:15:22.731295Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e6_still.jpg (11895 bytes)
-2026-02-20T18:15:22.753399Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e7_still.jpg (9173 bytes)
-2026-02-20T18:15:22.783686Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e8_still.jpg (12119 bytes)
-2026-02-20T18:15:22.805611Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e9_still.jpg (9973 bytes)
-2026-02-20T18:15:22.829403Z  INFO ferrite_metadata::image_cache: Cached still image: 1399_s1_e10_still.jpg (12483 bytes)
-2026-02-20T18:15:22.959161Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Game of Thrones' -> TMDB 1399 (Game of Thrones)
-2026-02-20T18:15:25.044042Z  INFO ferrite_metadata::image_cache: Cached poster image: 40075_poster.jpg (99440 bytes)
-2026-02-20T18:15:25.076833Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 40075_backdrop.jpg (200836 bytes)
-2026-02-20T18:15:25.236610Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e1_still.jpg (13819 bytes)
-2026-02-20T18:15:25.258775Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e2_still.jpg (17003 bytes)
-2026-02-20T18:15:25.285568Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e3_still.jpg (20322 bytes)
-2026-02-20T18:15:25.308076Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e4_still.jpg (11346 bytes)
-2026-02-20T18:15:25.332852Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e5_still.jpg (17367 bytes)
-2026-02-20T18:15:25.355986Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e6_still.jpg (17065 bytes)
-2026-02-20T18:15:25.379327Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e7_still.jpg (17754 bytes)
-2026-02-20T18:15:25.401328Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e8_still.jpg (14798 bytes)
-2026-02-20T18:15:25.425776Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e9_still.jpg (17103 bytes)
-2026-02-20T18:15:25.448305Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e10_still.jpg (18494 bytes)
-2026-02-20T18:15:25.474095Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e11_still.jpg (12302 bytes)
-2026-02-20T18:15:25.496394Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e12_still.jpg (12732 bytes)
-2026-02-20T18:15:25.518668Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e13_still.jpg (10974 bytes)
-2026-02-20T18:15:25.547158Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e14_still.jpg (14029 bytes)
-2026-02-20T18:15:25.569273Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e15_still.jpg (15991 bytes)
-2026-02-20T18:15:25.591920Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e16_still.jpg (18144 bytes)
-2026-02-20T18:15:25.614170Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e17_still.jpg (14528 bytes)
-2026-02-20T18:15:25.646176Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e18_still.jpg (19129 bytes)
-2026-02-20T18:15:25.670087Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e19_still.jpg (13018 bytes)
-2026-02-20T18:15:25.701283Z  INFO ferrite_metadata::image_cache: Cached still image: 40075_s1_e20_still.jpg (18664 bytes)
-2026-02-20T18:15:25.951178Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Gravity Falls' -> TMDB 40075 (Gravity Falls)
-2026-02-20T18:15:26.208014Z  INFO ferrite_metadata::image_cache: Cached poster image: 61852_poster.jpg (83334 bytes)
-2026-02-20T18:15:26.239827Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 61852_backdrop.jpg (153783 bytes)
-2026-02-20T18:15:26.269148Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e1_still.jpg (18630 bytes)
-2026-02-20T18:15:26.291324Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e2_still.jpg (14600 bytes)
-2026-02-20T18:15:26.316415Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e3_still.jpg (18893 bytes)
-2026-02-20T18:15:26.339979Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e4_still.jpg (16893 bytes)
-2026-02-20T18:15:26.362662Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e5_still.jpg (17947 bytes)
-2026-02-20T18:15:26.386021Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e6_still.jpg (13392 bytes)
-2026-02-20T18:15:26.408027Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e7_still.jpg (15668 bytes)
-2026-02-20T18:15:26.433677Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e8_still.jpg (14818 bytes)
-2026-02-20T18:15:26.455799Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e9_still.jpg (11179 bytes)
-2026-02-20T18:15:26.478865Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e10_still.jpg (12904 bytes)
-2026-02-20T18:15:26.504259Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e11_still.jpg (18899 bytes)
-2026-02-20T18:15:26.529937Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e12_still.jpg (15948 bytes)
-2026-02-20T18:15:26.553924Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e13_still.jpg (15072 bytes)
-2026-02-20T18:15:26.576531Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e14_still.jpg (10258 bytes)
-2026-02-20T18:15:26.600712Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e15_still.jpg (12848 bytes)
-2026-02-20T18:15:26.623436Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e16_still.jpg (17829 bytes)
-2026-02-20T18:15:26.649346Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e17_still.jpg (16668 bytes)
-2026-02-20T18:15:26.672223Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e18_still.jpg (15879 bytes)
-2026-02-20T18:15:26.694324Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e19_still.jpg (14665 bytes)
-2026-02-20T18:15:26.718207Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e20_still.jpg (13771 bytes)
-2026-02-20T18:15:26.740948Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e21_still.jpg (16930 bytes)
-2026-02-20T18:15:26.763106Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e22_still.jpg (15434 bytes)
-2026-02-20T18:15:26.787834Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e23_still.jpg (10305 bytes)
-2026-02-20T18:15:26.809962Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e24_still.jpg (12009 bytes)
-2026-02-20T18:15:26.836881Z  INFO ferrite_metadata::image_cache: Cached still image: 61852_s1_e25_still.jpg (15973 bytes)
-2026-02-20T18:15:26.838877Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Henry Danger' -> TMDB 61852 (Henry Danger)
-2026-02-20T18:15:28.076199Z  INFO ferrite_metadata::image_cache: Cached poster image: 33827_poster.jpg (98914 bytes)
-2026-02-20T18:15:28.102905Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 33827_backdrop.jpg (98732 bytes)
-2026-02-20T18:15:28.130295Z  INFO ferrite_metadata::image_cache: Cached still image: 33827_s1_e1_still.jpg (5520 bytes)
-2026-02-20T18:15:28.156447Z  INFO ferrite_metadata::image_cache: Cached still image: 33827_s1_e2_still.jpg (5460 bytes)
-2026-02-20T18:15:28.179698Z  INFO ferrite_metadata::image_cache: Cached still image: 33827_s1_e3_still.jpg (7627 bytes)
-2026-02-20T18:15:28.202203Z  INFO ferrite_metadata::image_cache: Cached still image: 33827_s1_e4_still.jpg (8324 bytes)
-2026-02-20T18:15:28.227772Z  INFO ferrite_metadata::image_cache: Cached still image: 33827_s1_e5_still.jpg (9279 bytes)
-2026-02-20T18:15:28.249724Z  INFO ferrite_metadata::image_cache: Cached still image: 33827_s1_e6_still.jpg (4907 bytes)
-2026-02-20T18:15:28.272951Z  INFO ferrite_metadata::image_cache: Cached still image: 33827_s1_e7_still.jpg (12377 bytes)
-2026-02-20T18:15:28.294956Z  INFO ferrite_metadata::image_cache: Cached still image: 33827_s1_e8_still.jpg (9877 bytes)
-2026-02-20T18:15:28.296338Z  INFO ferrite_metadata::enrichment: Enriched TV: 'How the Universe Works' -> TMDB 33827 (How the Universe Works)
-2026-02-20T18:15:30.961755Z  INFO ferrite_metadata::image_cache: Cached poster image: 270572_poster.jpg (87748 bytes)
-2026-02-20T18:15:30.990697Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 270572_backdrop.jpg (128765 bytes)
-2026-02-20T18:15:31.016689Z  INFO ferrite_metadata::image_cache: Cached still image: 270572_s1_e1_still.jpg (11963 bytes)
-2026-02-20T18:15:31.039619Z  INFO ferrite_metadata::image_cache: Cached still image: 270572_s1_e2_still.jpg (14301 bytes)
-2026-02-20T18:15:31.066356Z  INFO ferrite_metadata::image_cache: Cached still image: 270572_s1_e3_still.jpg (23557 bytes)
-2026-02-20T18:15:31.089300Z  INFO ferrite_metadata::image_cache: Cached still image: 270572_s1_e4_still.jpg (18961 bytes)
-2026-02-20T18:15:31.249294Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Lord of the Flies' -> TMDB 270572 (Lord of the Flies)
-2026-02-20T18:15:31.284707Z  INFO ferrite_metadata::image_cache: Cached poster image: 247293_poster.jpg (22044 bytes)
-2026-02-20T18:15:31.317855Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 247293_backdrop.jpg (174359 bytes)
-2026-02-20T18:15:31.453570Z  INFO ferrite_metadata::image_cache: Cached still image: 247293_s1_e1_still.jpg (13768 bytes)
-2026-02-20T18:15:31.475615Z  INFO ferrite_metadata::image_cache: Cached still image: 247293_s1_e2_still.jpg (9928 bytes)
-2026-02-20T18:15:31.498266Z  INFO ferrite_metadata::image_cache: Cached still image: 247293_s1_e3_still.jpg (8127 bytes)
-2026-02-20T18:15:31.521285Z  INFO ferrite_metadata::image_cache: Cached still image: 247293_s1_e4_still.jpg (3646 bytes)
-2026-02-20T18:15:31.543902Z  INFO ferrite_metadata::image_cache: Cached still image: 247293_s1_e5_still.jpg (7738 bytes)
-2026-02-20T18:15:31.566900Z  INFO ferrite_metadata::image_cache: Cached still image: 247293_s1_e6_still.jpg (9853 bytes)
-2026-02-20T18:15:31.705601Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Mammals' -> TMDB 247293 (Mammals)
-2026-02-20T18:15:31.967487Z  INFO ferrite_metadata::image_cache: Cached poster image: 107113_poster.jpg (95582 bytes)
-2026-02-20T18:15:32.000880Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 107113_backdrop.jpg (220129 bytes)
-2026-02-20T18:15:32.201899Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e1_still.jpg (11990 bytes)
-2026-02-20T18:15:32.224029Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e2_still.jpg (8508 bytes)
-2026-02-20T18:15:32.246224Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e3_still.jpg (12178 bytes)
-2026-02-20T18:15:32.268084Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e4_still.jpg (11230 bytes)
-2026-02-20T18:15:32.290300Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e5_still.jpg (15466 bytes)
-2026-02-20T18:15:32.312793Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e6_still.jpg (10578 bytes)
-2026-02-20T18:15:32.334815Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e7_still.jpg (11866 bytes)
-2026-02-20T18:15:32.357723Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e8_still.jpg (8142 bytes)
-2026-02-20T18:15:32.380358Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e9_still.jpg (14006 bytes)
-2026-02-20T18:15:32.402929Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s1_e10_still.jpg (8309 bytes)
-2026-02-20T18:15:32.482265Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e1_still.jpg (12298 bytes)
-2026-02-20T18:15:32.508747Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e2_still.jpg (13428 bytes)
-2026-02-20T18:15:32.539239Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e3_still.jpg (13351 bytes)
-2026-02-20T18:15:32.562378Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e4_still.jpg (7898 bytes)
-2026-02-20T18:15:32.600121Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e5_still.jpg (9827 bytes)
-2026-02-20T18:15:32.622900Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e6_still.jpg (7209 bytes)
-2026-02-20T18:15:32.645508Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e7_still.jpg (9446 bytes)
-2026-02-20T18:15:32.670132Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e8_still.jpg (7647 bytes)
-2026-02-20T18:15:32.693296Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e9_still.jpg (12453 bytes)
-2026-02-20T18:15:32.715704Z  INFO ferrite_metadata::image_cache: Cached still image: 107113_s2_e10_still.jpg (14348 bytes)
-2026-02-20T18:15:32.827972Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Only Murders in the Building' -> TMDB 107113 (Only Murders in the Building)
-2026-02-20T18:15:33.021036Z  INFO ferrite_metadata::image_cache: Cached poster image: 83880_poster.jpg (58936 bytes)
-2026-02-20T18:15:33.055575Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 83880_backdrop.jpg (184369 bytes)
-2026-02-20T18:15:33.458221Z  INFO ferrite_metadata::image_cache: Cached poster image: 8592_poster.jpg (99489 bytes)
-2026-02-20T18:15:33.494015Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 8592_backdrop.jpg (214681 bytes)
-2026-02-20T18:15:33.718246Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s1_e1_still.jpg (12344 bytes)
-2026-02-20T18:15:33.745797Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s1_e2_still.jpg (12682 bytes)
-2026-02-20T18:15:33.769241Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s1_e3_still.jpg (19192 bytes)
-2026-02-20T18:15:33.792261Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s1_e4_still.jpg (20903 bytes)
-2026-02-20T18:15:33.815129Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s1_e5_still.jpg (18767 bytes)
-2026-02-20T18:15:33.838453Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s1_e6_still.jpg (9878 bytes)
-2026-02-20T18:15:33.910844Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s1_e7_still.jpg (11913 bytes)
-2026-02-20T18:15:33.934817Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s1_e8_still.jpg (16953 bytes)
-2026-02-20T18:15:33.954168Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s1_e1_still.jpg (9617 bytes)
-2026-02-20T18:15:33.980706Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s1_e2_still.jpg (12047 bytes)
-2026-02-20T18:15:34.006323Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s1_e3_still.jpg (14765 bytes)
-2026-02-20T18:15:34.029824Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s1_e4_still.jpg (12753 bytes)
-2026-02-20T18:15:34.052777Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s1_e5_still.jpg (10149 bytes)
-2026-02-20T18:15:34.075329Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s1_e6_still.jpg (12056 bytes)
-2026-02-20T18:15:34.209788Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s2_e1_still.jpg (16093 bytes)
-2026-02-20T18:15:34.233156Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s2_e2_still.jpg (16414 bytes)
-2026-02-20T18:15:34.257785Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s2_e3_still.jpg (10248 bytes)
-2026-02-20T18:15:34.454269Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e1_still.jpg (11909 bytes)
-2026-02-20T18:15:34.476563Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e2_still.jpg (7667 bytes)
-2026-02-20T18:15:34.498515Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e3_still.jpg (12510 bytes)
-2026-02-20T18:15:34.521656Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e4_still.jpg (14396 bytes)
-2026-02-20T18:15:34.545248Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e5_still.jpg (13776 bytes)
-2026-02-20T18:15:34.572446Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e6_still.jpg (11822 bytes)
-2026-02-20T18:15:34.594602Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e7_still.jpg (11333 bytes)
-2026-02-20T18:15:34.618444Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e8_still.jpg (11639 bytes)
-2026-02-20T18:15:34.641183Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e9_still.jpg (14302 bytes)
-2026-02-20T18:15:34.663731Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e10_still.jpg (11995 bytes)
-2026-02-20T18:15:34.686085Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e11_still.jpg (8627 bytes)
-2026-02-20T18:15:34.710050Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e12_still.jpg (13501 bytes)
-2026-02-20T18:15:34.733241Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e13_still.jpg (9547 bytes)
-2026-02-20T18:15:34.755995Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e14_still.jpg (12123 bytes)
-2026-02-20T18:15:34.778994Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e15_still.jpg (13637 bytes)
-2026-02-20T18:15:34.801187Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e16_still.jpg (11888 bytes)
-2026-02-20T18:15:34.829373Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e17_still.jpg (10546 bytes)
-2026-02-20T18:15:34.870259Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e18_still.jpg (11919 bytes)
-2026-02-20T18:15:34.893962Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e19_still.jpg (11468 bytes)
-2026-02-20T18:15:34.916381Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e20_still.jpg (9184 bytes)
-2026-02-20T18:15:34.939104Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e21_still.jpg (14348 bytes)
-2026-02-20T18:15:34.963562Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e22_still.jpg (12481 bytes)
-2026-02-20T18:15:34.987399Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e23_still.jpg (9413 bytes)
-2026-02-20T18:15:35.009437Z  INFO ferrite_metadata::image_cache: Cached still image: 8592_s2_e24_still.jpg (7805 bytes)
-2026-02-20T18:15:35.078057Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Parks and Recreation' -> TMDB 8592 (Parks and Recreation)
-2026-02-20T18:15:35.213290Z  INFO ferrite_metadata::image_cache: Cached still image: 83880_s2_e4_still.jpg (11520 bytes)
-2026-02-20T18:15:35.218459Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Our Planet' -> TMDB 83880 (Our Planet)
-2026-02-20T18:15:37.227100Z  INFO ferrite_metadata::image_cache: Cached poster image: 116156_poster.jpg (86952 bytes)
-2026-02-20T18:15:37.265869Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 116156_backdrop.jpg (267867 bytes)
-2026-02-20T18:15:37.293933Z  INFO ferrite_metadata::image_cache: Cached still image: 116156_s1_e1_still.jpg (9208 bytes)
-2026-02-20T18:15:37.318158Z  INFO ferrite_metadata::image_cache: Cached still image: 116156_s1_e2_still.jpg (7895 bytes)
-2026-02-20T18:15:37.341601Z  INFO ferrite_metadata::image_cache: Cached still image: 116156_s1_e3_still.jpg (16414 bytes)
-2026-02-20T18:15:37.365819Z  INFO ferrite_metadata::image_cache: Cached still image: 116156_s1_e4_still.jpg (9041 bytes)
-2026-02-20T18:15:37.391251Z  INFO ferrite_metadata::image_cache: Cached still image: 116156_s1_e5_still.jpg (16169 bytes)
-2026-02-20T18:15:37.414927Z  INFO ferrite_metadata::image_cache: Cached still image: 116156_s1_e6_still.jpg (9128 bytes)
-2026-02-20T18:15:37.439723Z  INFO ferrite_metadata::image_cache: Cached still image: 116156_s1_e7_still.jpg (15435 bytes)
-2026-02-20T18:15:37.462582Z  INFO ferrite_metadata::image_cache: Cached still image: 116156_s1_e8_still.jpg (14557 bytes)
-2026-02-20T18:15:37.463659Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Planet Earth III' -> TMDB 116156 (Planet Earth III)
-2026-02-20T18:15:37.580458Z  INFO ferrite_metadata::image_cache: Cached poster image: 95171_poster.jpg (72275 bytes)
-2026-02-20T18:15:37.612710Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 95171_backdrop.jpg (117485 bytes)
-2026-02-20T18:15:37.722055Z  INFO ferrite_metadata::image_cache: Cached still image: 95171_s1_e1_still.jpg (3561 bytes)
-2026-02-20T18:15:37.745036Z  INFO ferrite_metadata::image_cache: Cached still image: 95171_s1_e2_still.jpg (6934 bytes)
-2026-02-20T18:15:37.769505Z  INFO ferrite_metadata::image_cache: Cached still image: 95171_s1_e3_still.jpg (9612 bytes)
-2026-02-20T18:15:37.792029Z  INFO ferrite_metadata::image_cache: Cached still image: 95171_s1_e4_still.jpg (7901 bytes)
-2026-02-20T18:15:37.821040Z  INFO ferrite_metadata::image_cache: Cached still image: 95171_s1_e5_still.jpg (11804 bytes)
-2026-02-20T18:15:38.071837Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Prehistoric Planet' -> TMDB 95171 (Prehistoric Planet)
-2026-02-20T18:15:38.241868Z  INFO ferrite_metadata::image_cache: Cached poster image: 62113_poster.jpg (47546 bytes)
-2026-02-20T18:15:38.275641Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 62113_backdrop.jpg (122729 bytes)
-2026-02-20T18:15:38.853280Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Shahs Of Sunset' -> TMDB 62113 (Shahs of Sunset)
-2026-02-20T18:15:39.644709Z  INFO ferrite_metadata::image_cache: Cached poster image: 136311_poster.jpg (55135 bytes)
-2026-02-20T18:15:39.677353Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 136311_backdrop.jpg (247054 bytes)
-2026-02-20T18:15:39.704653Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e1_still.jpg (12916 bytes)
-2026-02-20T18:15:39.727767Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e2_still.jpg (11569 bytes)
-2026-02-20T18:15:39.761822Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e3_still.jpg (6612 bytes)
-2026-02-20T18:15:39.784632Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e4_still.jpg (15357 bytes)
-2026-02-20T18:15:39.808208Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e5_still.jpg (17095 bytes)
-2026-02-20T18:15:39.831507Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e6_still.jpg (14239 bytes)
-2026-02-20T18:15:39.855438Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e7_still.jpg (12781 bytes)
-2026-02-20T18:15:39.880917Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e8_still.jpg (14692 bytes)
-2026-02-20T18:15:39.904058Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e9_still.jpg (14363 bytes)
-2026-02-20T18:15:39.927229Z  INFO ferrite_metadata::image_cache: Cached still image: 136311_s1_e10_still.jpg (18131 bytes)
-2026-02-20T18:15:40.051165Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Shrinking' -> TMDB 136311 (Shrinking)
-2026-02-20T18:15:40.690076Z  INFO ferrite_metadata::image_cache: Cached poster image: 126308_poster.jpg (79123 bytes)
-2026-02-20T18:15:40.720175Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 126308_backdrop.jpg (181357 bytes)
-2026-02-20T18:15:40.821908Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e1_still.jpg (11539 bytes)
-2026-02-20T18:15:40.845957Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e2_still.jpg (13000 bytes)
-2026-02-20T18:15:40.869121Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e3_still.jpg (12549 bytes)
-2026-02-20T18:15:40.892415Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e4_still.jpg (11442 bytes)
-2026-02-20T18:15:40.923004Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e5_still.jpg (11746 bytes)
-2026-02-20T18:15:40.945849Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e6_still.jpg (8789 bytes)
-2026-02-20T18:15:40.969660Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e7_still.jpg (11210 bytes)
-2026-02-20T18:15:40.987864Z  INFO ferrite_metadata::image_cache: Cached poster image: 125988_poster.jpg (47056 bytes)
-2026-02-20T18:15:40.992178Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e8_still.jpg (9771 bytes)
-2026-02-20T18:15:41.012756Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 125988_backdrop.jpg (61387 bytes)
-2026-02-20T18:15:41.017945Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e9_still.jpg (14572 bytes)
-2026-02-20T18:15:41.041980Z  INFO ferrite_metadata::image_cache: Cached still image: 126308_s1_e10_still.jpg (18465 bytes)
-2026-02-20T18:15:41.184200Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e1_still.jpg (9546 bytes)
-2026-02-20T18:15:41.210497Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e2_still.jpg (6523 bytes)
-2026-02-20T18:15:41.232884Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e3_still.jpg (8471 bytes)
-2026-02-20T18:15:41.233864Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Shogun' -> TMDB 126308 (Shōgun)
-2026-02-20T18:15:41.258163Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e4_still.jpg (9359 bytes)
-2026-02-20T18:15:41.280962Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e5_still.jpg (7788 bytes)
-2026-02-20T18:15:41.303406Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e6_still.jpg (5690 bytes)
-2026-02-20T18:15:41.326272Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e7_still.jpg (9162 bytes)
-2026-02-20T18:15:41.349871Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e8_still.jpg (11029 bytes)
-2026-02-20T18:15:41.373088Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e9_still.jpg (8013 bytes)
-2026-02-20T18:15:41.396450Z  INFO ferrite_metadata::image_cache: Cached still image: 125988_s1_e10_still.jpg (5100 bytes)
-2026-02-20T18:15:41.397613Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Silo' -> TMDB 125988 (Silo)
-2026-02-20T18:15:41.686323Z  INFO ferrite_metadata::image_cache: Cached poster image: 34045_poster.jpg (76945 bytes)
-2026-02-20T18:15:41.713403Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 34045_backdrop.jpg (97724 bytes)
-2026-02-20T18:15:42.040352Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Sister Wives' -> TMDB 34045 (Sister Wives)
-2026-02-20T18:15:42.436450Z  INFO ferrite_metadata::image_cache: Cached poster image: 62185_poster.jpg (122843 bytes)
-2026-02-20T18:15:42.470478Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 62185_backdrop.jpg (214861 bytes)
-2026-02-20T18:15:42.823827Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Southern Charm' -> TMDB 62185 (Southern Charm)
-2026-02-20T18:15:47.052239Z  INFO ferrite_metadata::image_cache: Cached poster image: 216562_poster.jpg (68314 bytes)
-2026-02-20T18:15:47.077074Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 216562_backdrop.jpg (62772 bytes)
-2026-02-20T18:15:47.082099Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Special Forces Worlds Toughest Test' -> TMDB 216562 (Special Forces: World's Toughest Test)
-2026-02-20T18:15:47.418931Z  INFO ferrite_metadata::image_cache: Cached poster image: 85948_poster.jpg (94045 bytes)
-2026-02-20T18:15:47.449291Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 85948_backdrop.jpg (168551 bytes)
-2026-02-20T18:15:47.552052Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e1_still.jpg (13111 bytes)
-2026-02-20T18:15:47.575114Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e2_still.jpg (12621 bytes)
-2026-02-20T18:15:47.600508Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e3_still.jpg (16075 bytes)
-2026-02-20T18:15:47.623404Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e4_still.jpg (12468 bytes)
-2026-02-20T18:15:47.646273Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e5_still.jpg (11040 bytes)
-2026-02-20T18:15:47.669104Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e6_still.jpg (9775 bytes)
-2026-02-20T18:15:47.693892Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e7_still.jpg (8366 bytes)
-2026-02-20T18:15:47.717686Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e8_still.jpg (9161 bytes)
-2026-02-20T18:15:47.752974Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e9_still.jpg (16580 bytes)
-2026-02-20T18:15:47.776098Z  INFO ferrite_metadata::image_cache: Cached still image: 85948_s1_e10_still.jpg (12790 bytes)
-2026-02-20T18:15:48.026271Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Star Trek - Lower Decks' -> TMDB 85948 (Star Trek: Lower Decks)
-2026-02-20T18:15:50.076838Z  INFO ferrite_metadata::image_cache: Cached poster image: 69720_poster.jpg (62146 bytes)
-2026-02-20T18:15:50.112661Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 69720_backdrop.jpg (188877 bytes)
-2026-02-20T18:15:50.324295Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Summer House' -> TMDB 69720 (Summer House)
-2026-02-20T18:15:51.539093Z  INFO ferrite_metadata::image_cache: Cached poster image: 213810_poster.jpg (50978 bytes)
-2026-02-20T18:15:51.570533Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 213810_backdrop.jpg (87363 bytes)
-2026-02-20T18:15:51.788937Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Survivor' -> TMDB 213810 (Survivor)
-2026-02-20T18:15:55.175016Z  INFO ferrite_metadata::image_cache: Cached poster image: 37606_poster.jpg (59613 bytes)
-2026-02-20T18:15:55.205851Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 37606_backdrop.jpg (167334 bytes)
-2026-02-20T18:15:55.229463Z  INFO ferrite_metadata::image_cache: Cached poster image: 45140_poster.jpg (109694 bytes)
-2026-02-20T18:15:55.260434Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 45140_backdrop.jpg (174670 bytes)
-2026-02-20T18:15:55.425218Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e1_still.jpg (13841 bytes)
-2026-02-20T18:15:55.447554Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e2_still.jpg (9259 bytes)
-2026-02-20T18:15:55.469311Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e3_still.jpg (12269 bytes)
-2026-02-20T18:15:55.492422Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e4_still.jpg (11759 bytes)
-2026-02-20T18:15:55.514667Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e5_still.jpg (6644 bytes)
-2026-02-20T18:15:55.536518Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e6_still.jpg (12677 bytes)
-2026-02-20T18:15:55.560700Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e7_still.jpg (11688 bytes)
-2026-02-20T18:15:55.584886Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e8_still.jpg (14924 bytes)
-2026-02-20T18:15:55.607087Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e9_still.jpg (14385 bytes)
-2026-02-20T18:15:55.642194Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e10_still.jpg (11850 bytes)
-2026-02-20T18:15:55.664775Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e11_still.jpg (14303 bytes)
-2026-02-20T18:15:55.677671Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e1_still.jpg (15669 bytes)
-2026-02-20T18:15:55.687145Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e12_still.jpg (12448 bytes)
-2026-02-20T18:15:55.700069Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e2_still.jpg (14485 bytes)
-2026-02-20T18:15:55.711887Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e13_still.jpg (10557 bytes)
-2026-02-20T18:15:55.726146Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e3_still.jpg (16763 bytes)
-2026-02-20T18:15:55.739470Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e14_still.jpg (11174 bytes)
-2026-02-20T18:15:55.748836Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e4_still.jpg (14433 bytes)
-2026-02-20T18:15:55.761751Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e15_still.jpg (13085 bytes)
-2026-02-20T18:15:55.775625Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e5_still.jpg (12539 bytes)
-2026-02-20T18:15:55.784881Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e16_still.jpg (9989 bytes)
-2026-02-20T18:15:55.798651Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e6_still.jpg (17536 bytes)
-2026-02-20T18:15:55.808647Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e17_still.jpg (14558 bytes)
-2026-02-20T18:15:55.822470Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e7_still.jpg (16127 bytes)
-2026-02-20T18:15:55.831625Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e18_still.jpg (15199 bytes)
-2026-02-20T18:15:55.846504Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e8_still.jpg (17372 bytes)
-2026-02-20T18:15:55.856039Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e19_still.jpg (14619 bytes)
-2026-02-20T18:15:55.870427Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e9_still.jpg (14706 bytes)
-2026-02-20T18:15:55.879602Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e20_still.jpg (9994 bytes)
-2026-02-20T18:15:55.893379Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e10_still.jpg (15577 bytes)
-2026-02-20T18:15:55.903734Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e21_still.jpg (20148 bytes)
-2026-02-20T18:15:55.919111Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e11_still.jpg (15084 bytes)
-2026-02-20T18:15:55.925931Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e22_still.jpg (12640 bytes)
-2026-02-20T18:15:55.942027Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e12_still.jpg (15983 bytes)
-2026-02-20T18:15:55.955100Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e23_still.jpg (13259 bytes)
-2026-02-20T18:15:55.965204Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e13_still.jpg (19047 bytes)
-2026-02-20T18:15:55.979156Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e24_still.jpg (12520 bytes)
-2026-02-20T18:15:55.987652Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e14_still.jpg (13718 bytes)
-2026-02-20T18:15:56.001991Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e25_still.jpg (10906 bytes)
-2026-02-20T18:15:56.010265Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e15_still.jpg (13808 bytes)
-2026-02-20T18:15:56.033339Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e16_still.jpg (15022 bytes)
-2026-02-20T18:15:56.038266Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e26_still.jpg (9442 bytes)
-2026-02-20T18:15:56.058619Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e17_still.jpg (13974 bytes)
-2026-02-20T18:15:56.061185Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e27_still.jpg (18384 bytes)
-2026-02-20T18:15:56.083013Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e18_still.jpg (16781 bytes)
-2026-02-20T18:15:56.083958Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e28_still.jpg (13766 bytes)
-2026-02-20T18:15:56.106433Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e29_still.jpg (10391 bytes)
-2026-02-20T18:15:56.106618Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e19_still.jpg (15437 bytes)
-2026-02-20T18:15:56.129290Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e20_still.jpg (16225 bytes)
-2026-02-20T18:15:56.129769Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e30_still.jpg (14352 bytes)
-2026-02-20T18:15:56.152389Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e21_still.jpg (19777 bytes)
-2026-02-20T18:15:56.153212Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e31_still.jpg (16899 bytes)
-2026-02-20T18:15:56.177738Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e22_still.jpg (18001 bytes)
-2026-02-20T18:15:56.178197Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e32_still.jpg (12781 bytes)
-2026-02-20T18:15:56.201523Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e33_still.jpg (16502 bytes)
-2026-02-20T18:15:56.213431Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e23_still.jpg (17153 bytes)
-2026-02-20T18:15:56.225609Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e34_still.jpg (10281 bytes)
-2026-02-20T18:15:56.239373Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e24_still.jpg (12325 bytes)
-2026-02-20T18:15:56.248093Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e35_still.jpg (13170 bytes)
-2026-02-20T18:15:56.262473Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e25_still.jpg (9469 bytes)
-2026-02-20T18:15:56.272615Z  INFO ferrite_metadata::image_cache: Cached still image: 37606_s1_e36_still.jpg (11019 bytes)
-2026-02-20T18:15:56.275612Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Amazing World of Gumball' -> TMDB 37606 (The Amazing World of Gumball)
-2026-02-20T18:15:56.285128Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e26_still.jpg (16331 bytes)
-2026-02-20T18:15:56.309499Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e27_still.jpg (20605 bytes)
-2026-02-20T18:15:56.332427Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e28_still.jpg (19661 bytes)
-2026-02-20T18:15:56.355016Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e29_still.jpg (14414 bytes)
-2026-02-20T18:15:56.378794Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e30_still.jpg (16994 bytes)
-2026-02-20T18:15:56.405873Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e31_still.jpg (16520 bytes)
-2026-02-20T18:15:56.430248Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e32_still.jpg (21272 bytes)
-2026-02-20T18:15:56.452530Z  INFO ferrite_metadata::image_cache: Cached still image: 45140_s9_e35_still.jpg (15038 bytes)
-2026-02-20T18:15:56.454524Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Teen Titans Go' -> TMDB 45140 (Teen Titans Go!)
-2026-02-20T18:15:59.357983Z  INFO ferrite_metadata::image_cache: Cached poster image: 132559_poster.jpg (103799 bytes)
-2026-02-20T18:15:59.389854Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 132559_backdrop.jpg (152036 bytes)
-2026-02-20T18:15:59.546383Z  INFO ferrite_metadata::image_cache: Cached still image: 132559_s1_e1_still.jpg (13581 bytes)
-2026-02-20T18:15:59.570161Z  INFO ferrite_metadata::image_cache: Cached still image: 132559_s1_e2_still.jpg (16645 bytes)
-2026-02-20T18:15:59.592739Z  INFO ferrite_metadata::image_cache: Cached still image: 132559_s1_e3_still.jpg (14866 bytes)
-2026-02-20T18:15:59.618192Z  INFO ferrite_metadata::image_cache: Cached still image: 132559_s1_e4_still.jpg (10986 bytes)
-2026-02-20T18:15:59.640684Z  INFO ferrite_metadata::image_cache: Cached still image: 132559_s1_e5_still.jpg (10460 bytes)
-2026-02-20T18:15:59.663527Z  INFO ferrite_metadata::image_cache: Cached still image: 132559_s1_e6_still.jpg (16545 bytes)
-2026-02-20T18:15:59.664332Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Croods Family Tree' -> TMDB 132559 (The Croods: Family Tree)
-2026-02-20T18:16:00.899135Z  INFO ferrite_metadata::image_cache: Cached poster image: 66573_poster.jpg (85978 bytes)
-2026-02-20T18:16:00.934202Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 66573_backdrop.jpg (241024 bytes)
-2026-02-20T18:16:00.961721Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e1_still.jpg (10302 bytes)
-2026-02-20T18:16:00.985224Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e2_still.jpg (14289 bytes)
-2026-02-20T18:16:01.010552Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e3_still.jpg (16972 bytes)
-2026-02-20T18:16:01.033737Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e4_still.jpg (18024 bytes)
-2026-02-20T18:16:01.057561Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e5_still.jpg (13292 bytes)
-2026-02-20T18:16:01.079802Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e6_still.jpg (10908 bytes)
-2026-02-20T18:16:01.102009Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e7_still.jpg (12023 bytes)
-2026-02-20T18:16:01.125933Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e8_still.jpg (15597 bytes)
-2026-02-20T18:16:01.147964Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e9_still.jpg (13085 bytes)
-2026-02-20T18:16:01.170618Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e10_still.jpg (11784 bytes)
-2026-02-20T18:16:01.193706Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e11_still.jpg (13947 bytes)
-2026-02-20T18:16:01.216807Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e12_still.jpg (13565 bytes)
-2026-02-20T18:16:01.243454Z  INFO ferrite_metadata::image_cache: Cached still image: 66573_s1_e13_still.jpg (13461 bytes)
-2026-02-20T18:16:01.300757Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Good Place' -> TMDB 66573 (The Good Place)
-2026-02-20T18:16:03.171861Z  INFO ferrite_metadata::image_cache: Cached poster image: 96323_poster.jpg (120208 bytes)
-2026-02-20T18:16:03.209884Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 96323_backdrop.jpg (312637 bytes)
-2026-02-20T18:16:03.315869Z  INFO ferrite_metadata::image_cache: Cached still image: 96323_s1_e1_still.jpg (17920 bytes)
-2026-02-20T18:16:03.338505Z  INFO ferrite_metadata::image_cache: Cached still image: 96323_s1_e2_still.jpg (13148 bytes)
-2026-02-20T18:16:03.363730Z  INFO ferrite_metadata::image_cache: Cached still image: 96323_s1_e3_still.jpg (9872 bytes)
-2026-02-20T18:16:03.385644Z  INFO ferrite_metadata::image_cache: Cached still image: 96323_s1_e4_still.jpg (15370 bytes)
-2026-02-20T18:16:03.412069Z  INFO ferrite_metadata::image_cache: Cached still image: 96323_s1_e5_still.jpg (10767 bytes)
-2026-02-20T18:16:03.422034Z  INFO ferrite_metadata::image_cache: Cached poster image: 64432_poster.jpg (74862 bytes)
-2026-02-20T18:16:03.449588Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 64432_backdrop.jpg (116398 bytes)
-2026-02-20T18:16:03.748574Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Green Planet' -> TMDB 96323 (The Green Planet)
-2026-02-20T18:16:03.785497Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e1_still.jpg (15103 bytes)
-2026-02-20T18:16:03.859210Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e2_still.jpg (14604 bytes)
-2026-02-20T18:16:03.887950Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e3_still.jpg (13706 bytes)
-2026-02-20T18:16:03.912017Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e4_still.jpg (10784 bytes)
-2026-02-20T18:16:03.937039Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e5_still.jpg (8595 bytes)
-2026-02-20T18:16:03.960074Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e6_still.jpg (9009 bytes)
-2026-02-20T18:16:03.985613Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e7_still.jpg (13050 bytes)
-2026-02-20T18:16:04.011166Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e8_still.jpg (8259 bytes)
-2026-02-20T18:16:04.042714Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e9_still.jpg (12816 bytes)
-2026-02-20T18:16:04.068787Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e10_still.jpg (8010 bytes)
-2026-02-20T18:16:04.100940Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e11_still.jpg (8912 bytes)
-2026-02-20T18:16:04.126793Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e12_still.jpg (8667 bytes)
-2026-02-20T18:16:04.156022Z  INFO ferrite_metadata::image_cache: Cached still image: 64432_s1_e13_still.jpg (10371 bytes)
-2026-02-20T18:16:04.275689Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Magicians' -> TMDB 64432 (The Magicians)
-2026-02-20T18:16:07.605256Z  INFO ferrite_metadata::image_cache: Cached poster image: 61859_poster.jpg (75260 bytes)
-2026-02-20T18:16:07.633571Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 61859_backdrop.jpg (106824 bytes)
-2026-02-20T18:16:07.667141Z  INFO ferrite_metadata::image_cache: Cached still image: 61859_s1_e1_still.jpg (17260 bytes)
-2026-02-20T18:16:07.689708Z  INFO ferrite_metadata::image_cache: Cached still image: 61859_s1_e2_still.jpg (9590 bytes)
-2026-02-20T18:16:07.712908Z  INFO ferrite_metadata::image_cache: Cached still image: 61859_s1_e3_still.jpg (8877 bytes)
-2026-02-20T18:16:07.737998Z  INFO ferrite_metadata::image_cache: Cached still image: 61859_s1_e4_still.jpg (13022 bytes)
-2026-02-20T18:16:07.760410Z  INFO ferrite_metadata::image_cache: Cached still image: 61859_s1_e5_still.jpg (7942 bytes)
-2026-02-20T18:16:07.783047Z  INFO ferrite_metadata::image_cache: Cached still image: 61859_s1_e6_still.jpg (10941 bytes)
-2026-02-20T18:16:07.802007Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Night Manager' -> TMDB 61859 (The Night Manager)
-2026-02-20T18:16:08.167183Z  INFO ferrite_metadata::image_cache: Cached poster image: 2316_poster.jpg (69411 bytes)
-2026-02-20T18:16:08.193624Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 2316_backdrop.jpg (89420 bytes)
-2026-02-20T18:16:08.319615Z  INFO ferrite_metadata::image_cache: Cached still image: 2316_s1_e1_still.jpg (14351 bytes)
-2026-02-20T18:16:08.342385Z  INFO ferrite_metadata::image_cache: Cached still image: 2316_s1_e2_still.jpg (13454 bytes)
-2026-02-20T18:16:08.365385Z  INFO ferrite_metadata::image_cache: Cached still image: 2316_s1_e3_still.jpg (14247 bytes)
-2026-02-20T18:16:08.406093Z  INFO ferrite_metadata::image_cache: Cached still image: 2316_s1_e4_still.jpg (13330 bytes)
-2026-02-20T18:16:08.431569Z  INFO ferrite_metadata::image_cache: Cached still image: 2316_s1_e5_still.jpg (11054 bytes)
-2026-02-20T18:16:08.454124Z  INFO ferrite_metadata::image_cache: Cached still image: 2316_s1_e6_still.jpg (10786 bytes)
-2026-02-20T18:16:08.793125Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Office (US)' -> TMDB 2316 (The Office)
-2026-02-20T18:16:15.291101Z  INFO ferrite_metadata::image_cache: Cached poster image: 92685_poster.jpg (87450 bytes)
-2026-02-20T18:16:15.319417Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 92685_backdrop.jpg (131586 bytes)
-2026-02-20T18:16:15.353648Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e1_still.jpg (11985 bytes)
-2026-02-20T18:16:15.382748Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e2_still.jpg (16445 bytes)
-2026-02-20T18:16:15.408654Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e3_still.jpg (13464 bytes)
-2026-02-20T18:16:15.433206Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e4_still.jpg (11725 bytes)
-2026-02-20T18:16:15.455700Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e5_still.jpg (11857 bytes)
-2026-02-20T18:16:15.479505Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e6_still.jpg (12409 bytes)
-2026-02-20T18:16:15.505981Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e7_still.jpg (15558 bytes)
-2026-02-20T18:16:15.531422Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e8_still.jpg (14388 bytes)
-2026-02-20T18:16:15.554861Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e9_still.jpg (15619 bytes)
-2026-02-20T18:16:15.577479Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e10_still.jpg (13426 bytes)
-2026-02-20T18:16:15.600342Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e11_still.jpg (13557 bytes)
-2026-02-20T18:16:15.623516Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e12_still.jpg (16634 bytes)
-2026-02-20T18:16:15.646264Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e13_still.jpg (13919 bytes)
-2026-02-20T18:16:15.669299Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e14_still.jpg (16010 bytes)
-2026-02-20T18:16:15.693150Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e15_still.jpg (13155 bytes)
-2026-02-20T18:16:15.716900Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e16_still.jpg (12785 bytes)
-2026-02-20T18:16:15.740110Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e17_still.jpg (16698 bytes)
-2026-02-20T18:16:15.764566Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e18_still.jpg (13487 bytes)
-2026-02-20T18:16:15.787901Z  INFO ferrite_metadata::image_cache: Cached still image: 92685_s1_e19_still.jpg (13235 bytes)
-2026-02-20T18:16:15.950895Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Owl House' -> TMDB 92685 (The Owl House)
-2026-02-20T18:16:16.063908Z  INFO ferrite_metadata::image_cache: Cached poster image: 32390_poster.jpg (70609 bytes)
-2026-02-20T18:16:16.098553Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 32390_backdrop.jpg (148093 bytes)
-2026-02-20T18:16:16.125194Z  INFO ferrite_metadata::image_cache: Cached still image: 32390_s15_e1_still.jpg (12159 bytes)
-2026-02-20T18:16:16.148740Z  INFO ferrite_metadata::image_cache: Cached still image: 32390_s15_e2_still.jpg (14417 bytes)
-2026-02-20T18:16:16.172046Z  INFO ferrite_metadata::image_cache: Cached still image: 32390_s15_e3_still.jpg (11006 bytes)
-2026-02-20T18:16:16.194785Z  INFO ferrite_metadata::image_cache: Cached still image: 32390_s15_e4_still.jpg (13840 bytes)
-2026-02-20T18:16:16.217984Z  INFO ferrite_metadata::image_cache: Cached still image: 32390_s15_e5_still.jpg (13957 bytes)
-2026-02-20T18:16:16.241331Z  INFO ferrite_metadata::image_cache: Cached still image: 32390_s15_e6_still.jpg (12423 bytes)
-2026-02-20T18:16:16.267268Z  INFO ferrite_metadata::image_cache: Cached still image: 32390_s15_e7_still.jpg (11244 bytes)
-2026-02-20T18:16:16.291653Z  INFO ferrite_metadata::image_cache: Cached still image: 32390_s15_e8_still.jpg (12271 bytes)
-2026-02-20T18:16:16.315583Z  INFO ferrite_metadata::image_cache: Cached still image: 32390_s15_e9_still.jpg (11649 bytes)
-2026-02-20T18:16:16.318041Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Real Housewives of Beverly Hills' -> TMDB 32390 (The Real Housewives of Beverly Hills)
-2026-02-20T18:16:16.388750Z  WARN ferrite_metadata::enrichment: No TMDB match for TV show 'The Real Housewives of New York City' (searched: 'The Real Housewives of New York City', 0 results returned)
-2026-02-20T18:16:27.394305Z  INFO ferrite_metadata::image_cache: Cached poster image: 10222_poster.jpg (84747 bytes)
-2026-02-20T18:16:27.632110Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 10222_backdrop.jpg (93046 bytes)
-2026-02-20T18:16:27.661582Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s1_e1_still.jpg (17337 bytes)
-2026-02-20T18:16:27.685519Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s1_e2_still.jpg (15464 bytes)
-2026-02-20T18:16:27.737238Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s1_e3_still.jpg (14640 bytes)
-2026-02-20T18:16:27.765014Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s1_e4_still.jpg (17349 bytes)
-2026-02-20T18:16:27.809247Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s1_e5_still.jpg (13645 bytes)
-2026-02-20T18:16:27.838466Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s1_e6_still.jpg (17852 bytes)
-2026-02-20T18:16:27.897251Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s1_e7_still.jpg (23670 bytes)
-2026-02-20T18:16:27.928233Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s1_e8_still.jpg (15538 bytes)
-2026-02-20T18:16:27.957296Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e1_still.jpg (15502 bytes)
-2026-02-20T18:16:27.980992Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e2_still.jpg (18002 bytes)
-2026-02-20T18:16:28.004779Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e3_still.jpg (14788 bytes)
-2026-02-20T18:16:28.027798Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e4_still.jpg (14510 bytes)
-2026-02-20T18:16:28.050583Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e5_still.jpg (14467 bytes)
-2026-02-20T18:16:28.073271Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e6_still.jpg (12719 bytes)
-2026-02-20T18:16:28.100980Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e7_still.jpg (9071 bytes)
-2026-02-20T18:16:28.124205Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e8_still.jpg (14847 bytes)
-2026-02-20T18:16:28.160850Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e9_still.jpg (21095 bytes)
-2026-02-20T18:16:28.184538Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e10_still.jpg (11667 bytes)
-2026-02-20T18:16:28.207288Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e11_still.jpg (8378 bytes)
-2026-02-20T18:16:28.242703Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e12_still.jpg (15637 bytes)
-2026-02-20T18:16:28.265805Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e13_still.jpg (16639 bytes)
-2026-02-20T18:16:28.289377Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e14_still.jpg (11320 bytes)
-2026-02-20T18:16:28.339425Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e15_still.jpg (16017 bytes)
-2026-02-20T18:16:28.362576Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e16_still.jpg (14376 bytes)
-2026-02-20T18:16:28.385841Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e17_still.jpg (11158 bytes)
-2026-02-20T18:16:28.408685Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e18_still.jpg (16033 bytes)
-2026-02-20T18:16:28.450825Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e19_still.jpg (14663 bytes)
-2026-02-20T18:16:28.478416Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e20_still.jpg (13946 bytes)
-2026-02-20T18:16:28.504625Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e21_still.jpg (12340 bytes)
-2026-02-20T18:16:28.529570Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e22_still.jpg (15036 bytes)
-2026-02-20T18:16:28.557178Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e23_still.jpg (15288 bytes)
-2026-02-20T18:16:28.584967Z  INFO ferrite_metadata::image_cache: Cached still image: 10222_s10_e24_still.jpg (17551 bytes)
-2026-02-20T18:16:28.672682Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Real Housewives of Orange County' -> TMDB 10222 (The Real Housewives of Orange County)
-2026-02-20T18:16:39.896041Z  INFO ferrite_metadata::image_cache: Cached poster image: 65300_poster.jpg (111209 bytes)
-2026-02-20T18:16:40.134614Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 65300_backdrop.jpg (177318 bytes)
-2026-02-20T18:16:40.210736Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e1_still.jpg (15411 bytes)
-2026-02-20T18:16:40.239220Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e2_still.jpg (10904 bytes)
-2026-02-20T18:16:40.264691Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e3_still.jpg (13102 bytes)
-2026-02-20T18:16:40.287580Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e4_still.jpg (10419 bytes)
-2026-02-20T18:16:40.310365Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e5_still.jpg (11459 bytes)
-2026-02-20T18:16:40.332734Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e6_still.jpg (11150 bytes)
-2026-02-20T18:16:40.361083Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e7_still.jpg (12837 bytes)
-2026-02-20T18:16:40.387782Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e8_still.jpg (14935 bytes)
-2026-02-20T18:16:40.419438Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e9_still.jpg (15574 bytes)
-2026-02-20T18:16:40.444948Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e10_still.jpg (11475 bytes)
-2026-02-20T18:16:40.477158Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e11_still.jpg (13943 bytes)
-2026-02-20T18:16:40.500635Z  INFO ferrite_metadata::image_cache: Cached still image: 65300_s10_e12_still.jpg (12709 bytes)
-2026-02-20T18:16:40.543436Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Real Housewives of Potomac' -> TMDB 65300 (The Real Housewives of Potomac)
-2026-02-20T18:16:41.218377Z  INFO ferrite_metadata::image_cache: Cached poster image: 110381_poster.jpg (91760 bytes)
-2026-02-20T18:16:41.251040Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 110381_backdrop.jpg (201538 bytes)
-2026-02-20T18:16:41.278721Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e1_still.jpg (16873 bytes)
-2026-02-20T18:16:41.303942Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e2_still.jpg (13971 bytes)
-2026-02-20T18:16:41.326645Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e3_still.jpg (12578 bytes)
-2026-02-20T18:16:41.349382Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e4_still.jpg (14714 bytes)
-2026-02-20T18:16:41.372010Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e5_still.jpg (10621 bytes)
-2026-02-20T18:16:41.395098Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e6_still.jpg (12510 bytes)
-2026-02-20T18:16:41.419268Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e7_still.jpg (15458 bytes)
-2026-02-20T18:16:41.443110Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e8_still.jpg (16617 bytes)
-2026-02-20T18:16:41.467677Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e9_still.jpg (13297 bytes)
-2026-02-20T18:16:41.493838Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e10_still.jpg (15771 bytes)
-2026-02-20T18:16:41.532432Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e11_still.jpg (11355 bytes)
-2026-02-20T18:16:41.572614Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e12_still.jpg (15113 bytes)
-2026-02-20T18:16:41.595327Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e13_still.jpg (15297 bytes)
-2026-02-20T18:16:41.618231Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e14_still.jpg (15229 bytes)
-2026-02-20T18:16:41.643979Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e15_still.jpg (11970 bytes)
-2026-02-20T18:16:41.666785Z  INFO ferrite_metadata::image_cache: Cached poster image: 215943_poster.jpg (70720 bytes)
-2026-02-20T18:16:41.667132Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e16_still.jpg (18962 bytes)
-2026-02-20T18:16:41.689625Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e17_still.jpg (13298 bytes)
-2026-02-20T18:16:41.697701Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 215943_backdrop.jpg (201924 bytes)
-2026-02-20T18:16:41.712300Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e18_still.jpg (10067 bytes)
-2026-02-20T18:16:41.726681Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e1_still.jpg (18916 bytes)
-2026-02-20T18:16:41.734760Z  INFO ferrite_metadata::image_cache: Cached still image: 110381_s6_e19_still.jpg (12211 bytes)
-2026-02-20T18:16:41.736896Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Real Housewives of Salt Lake City' -> TMDB 110381 (The Real Housewives of Salt Lake City)
-2026-02-20T18:16:41.750611Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e2_still.jpg (9007 bytes)
-2026-02-20T18:16:41.773026Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e3_still.jpg (10410 bytes)
-2026-02-20T18:16:41.795440Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e4_still.jpg (14432 bytes)
-2026-02-20T18:16:41.819843Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e5_still.jpg (9513 bytes)
-2026-02-20T18:16:41.843794Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e6_still.jpg (18771 bytes)
-2026-02-20T18:16:41.867268Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e7_still.jpg (10508 bytes)
-2026-02-20T18:16:41.890515Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e8_still.jpg (13266 bytes)
-2026-02-20T18:16:41.913143Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e9_still.jpg (7962 bytes)
-2026-02-20T18:16:41.960635Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e10_still.jpg (8517 bytes)
-2026-02-20T18:16:41.988147Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s1_e11_still.jpg (14089 bytes)
-2026-02-20T18:16:41.988528Z  WARN ferrite_scanner: TMDB enrichment failed for 'The Traitors US': error returned from database: (code: 2067) UNIQUE constraint failed: tv_shows.library_id, tv_shows.title
-2026-02-20T18:16:42.457135Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e1_still.jpg (19842 bytes)
-2026-02-20T18:16:42.485461Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e2_still.jpg (17206 bytes)
-2026-02-20T18:16:42.511773Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e3_still.jpg (15539 bytes)
-2026-02-20T18:16:42.534949Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e4_still.jpg (8198 bytes)
-2026-02-20T18:16:42.558096Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e5_still.jpg (13203 bytes)
-2026-02-20T18:16:42.585238Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e6_still.jpg (12214 bytes)
-2026-02-20T18:16:42.618576Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e7_still.jpg (19783 bytes)
-2026-02-20T18:16:42.641556Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e8_still.jpg (12591 bytes)
-2026-02-20T18:16:42.665290Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e9_still.jpg (11715 bytes)
-2026-02-20T18:16:42.689567Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e10_still.jpg (19387 bytes)
-2026-02-20T18:16:42.712455Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e11_still.jpg (14161 bytes)
-2026-02-20T18:16:42.735406Z  INFO ferrite_metadata::image_cache: Cached still image: 215943_s2_e12_still.jpg (13502 bytes)
-2026-02-20T18:16:42.944132Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Traitors' -> TMDB 215943 (The Traitors)
-2026-02-20T18:16:42.958644Z  INFO ferrite_metadata::image_cache: Cached poster image: 247758_poster.jpg (74604 bytes)
-2026-02-20T18:16:42.994232Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 247758_backdrop.jpg (253811 bytes)
-2026-02-20T18:16:43.463737Z  INFO ferrite_metadata::image_cache: Cached poster image: 290884_poster.jpg (81596 bytes)
-2026-02-20T18:16:43.495552Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 290884_backdrop.jpg (216200 bytes)
-2026-02-20T18:16:43.709593Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e1_still.jpg (11308 bytes)
-2026-02-20T18:16:43.733523Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e2_still.jpg (12979 bytes)
-2026-02-20T18:16:43.756243Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e3_still.jpg (10232 bytes)
-2026-02-20T18:16:43.779528Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e4_still.jpg (10513 bytes)
-2026-02-20T18:16:43.802764Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e5_still.jpg (14903 bytes)
-2026-02-20T18:16:43.826239Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e6_still.jpg (9023 bytes)
-2026-02-20T18:16:43.848661Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e7_still.jpg (10230 bytes)
-2026-02-20T18:16:43.874069Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e8_still.jpg (11340 bytes)
-2026-02-20T18:16:43.898180Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e9_still.jpg (15623 bytes)
-2026-02-20T18:16:43.922265Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e10_still.jpg (8853 bytes)
-2026-02-20T18:16:43.955088Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e11_still.jpg (14023 bytes)
-2026-02-20T18:16:43.978177Z  INFO ferrite_metadata::image_cache: Cached still image: 247758_s1_e12_still.jpg (16615 bytes)
-2026-02-20T18:16:44.163747Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Valley (2024)' -> TMDB 247758 (The Valley)
-2026-02-20T18:16:44.205989Z  INFO ferrite_metadata::image_cache: Cached still image: 290884_s1_e1_still.jpg (14864 bytes)
-2026-02-20T18:16:44.228520Z  INFO ferrite_metadata::image_cache: Cached still image: 290884_s1_e2_still.jpg (12470 bytes)
-2026-02-20T18:16:44.314821Z  INFO ferrite_metadata::enrichment: Enriched TV: 'The Valley Persian Style' -> TMDB 290884 (The Valley: Persian Style)
-2026-02-20T18:16:44.456041Z  INFO ferrite_metadata::image_cache: Cached poster image: 61581_poster.jpg (43171 bytes)
-2026-02-20T18:16:44.488264Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 61581_backdrop.jpg (129656 bytes)
-2026-02-20T18:16:44.704517Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e1_still.jpg (9657 bytes)
-2026-02-20T18:16:44.728805Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e2_still.jpg (5383 bytes)
-2026-02-20T18:16:44.751694Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e3_still.jpg (10079 bytes)
-2026-02-20T18:16:44.791641Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e4_still.jpg (10021 bytes)
-2026-02-20T18:16:44.817325Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e5_still.jpg (10795 bytes)
-2026-02-20T18:16:44.842508Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e6_still.jpg (8475 bytes)
-2026-02-20T18:16:44.867685Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e7_still.jpg (11757 bytes)
-2026-02-20T18:16:44.894085Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e8_still.jpg (10930 bytes)
-2026-02-20T18:16:44.920955Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e9_still.jpg (9781 bytes)
-2026-02-20T18:16:45.248767Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s1_e10_still.jpg (6854 bytes)
-2026-02-20T18:16:45.290700Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e1_still.jpg (13627 bytes)
-2026-02-20T18:16:45.314934Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e2_still.jpg (10115 bytes)
-2026-02-20T18:16:45.338053Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e3_still.jpg (9747 bytes)
-2026-02-20T18:16:45.361447Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e4_still.jpg (8003 bytes)
-2026-02-20T18:16:45.385439Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e5_still.jpg (8171 bytes)
-2026-02-20T18:16:45.413249Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e6_still.jpg (11857 bytes)
-2026-02-20T18:16:45.436485Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e7_still.jpg (14369 bytes)
-2026-02-20T18:16:45.462368Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e8_still.jpg (6968 bytes)
-2026-02-20T18:16:45.489579Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e9_still.jpg (13749 bytes)
-2026-02-20T18:16:45.514406Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e10_still.jpg (16470 bytes)
-2026-02-20T18:16:45.538864Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e11_still.jpg (9387 bytes)
-2026-02-20T18:16:45.566008Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e12_still.jpg (10843 bytes)
-2026-02-20T18:16:45.592387Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e13_still.jpg (14385 bytes)
-2026-02-20T18:16:45.616436Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e14_still.jpg (12326 bytes)
-2026-02-20T18:16:45.640873Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e15_still.jpg (10046 bytes)
-2026-02-20T18:16:45.664960Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e16_still.jpg (14796 bytes)
-2026-02-20T18:16:45.688865Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e17_still.jpg (14514 bytes)
-2026-02-20T18:16:45.714135Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e18_still.jpg (15626 bytes)
-2026-02-20T18:16:45.741979Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s10_e19_still.jpg (14938 bytes)
-2026-02-20T18:16:45.777029Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e1_still.jpg (11679 bytes)
-2026-02-20T18:16:45.799968Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e2_still.jpg (10300 bytes)
-2026-02-20T18:16:45.822910Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e3_still.jpg (16972 bytes)
-2026-02-20T18:16:45.845824Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e4_still.jpg (8535 bytes)
-2026-02-20T18:16:45.868732Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e5_still.jpg (15747 bytes)
-2026-02-20T18:16:45.895469Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e6_still.jpg (9261 bytes)
-2026-02-20T18:16:45.920121Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e7_still.jpg (10445 bytes)
-2026-02-20T18:16:45.944091Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e8_still.jpg (16836 bytes)
-2026-02-20T18:16:45.980026Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e9_still.jpg (14999 bytes)
-2026-02-20T18:16:46.004204Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e10_still.jpg (14473 bytes)
-2026-02-20T18:16:46.026547Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e11_still.jpg (14818 bytes)
-2026-02-20T18:16:46.054334Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e12_still.jpg (12941 bytes)
-2026-02-20T18:16:46.077180Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e13_still.jpg (4712 bytes)
-2026-02-20T18:16:46.131107Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e14_still.jpg (8822 bytes)
-2026-02-20T18:16:46.153960Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e15_still.jpg (12262 bytes)
-2026-02-20T18:16:46.176592Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e16_still.jpg (10939 bytes)
-2026-02-20T18:16:46.200039Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e17_still.jpg (16654 bytes)
-2026-02-20T18:16:46.224818Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e18_still.jpg (10139 bytes)
-2026-02-20T18:16:46.248004Z  INFO ferrite_metadata::image_cache: Cached still image: 61581_s11_e19_still.jpg (14940 bytes)
-2026-02-20T18:16:46.250989Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Vanderpump Rules' -> TMDB 61581 (Vanderpump Rules)
-2026-02-20T18:16:49.673142Z  INFO ferrite_metadata::image_cache: Cached poster image: 208230_poster.jpg (106712 bytes)
-2026-02-20T18:16:49.701756Z  INFO ferrite_metadata::image_cache: Cached backdrop image: 208230_backdrop.jpg (124408 bytes)
-2026-02-20T18:16:49.729709Z  INFO ferrite_metadata::image_cache: Cached still image: 208230_s1_e1_still.jpg (14102 bytes)
-2026-02-20T18:16:49.752654Z  INFO ferrite_metadata::image_cache: Cached still image: 208230_s1_e2_still.jpg (10446 bytes)
-2026-02-20T18:16:49.776956Z  INFO ferrite_metadata::image_cache: Cached still image: 208230_s1_e3_still.jpg (12117 bytes)
-2026-02-20T18:16:49.804071Z  INFO ferrite_metadata::image_cache: Cached still image: 208230_s1_e4_still.jpg (15841 bytes)
-2026-02-20T18:16:49.826681Z  INFO ferrite_metadata::image_cache: Cached still image: 208230_s1_e5_still.jpg (12998 bytes)
-2026-02-20T18:16:49.908052Z  INFO ferrite_metadata::enrichment: Enriched TV: 'Wild Isles' -> TMDB 208230 (Wild Isles)
-2026-02-20T18:16:50.202482Z  INFO ferrite_scanner: Scan complete for 'TV Shows': 3224 new items indexed
-2026-02-20T18:16:50.202599Z  INFO ferrite_scanner: Starting subtitle extraction for 3224 item(s) in 'TV Shows'
-2026-02-20T18:17:13.766264Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/14cb40d3-b71d-4f49-9e64-988e30653b2b/Alone.S12E03.1080p.WEB.h264-EDITH.embedded.2.eng.srt (64466 bytes)
-2026-02-20T18:17:23.500214Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c4042aa8-e2e7-4097-a89a-a0535b2386fa/Alone.S12E02.1080p.WEB.h264-EDITH.embedded.2.eng.srt (85210 bytes)
-2026-02-20T18:17:35.804009Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.2.eng.srt (26504 bytes)
-2026-02-20T18:17:35.804082Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.3.eng.srt (30965 bytes)
-2026-02-20T18:17:35.804136Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.4.bul.srt (34963 bytes)
-2026-02-20T18:17:35.804185Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.5.cat.srt (27718 bytes)
-2026-02-20T18:17:35.804232Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.6.cze.srt (25146 bytes)
-2026-02-20T18:17:35.804277Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.7.dan.srt (25145 bytes)
-2026-02-20T18:17:35.804323Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.8.ger.srt (25058 bytes)
-2026-02-20T18:17:35.804369Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.9.und.srt (25769 bytes)
-2026-02-20T18:17:35.804415Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.10.gre.srt (35918 bytes)
-2026-02-20T18:17:35.804462Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.11.spa.srt (27990 bytes)
-2026-02-20T18:17:35.804544Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.12.spa.srt (28314 bytes)
-2026-02-20T18:17:35.804591Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.13.fin.srt (25093 bytes)
-2026-02-20T18:17:35.804641Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.14.fre.srt (26232 bytes)
-2026-02-20T18:17:35.804688Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.15.heb.srt (31579 bytes)
-2026-02-20T18:17:35.804735Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.16.hrv.srt (25140 bytes)
-2026-02-20T18:17:35.804780Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.17.hun.srt (25418 bytes)
-2026-02-20T18:17:35.804825Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.18.ind.srt (27534 bytes)
-2026-02-20T18:17:35.804871Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.19.ice.srt (25638 bytes)
-2026-02-20T18:17:35.804915Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.20.ita.srt (25974 bytes)
-2026-02-20T18:17:35.804964Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.21.und.srt (37454 bytes)
-2026-02-20T18:17:35.805017Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.22.lit.srt (26407 bytes)
-2026-02-20T18:17:35.805060Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.23.lav.srt (26014 bytes)
-2026-02-20T18:17:35.805096Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.24.mac.srt (34726 bytes)
-2026-02-20T18:17:35.805134Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.25.may.srt (27311 bytes)
-2026-02-20T18:17:35.805174Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.26.nob.srt (22632 bytes)
-2026-02-20T18:17:35.805213Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.27.dut.srt (23463 bytes)
-2026-02-20T18:17:35.805251Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.28.pol.srt (24454 bytes)
-2026-02-20T18:17:35.805287Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.29.por.srt (26928 bytes)
-2026-02-20T18:17:35.805325Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.30.por.srt (26692 bytes)
-2026-02-20T18:17:35.805366Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.31.rum.srt (27201 bytes)
-2026-02-20T18:17:35.805438Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.32.slo.srt (26158 bytes)
-2026-02-20T18:17:35.805493Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.33.slv.srt (24203 bytes)
-2026-02-20T18:17:35.805534Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.34.srp.srt (26268 bytes)
-2026-02-20T18:17:35.805618Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.35.swe.srt (23166 bytes)
-2026-02-20T18:17:35.805685Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.36.tha.srt (44504 bytes)
-2026-02-20T18:17:35.805733Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.37.tur.srt (25935 bytes)
-2026-02-20T18:17:35.805775Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 38 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.38.spa.srt (32205 bytes)
-2026-02-20T18:17:35.805816Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 39 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/9cd221b5-de49-4973-89cf-ca2b6bc5118a/A.Knight.of.the.Seven.Kingdoms.S01E04.1080p.WEB.H264-ETHEL.embedded.39.por.srt (36882 bytes)
-2026-02-20T18:17:35.872774Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.2.eng.srt (14966 bytes)
-2026-02-20T18:17:35.872834Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.3.eng.srt (24748 bytes)
-2026-02-20T18:17:35.872872Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.4.bul.srt (18842 bytes)
-2026-02-20T18:17:35.872907Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.5.cat.srt (16169 bytes)
-2026-02-20T18:17:35.872943Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.6.cze.srt (14412 bytes)
-2026-02-20T18:17:35.872981Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.7.dan.srt (14611 bytes)
-2026-02-20T18:17:35.873016Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.8.ger.srt (13655 bytes)
-2026-02-20T18:17:35.873052Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.9.und.srt (14510 bytes)
-2026-02-20T18:17:35.873087Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.10.gre.srt (18822 bytes)
-2026-02-20T18:17:35.873123Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.11.spa.srt (16579 bytes)
-2026-02-20T18:17:35.873159Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.12.spa.srt (16391 bytes)
-2026-02-20T18:17:35.873194Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.13.fin.srt (13677 bytes)
-2026-02-20T18:17:35.873230Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.14.fre.srt (14014 bytes)
-2026-02-20T18:17:35.873265Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.15.heb.srt (17011 bytes)
-2026-02-20T18:17:35.873300Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.16.hrv.srt (14049 bytes)
-2026-02-20T18:17:35.873335Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.17.hun.srt (14830 bytes)
-2026-02-20T18:17:35.873369Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.18.ind.srt (15073 bytes)
-2026-02-20T18:17:35.873406Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.19.ice.srt (15048 bytes)
-2026-02-20T18:17:35.873441Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.20.ita.srt (15006 bytes)
-2026-02-20T18:17:35.873482Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.21.und.srt (19795 bytes)
-2026-02-20T18:17:35.873517Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.22.lit.srt (14505 bytes)
-2026-02-20T18:17:35.873551Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.23.lav.srt (14756 bytes)
-2026-02-20T18:17:35.873586Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.24.mac.srt (18648 bytes)
-2026-02-20T18:17:35.873619Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.25.may.srt (14881 bytes)
-2026-02-20T18:17:35.873653Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.26.nob.srt (12572 bytes)
-2026-02-20T18:17:35.873688Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.27.dut.srt (12879 bytes)
-2026-02-20T18:17:35.873721Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.28.pol.srt (13518 bytes)
-2026-02-20T18:17:35.873758Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.29.por.srt (15037 bytes)
-2026-02-20T18:17:35.873792Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.30.por.srt (15029 bytes)
-2026-02-20T18:17:35.873827Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.31.rum.srt (15647 bytes)
-2026-02-20T18:17:35.873861Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.32.slo.srt (15685 bytes)
-2026-02-20T18:17:35.873897Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.33.slv.srt (13927 bytes)
-2026-02-20T18:17:35.873934Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.34.srp.srt (14716 bytes)
-2026-02-20T18:17:35.873972Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.35.swe.srt (12839 bytes)
-2026-02-20T18:17:35.874013Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.36.tha.srt (22779 bytes)
-2026-02-20T18:17:35.874055Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.37.tur.srt (14932 bytes)
-2026-02-20T18:17:35.874095Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 38 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.38.spa.srt (26268 bytes)
-2026-02-20T18:17:35.874136Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 39 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ab1de9de-cbf2-4333-a514-a79830827bdb/A.Knight.of.the.Seven.Kingdoms.S01E05.1080p.WEB.h264-ETHEL.embedded.39.por.srt (30867 bytes)
-2026-02-20T18:17:50.684824Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.2.eng.srt (30709 bytes)
-2026-02-20T18:17:50.684906Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.3.eng.srt (32251 bytes)
-2026-02-20T18:17:50.684966Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.4.eng.srt (42238 bytes)
-2026-02-20T18:17:50.685062Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.5.bul.srt (39174 bytes)
-2026-02-20T18:17:50.685113Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.6.cat.srt (31432 bytes)
-2026-02-20T18:17:50.685160Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.7.cze.srt (29281 bytes)
-2026-02-20T18:17:50.685207Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.8.dan.srt (29577 bytes)
-2026-02-20T18:17:50.685252Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.9.ger.srt (29434 bytes)
-2026-02-20T18:17:50.685296Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.10.gre.srt (40174 bytes)
-2026-02-20T18:17:50.685342Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.11.spa.srt (32632 bytes)
-2026-02-20T18:17:50.685386Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.12.spa.srt (32263 bytes)
-2026-02-20T18:17:50.685431Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.13.est.srt (29965 bytes)
-2026-02-20T18:17:50.685487Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.14.fin.srt (28130 bytes)
-2026-02-20T18:17:50.685633Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.15.fre.srt (30039 bytes)
-2026-02-20T18:17:50.685746Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.16.heb.srt (37797 bytes)
-2026-02-20T18:17:50.685798Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.17.hrv.srt (28602 bytes)
-2026-02-20T18:17:50.685842Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.18.hun.srt (29889 bytes)
-2026-02-20T18:17:50.685884Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.19.ind.srt (30557 bytes)
-2026-02-20T18:17:50.685924Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.20.ice.srt (30213 bytes)
-2026-02-20T18:17:50.685964Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.21.ita.srt (30797 bytes)
-2026-02-20T18:17:50.686004Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.22.und.srt (42706 bytes)
-2026-02-20T18:17:50.686043Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.23.lit.srt (30283 bytes)
-2026-02-20T18:17:50.686082Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.24.lav.srt (29981 bytes)
-2026-02-20T18:17:50.686121Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.25.mac.srt (39164 bytes)
-2026-02-20T18:17:50.686159Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.26.may.srt (31071 bytes)
-2026-02-20T18:17:50.686199Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.27.nob.srt (26294 bytes)
-2026-02-20T18:17:50.686240Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.28.dut.srt (27006 bytes)
-2026-02-20T18:17:50.686281Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.29.pol.srt (28625 bytes)
-2026-02-20T18:17:50.686328Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.30.por.srt (33115 bytes)
-2026-02-20T18:17:50.686419Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.31.por.srt (30632 bytes)
-2026-02-20T18:17:50.686460Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.32.rum.srt (31681 bytes)
-2026-02-20T18:17:50.686501Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.33.slo.srt (31696 bytes)
-2026-02-20T18:17:50.686540Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.34.slv.srt (27978 bytes)
-2026-02-20T18:17:50.686580Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.35.srp.srt (29957 bytes)
-2026-02-20T18:17:50.686620Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.36.swe.srt (26323 bytes)
-2026-02-20T18:17:50.686659Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.37.tha.srt (50057 bytes)
-2026-02-20T18:17:50.686698Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 38 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.38.tur.srt (30022 bytes)
-2026-02-20T18:17:50.686736Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 39 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.39.chi.srt (29483 bytes)
-2026-02-20T18:17:50.686777Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 40 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.40.chi.srt (28912 bytes)
-2026-02-20T18:17:50.686821Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 41 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/6141de67-35c7-4ad6-b515-d18459968958/A.Knight.of.the.Seven.Kingdoms.S01E01.The.Hedge.Knight.720p.HMAX.WEB-DL.DDP5.1.H.264-NTb.embedded.41.chi.srt (30149 bytes)
-2026-02-20T18:18:15.293238Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/85d891ff-8180-41f4-b431-c956cadff6e8/Alone.S12E01.The.Land.of.Great.Thirst.1080p.AMZN.WEB-DL.DDP5.1.H.264-Kitsune.embedded.2.eng.srt (91755 bytes)
-2026-02-20T18:18:15.293309Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/85d891ff-8180-41f4-b431-c956cadff6e8/Alone.S12E01.The.Land.of.Great.Thirst.1080p.AMZN.WEB-DL.DDP5.1.H.264-Kitsune.embedded.3.eng.srt (96162 bytes)
-2026-02-20T18:18:29.145690Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/8b7a97e4-9a17-4a61-b9fa-7f7e38bd262e/Alone.S12E07.Echoes.of.Emptiness.1080p.STAN.WEB-DL.DDP5.1.H.264-RAWR.embedded.2.eng.srt (42701 bytes)
-2026-02-20T18:18:29.145773Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/8b7a97e4-9a17-4a61-b9fa-7f7e38bd262e/Alone.S12E07.Echoes.of.Emptiness.1080p.STAN.WEB-DL.DDP5.1.H.264-RAWR.embedded.3.eng.srt (49090 bytes)
-2026-02-20T18:18:43.477014Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.2.eng.srt (23241 bytes)
-2026-02-20T18:18:43.477117Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.3.eng.srt (30794 bytes)
-2026-02-20T18:18:43.477269Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.4.bul.srt (28768 bytes)
-2026-02-20T18:18:43.477360Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.5.cat.srt (23265 bytes)
-2026-02-20T18:18:43.477414Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.6.cze.srt (20812 bytes)
-2026-02-20T18:18:43.477465Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.7.dan.srt (21059 bytes)
-2026-02-20T18:18:43.477512Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.8.ger.srt (20865 bytes)
-2026-02-20T18:18:43.477558Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.9.und.srt (21137 bytes)
-2026-02-20T18:18:43.477604Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.10.gre.srt (29165 bytes)
-2026-02-20T18:18:43.477651Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.11.spa.srt (23341 bytes)
-2026-02-20T18:18:43.477697Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.12.spa.srt (24136 bytes)
-2026-02-20T18:18:43.477743Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.13.fin.srt (19889 bytes)
-2026-02-20T18:18:43.477788Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.14.fre.srt (21396 bytes)
-2026-02-20T18:18:43.477830Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.15.heb.srt (25810 bytes)
-2026-02-20T18:18:43.477867Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.16.hrv.srt (20776 bytes)
-2026-02-20T18:18:43.477904Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.17.hun.srt (21212 bytes)
-2026-02-20T18:18:43.477941Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.18.ind.srt (22370 bytes)
-2026-02-20T18:18:43.477979Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.19.ice.srt (20581 bytes)
-2026-02-20T18:18:43.478016Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.20.ita.srt (22490 bytes)
-2026-02-20T18:18:43.478053Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.21.und.srt (30416 bytes)
-2026-02-20T18:18:43.478091Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.22.lit.srt (21025 bytes)
-2026-02-20T18:18:43.478128Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.23.lav.srt (21025 bytes)
-2026-02-20T18:18:43.478166Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.24.mac.srt (27727 bytes)
-2026-02-20T18:18:43.478203Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.25.may.srt (21998 bytes)
-2026-02-20T18:18:43.478240Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.26.nob.srt (18976 bytes)
-2026-02-20T18:18:43.478277Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.27.dut.srt (18838 bytes)
-2026-02-20T18:18:43.478314Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.28.pol.srt (20200 bytes)
-2026-02-20T18:18:43.478351Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.29.por.srt (23115 bytes)
-2026-02-20T18:18:43.478389Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.30.por.srt (22098 bytes)
-2026-02-20T18:18:43.478427Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.31.rum.srt (22759 bytes)
-2026-02-20T18:18:43.478465Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.32.slo.srt (23179 bytes)
-2026-02-20T18:18:43.478503Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.33.slv.srt (19991 bytes)
-2026-02-20T18:18:43.478541Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.34.srp.srt (21415 bytes)
-2026-02-20T18:18:43.478582Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.35.swe.srt (19421 bytes)
-2026-02-20T18:18:43.478619Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.36.tha.srt (38016 bytes)
-2026-02-20T18:18:43.478656Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.37.tur.srt (21263 bytes)
-2026-02-20T18:18:43.478694Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 38 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.38.spa.srt (30871 bytes)
-2026-02-20T18:18:43.478732Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 39 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c23f5fb6-1fd2-4854-b5b0-3ca605f755c0/A.Knight.of.the.Seven.Kingdoms.S01E03.1080p.WEB.h264-ETHEL.embedded.39.por.srt (36322 bytes)
-2026-02-20T18:18:48.739478Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/b7f660e5-6a26-4ebd-b688-a7cc14df5f94/Alone.S12E08.Weak.Spot.1080p.AMZN.WEB-DL.DDP5.1.H.264-Kitsune.embedded.2.eng.srt (55605 bytes)
-2026-02-20T18:18:48.739557Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/b7f660e5-6a26-4ebd-b688-a7cc14df5f94/Alone.S12E08.Weak.Spot.1080p.AMZN.WEB-DL.DDP5.1.H.264-Kitsune.embedded.3.eng.srt (57175 bytes)
-2026-02-20T18:19:01.255019Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/17ca6d8b-5b08-4451-9c04-85f607806807/Alone.S12E04.Finding.a.Foothold.1080p.STAN.WEB-DL.DDP5.1.H.264-RAWR.embedded.2.eng.srt (49715 bytes)
-2026-02-20T18:19:01.255088Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/17ca6d8b-5b08-4451-9c04-85f607806807/Alone.S12E04.Finding.a.Foothold.1080p.STAN.WEB-DL.DDP5.1.H.264-RAWR.embedded.3.eng.srt (55752 bytes)
-2026-02-20T18:19:15.089261Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/f28479da-b185-4bc7-8dae-515ef928f3cf/Asia.S01E01.Beneath.the.Waves.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.2.eng.ass (39430 bytes)
-2026-02-20T18:19:15.089344Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/f28479da-b185-4bc7-8dae-515ef928f3cf/Asia.S01E01.Beneath.the.Waves.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.3.eng.ass (39430 bytes)
-2026-02-20T18:19:34.538423Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.2.eng.srt (29414 bytes)
-2026-02-20T18:19:34.538519Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.3.eng.srt (31107 bytes)
-2026-02-20T18:19:34.538628Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.4.eng.srt (38291 bytes)
-2026-02-20T18:19:34.538703Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.5.bul.srt (36376 bytes)
-2026-02-20T18:19:34.538747Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.6.cat.srt (30234 bytes)
-2026-02-20T18:19:34.538788Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.7.cze.srt (27533 bytes)
-2026-02-20T18:19:34.538826Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.8.dan.srt (27573 bytes)
-2026-02-20T18:19:34.538863Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.9.ger.srt (27624 bytes)
-2026-02-20T18:19:34.538900Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.10.est.srt (27764 bytes)
-2026-02-20T18:19:34.538938Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.11.gre.srt (37306 bytes)
-2026-02-20T18:19:34.538975Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.12.spa.srt (31310 bytes)
-2026-02-20T18:19:34.539014Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.13.spa.srt (39075 bytes)
-2026-02-20T18:19:34.539052Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.14.spa.srt (30280 bytes)
-2026-02-20T18:19:34.539088Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.15.fin.srt (26846 bytes)
-2026-02-20T18:19:34.539125Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.16.fre.srt (28678 bytes)
-2026-02-20T18:19:34.539163Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.17.heb.srt (34960 bytes)
-2026-02-20T18:19:34.539200Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.18.hrv.srt (26931 bytes)
-2026-02-20T18:19:34.539239Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.19.hun.srt (27741 bytes)
-2026-02-20T18:19:34.539278Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.20.ind.srt (28746 bytes)
-2026-02-20T18:19:34.539315Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.21.ice.srt (26332 bytes)
-2026-02-20T18:19:34.539353Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.22.ita.srt (29099 bytes)
-2026-02-20T18:19:34.539391Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.23.und.srt (40211 bytes)
-2026-02-20T18:19:34.539429Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.24.lit.srt (27380 bytes)
-2026-02-20T18:19:34.539466Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.25.lav.srt (28224 bytes)
-2026-02-20T18:19:34.539503Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.26.mac.srt (35987 bytes)
-2026-02-20T18:19:34.539540Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.27.may.srt (28720 bytes)
-2026-02-20T18:19:34.539577Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.28.nob.srt (25091 bytes)
-2026-02-20T18:19:34.539613Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.29.dut.srt (25232 bytes)
-2026-02-20T18:19:34.539650Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.30.pol.srt (25787 bytes)
-2026-02-20T18:19:34.539689Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.31.por.srt (30273 bytes)
-2026-02-20T18:19:34.539726Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.32.por.srt (42453 bytes)
-2026-02-20T18:19:34.539763Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.33.por.srt (28684 bytes)
-2026-02-20T18:19:34.539801Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.34.rum.srt (29757 bytes)
-2026-02-20T18:19:34.539838Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.35.slo.srt (29126 bytes)
-2026-02-20T18:19:34.539875Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.36.slv.srt (26472 bytes)
-2026-02-20T18:19:34.539912Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.37.srp.srt (27853 bytes)
-2026-02-20T18:19:34.539948Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 38 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.38.swe.srt (25291 bytes)
-2026-02-20T18:19:34.539985Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 39 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.39.tha.srt (47424 bytes)
-2026-02-20T18:19:34.540022Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 40 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7eca2e58-a95b-4b3f-89fc-8157f81d2b6f/A.Knight.of.the.Seven.Kingdoms.S01E02.Hard.Salt.Beef.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.embedded.40.tur.srt (28086 bytes)
-2026-02-20T18:19:35.143029Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/806b0db8-eb26-4588-bd96-9775ceaf16e1/Alone.S12E09.The.Promised.Land.1080p.STAN.WEB-DL.DDP5.1.H.264-RAWR.embedded.2.eng.srt (45954 bytes)
-2026-02-20T18:19:35.143092Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/806b0db8-eb26-4588-bd96-9775ceaf16e1/Alone.S12E09.The.Promised.Land.1080p.STAN.WEB-DL.DDP5.1.H.264-RAWR.embedded.3.eng.srt (54697 bytes)
-2026-02-20T18:19:44.850954Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/d668828b-3dfe-4d4d-85a1-a054216497e8/Asia.S01E02.Above.the.Clouds.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.2.eng.ass (39383 bytes)
-2026-02-20T18:19:44.851052Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/d668828b-3dfe-4d4d-85a1-a054216497e8/Asia.S01E02.Above.the.Clouds.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.3.eng.ass (39383 bytes)
-2026-02-20T18:19:54.718732Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7486cb02-5bd7-4395-96a8-bce74f2c84e1/Alone.S12E05.1080p.AMZN.WEB-DL.DDP5.1.H.264-RAWR.embedded.2.eng.srt (43815 bytes)
-2026-02-20T18:19:54.718841Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/7486cb02-5bd7-4395-96a8-bce74f2c84e1/Alone.S12E05.1080p.AMZN.WEB-DL.DDP5.1.H.264-RAWR.embedded.3.eng.srt (50097 bytes)
-2026-02-20T18:19:57.268421Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ebf9feb2-0849-40f1-9ee6-23a94f6021f5/Asia.S01E03.The.Frozen.North.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.2.eng.ass (44745 bytes)
-2026-02-20T18:19:57.268536Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/ebf9feb2-0849-40f1-9ee6-23a94f6021f5/Asia.S01E03.The.Frozen.North.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.3.eng.ass (44773 bytes)
-2026-02-20T18:20:19.687960Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/c5cc52d0-beae-454b-8019-104268a5b73b/Alone.S12E10.1080p.WEB.h264-EDITH.embedded.2.eng.srt (78168 bytes)
-2026-02-20T18:20:20.963805Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4c4e1869-4551-4da7-86dd-c35f9807ecfe/Asia.S01E04.Tangled.Worlds.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.2.eng.ass (40056 bytes)
-2026-02-20T18:20:20.963916Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4c4e1869-4551-4da7-86dd-c35f9807ecfe/Asia.S01E04.Tangled.Worlds.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.3.eng.ass (40056 bytes)
-2026-02-20T18:20:22.969817Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/1aacef12-c64c-4541-b214-1ef7bfd2a594/Asia.S01E05.Crowded.Continent.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.2.eng.ass (44606 bytes)
-2026-02-20T18:20:22.969889Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/1aacef12-c64c-4541-b214-1ef7bfd2a594/Asia.S01E05.Crowded.Continent.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.3.eng.ass (44606 bytes)
-2026-02-20T18:20:30.287926Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/1840ffea-4e92-4342-895c-c1dea079d715/Asia.S01E07.Saving.Asia.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.2.eng.ass (47003 bytes)
-2026-02-20T18:20:30.287982Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/1840ffea-4e92-4342-895c-c1dea079d715/Asia.S01E07.Saving.Asia.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.3.eng.ass (47003 bytes)
-2026-02-20T18:20:38.141850Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/d14c3e37-2df7-48b1-9182-4e939ff53bf6/Asia.S01E06.The.Arid.Heart.1080p.WEBRip.10bit.EAC3.2.0.x265-iVy.embedded.2.eng.ass (35601 bytes)
-2026-02-20T18:20:45.186361Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.2.ara.ass (116526 bytes)
-2026-02-20T18:20:45.186462Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.3.chi.ass (86819 bytes)
-2026-02-20T18:20:45.186539Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.4.chi.ass (86295 bytes)
-2026-02-20T18:20:45.186588Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.5.hrv.ass (81006 bytes)
-2026-02-20T18:20:45.186637Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.6.cze.ass (80747 bytes)
-2026-02-20T18:20:45.186693Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.7.dan.ass (65759 bytes)
-2026-02-20T18:20:45.186744Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.8.dut.ass (69135 bytes)
-2026-02-20T18:20:45.186793Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.9.eng.ass (98924 bytes)
-2026-02-20T18:20:45.186843Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.10.fin.ass (73736 bytes)
-2026-02-20T18:20:45.186895Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.11.fre.ass (92885 bytes)
-2026-02-20T18:20:45.186939Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.12.fre.ass (85859 bytes)
-2026-02-20T18:20:45.186984Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.13.fre.ass (82651 bytes)
-2026-02-20T18:20:45.187029Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.14.fil.ass (80708 bytes)
-2026-02-20T18:20:45.187077Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.15.ger.ass (79456 bytes)
-2026-02-20T18:20:45.187124Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.16.gre.ass (110272 bytes)
-2026-02-20T18:20:45.187173Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.17.heb.ass (109925 bytes)
-2026-02-20T18:20:45.187220Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.18.hun.ass (85336 bytes)
-2026-02-20T18:20:45.187269Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.19.ice.ass (87675 bytes)
-2026-02-20T18:20:45.187320Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.20.ind.ass (88473 bytes)
-2026-02-20T18:20:45.187366Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.21.ita.ass (75383 bytes)
-2026-02-20T18:20:45.187414Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.22.jpn.ass (71834 bytes)
-2026-02-20T18:20:45.187462Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.23.kor.ass (91074 bytes)
-2026-02-20T18:20:45.187515Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.24.may.ass (84053 bytes)
-2026-02-20T18:20:45.187561Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.25.nob.ass (75787 bytes)
-2026-02-20T18:20:45.187609Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.26.pol.ass (83905 bytes)
-2026-02-20T18:20:45.187661Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.27.por.ass (82152 bytes)
-2026-02-20T18:20:45.187710Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.28.por.ass (80863 bytes)
-2026-02-20T18:20:45.187757Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.29.rum.ass (80222 bytes)
-2026-02-20T18:20:45.187802Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.30.rus.ass (102861 bytes)
-2026-02-20T18:20:45.187851Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.31.spa.ass (83504 bytes)
-2026-02-20T18:20:45.187897Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.32.spa.ass (80085 bytes)
-2026-02-20T18:20:45.187941Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.33.swe.ass (75423 bytes)
-2026-02-20T18:20:45.187985Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.34.tha.ass (136391 bytes)
-2026-02-20T18:20:45.188073Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.35.tur.ass (90291 bytes)
-2026-02-20T18:20:45.188119Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.36.ukr.ass (101372 bytes)
-2026-02-20T18:20:45.188165Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/a68f4805-79fa-44b0-9e5e-b96eebdc56d5/Black.Mirror.S05E02.Smithereens.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.37.vie.ass (108449 bytes)
-2026-02-20T18:20:47.608018Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.2.ara.ass (105523 bytes)
-2026-02-20T18:20:47.608088Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.3.chi.ass (77612 bytes)
-2026-02-20T18:20:47.608131Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.4.chi.ass (77502 bytes)
-2026-02-20T18:20:47.608172Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.5.hrv.ass (75622 bytes)
-2026-02-20T18:20:47.608212Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.6.cze.ass (76275 bytes)
-2026-02-20T18:20:47.608252Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.7.dan.ass (77561 bytes)
-2026-02-20T18:20:47.608293Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.8.dut.ass (67541 bytes)
-2026-02-20T18:20:47.608331Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.9.eng.ass (92947 bytes)
-2026-02-20T18:20:47.608372Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.10.fin.ass (67913 bytes)
-2026-02-20T18:20:47.608413Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.11.fre.ass (91546 bytes)
-2026-02-20T18:20:47.608453Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.12.fre.ass (77209 bytes)
-2026-02-20T18:20:47.608492Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.13.fre.ass (74609 bytes)
-2026-02-20T18:20:47.608531Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.14.fil.ass (72443 bytes)
-2026-02-20T18:20:47.608571Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.15.ger.ass (76980 bytes)
-2026-02-20T18:20:47.608609Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.16.gre.ass (103277 bytes)
-2026-02-20T18:20:47.608647Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.17.heb.ass (96924 bytes)
-2026-02-20T18:20:47.608686Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.18.hun.ass (80385 bytes)
-2026-02-20T18:20:47.608727Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.19.ice.ass (78625 bytes)
-2026-02-20T18:20:47.608765Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.20.ind.ass (81094 bytes)
-2026-02-20T18:20:47.608804Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.21.ita.ass (73378 bytes)
-2026-02-20T18:20:47.608843Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.22.jpn.ass (76751 bytes)
-2026-02-20T18:20:47.608881Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.23.kor.ass (81919 bytes)
-2026-02-20T18:20:47.608920Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.24.may.ass (80354 bytes)
-2026-02-20T18:20:47.608960Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.25.nob.ass (77361 bytes)
-2026-02-20T18:20:47.608999Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.26.pol.ass (76373 bytes)
-2026-02-20T18:20:47.609037Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.27.por.ass (73723 bytes)
-2026-02-20T18:20:47.609075Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.28.por.ass (78820 bytes)
-2026-02-20T18:20:47.609113Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.29.rum.ass (77537 bytes)
-2026-02-20T18:20:47.609152Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.30.rus.ass (98362 bytes)
-2026-02-20T18:20:47.609190Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.31.spa.ass (75979 bytes)
-2026-02-20T18:20:47.609230Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.32.spa.ass (75898 bytes)
-2026-02-20T18:20:47.609267Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.33.swe.ass (73376 bytes)
-2026-02-20T18:20:47.609305Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.34.tha.ass (122769 bytes)
-2026-02-20T18:20:47.609377Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.35.tur.ass (85296 bytes)
-2026-02-20T18:20:47.609417Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.36.ukr.ass (95421 bytes)
-2026-02-20T18:20:47.609456Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/68dd5a0f-9b3b-4174-9406-601e8a30b4cf/Black.Mirror.S05E03.Rachel.Jack.and.Ashley.Too.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.37.vie.ass (99060 bytes)
-2026-02-20T18:20:51.050391Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/426ce46a-963f-4a9f-9f7d-16ad43e30f57/Alone.S12E06.Purpose.1080p.STAN.WEB-DL.DDP5.1.H.264-RAWR.embedded.2.eng.srt (48541 bytes)
-2026-02-20T18:20:51.050465Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (subrip) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/426ce46a-963f-4a9f-9f7d-16ad43e30f57/Alone.S12E06.Purpose.1080p.STAN.WEB-DL.DDP5.1.H.264-RAWR.embedded.3.eng.srt (54650 bytes)
-2026-02-20T18:20:53.087895Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.2.ara.ass (73145 bytes)
-2026-02-20T18:20:53.087967Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.3.chi.ass (55565 bytes)
-2026-02-20T18:20:53.088014Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.4.chi.ass (55056 bytes)
-2026-02-20T18:20:53.088061Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.5.hrv.ass (51999 bytes)
-2026-02-20T18:20:53.088108Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.6.cze.ass (53151 bytes)
-2026-02-20T18:20:53.088155Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.7.dan.ass (44498 bytes)
-2026-02-20T18:20:53.088201Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.8.dut.ass (43970 bytes)
-2026-02-20T18:20:53.088246Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.9.eng.ass (59787 bytes)
-2026-02-20T18:20:53.088292Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.10.fin.ass (46963 bytes)
-2026-02-20T18:20:53.088337Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.11.fre.ass (62141 bytes)
-2026-02-20T18:20:53.088381Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.12.fre.ass (55335 bytes)
-2026-02-20T18:20:53.088426Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.13.fre.ass (48369 bytes)
-2026-02-20T18:20:53.088471Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.14.fil.ass (51348 bytes)
-2026-02-20T18:20:53.088515Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.15.ger.ass (49950 bytes)
-2026-02-20T18:20:53.088559Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.16.gre.ass (66210 bytes)
-2026-02-20T18:20:53.088603Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.17.heb.ass (68612 bytes)
-2026-02-20T18:20:53.088647Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.18.hun.ass (54057 bytes)
-2026-02-20T18:20:53.088695Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.19.ice.ass (51325 bytes)
-2026-02-20T18:20:53.088740Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.20.ind.ass (55490 bytes)
-2026-02-20T18:20:53.088788Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.21.ita.ass (45796 bytes)
-2026-02-20T18:20:53.088833Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.22.jpn.ass (52855 bytes)
-2026-02-20T18:20:53.088877Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.23.kor.ass (57595 bytes)
-2026-02-20T18:20:53.088926Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.24.may.ass (54048 bytes)
-2026-02-20T18:20:53.088982Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.25.nob.ass (46998 bytes)
-2026-02-20T18:20:53.089028Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.26.pol.ass (52873 bytes)
-2026-02-20T18:20:53.089073Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.27.por.ass (51037 bytes)
-2026-02-20T18:20:53.089117Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.28.por.ass (48575 bytes)
-2026-02-20T18:20:53.089162Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.29.rum.ass (53564 bytes)
-2026-02-20T18:20:53.089205Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.30.rus.ass (64488 bytes)
-2026-02-20T18:20:53.089250Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.31.spa.ass (49391 bytes)
-2026-02-20T18:20:53.089293Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.32.spa.ass (47374 bytes)
-2026-02-20T18:20:53.089338Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.33.swe.ass (46188 bytes)
-2026-02-20T18:20:53.089384Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.34.tha.ass (82444 bytes)
-2026-02-20T18:20:53.089446Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.35.tur.ass (57748 bytes)
-2026-02-20T18:20:53.089492Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.36.ukr.ass (63546 bytes)
-2026-02-20T18:20:53.089537Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/cfe195b0-d9fb-491d-b634-8acc10d0568a/Black.Mirror.S05E01.Striking.Vipers.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.37.vie.ass (64815 bytes)
-2026-02-20T18:20:55.116475Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.2.und.ass (72250 bytes)
-2026-02-20T18:20:55.116557Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.3.und.ass (71846 bytes)
-2026-02-20T18:20:55.116622Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.4.ara.ass (96630 bytes)
-2026-02-20T18:20:55.116666Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.5.bul.ass (88338 bytes)
-2026-02-20T18:20:55.116707Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.6.chi.ass (76220 bytes)
-2026-02-20T18:20:55.116745Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.7.chi.ass (74302 bytes)
-2026-02-20T18:20:55.116784Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.8.cze.ass (72978 bytes)
-2026-02-20T18:20:55.116822Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.9.dan.ass (67843 bytes)
-2026-02-20T18:20:55.116860Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.10.dut.ass (71800 bytes)
-2026-02-20T18:20:55.116899Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.11.eng.ass (77643 bytes)
-2026-02-20T18:20:55.116937Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.12.eng.ass (86731 bytes)
-2026-02-20T18:20:55.116982Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.13.fin.ass (69473 bytes)
-2026-02-20T18:20:55.117023Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.14.fre.ass (72468 bytes)
-2026-02-20T18:20:55.117060Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.15.ger.ass (70631 bytes)
-2026-02-20T18:20:55.117098Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.16.gre.ass (98248 bytes)
-2026-02-20T18:20:55.117135Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.17.heb.ass (88994 bytes)
-2026-02-20T18:20:55.117173Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.18.hun.ass (70514 bytes)
-2026-02-20T18:20:55.117211Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.19.ice.ass (72707 bytes)
-2026-02-20T18:20:55.117248Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.20.ind.ass (72485 bytes)
-2026-02-20T18:20:55.117285Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.21.ita.ass (72528 bytes)
-2026-02-20T18:20:55.117322Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.22.jpn.ass (73289 bytes)
-2026-02-20T18:20:55.117358Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.23.kor.ass (84692 bytes)
-2026-02-20T18:20:55.117396Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.24.nob.ass (68425 bytes)
-2026-02-20T18:20:55.117432Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.25.pol.ass (71134 bytes)
-2026-02-20T18:20:55.117469Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.26.por.ass (72394 bytes)
-2026-02-20T18:20:55.117505Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.27.por.ass (73237 bytes)
-2026-02-20T18:20:55.117543Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.28.rum.ass (79264 bytes)
-2026-02-20T18:20:55.117580Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.29.rus.ass (91341 bytes)
-2026-02-20T18:20:55.117617Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.30.scr.ass (70639 bytes)
-2026-02-20T18:20:55.117653Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.31.spa.ass (74744 bytes)
-2026-02-20T18:20:55.117690Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.32.spa.ass (71891 bytes)
-2026-02-20T18:20:55.117727Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.33.swe.ass (63867 bytes)
-2026-02-20T18:20:55.117764Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.34.tha.ass (114268 bytes)
-2026-02-20T18:20:55.117803Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.35.tur.ass (72925 bytes)
-2026-02-20T18:20:55.117840Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.36.ukr.ass (87774 bytes)
-2026-02-20T18:20:55.117877Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/063eba56-6025-4762-accd-a2e9b238b0a2/Black.Mirror.S06E01.Joan.Is.Awful.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.37.vie.ass (84631 bytes)
-2026-02-20T18:21:01.470907Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.2.und.ass (33466 bytes)
-2026-02-20T18:21:01.470967Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.3.und.ass (33126 bytes)
-2026-02-20T18:21:01.471011Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.4.ara.ass (45826 bytes)
-2026-02-20T18:21:01.471050Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.5.bul.ass (41233 bytes)
-2026-02-20T18:21:01.471090Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.6.chi.ass (37294 bytes)
-2026-02-20T18:21:01.471129Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.7.chi.ass (34989 bytes)
-2026-02-20T18:21:01.471166Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.8.cze.ass (33502 bytes)
-2026-02-20T18:21:01.471203Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.9.dan.ass (30769 bytes)
-2026-02-20T18:21:01.471243Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.10.dut.ass (33292 bytes)
-2026-02-20T18:21:01.471285Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.11.eng.ass (37015 bytes)
-2026-02-20T18:21:01.471323Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.12.eng.ass (49367 bytes)
-2026-02-20T18:21:01.471360Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.13.fin.ass (31736 bytes)
-2026-02-20T18:21:01.471396Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.14.fre.ass (47195 bytes)
-2026-02-20T18:21:01.471432Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.15.fre.ass (33130 bytes)
-2026-02-20T18:21:01.471471Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.16.fre.ass (35011 bytes)
-2026-02-20T18:21:01.471508Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.17.ger.ass (31812 bytes)
-2026-02-20T18:21:01.471545Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.18.gre.ass (44101 bytes)
-2026-02-20T18:21:01.471584Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.19.heb.ass (40199 bytes)
-2026-02-20T18:21:01.471623Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.20.hun.ass (32874 bytes)
-2026-02-20T18:21:01.471662Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.21.ice.ass (34103 bytes)
-2026-02-20T18:21:01.471700Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.22.ind.ass (33870 bytes)
-2026-02-20T18:21:01.471738Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.23.ita.ass (32420 bytes)
-2026-02-20T18:21:01.471778Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.24.jpn.ass (34343 bytes)
-2026-02-20T18:21:01.471816Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.25.kor.ass (39121 bytes)
-2026-02-20T18:21:01.471855Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.26.nob.ass (30833 bytes)
-2026-02-20T18:21:01.471891Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.27.pol.ass (33153 bytes)
-2026-02-20T18:21:01.471930Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.28.por.ass (32845 bytes)
-2026-02-20T18:21:01.471975Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.29.por.ass (34027 bytes)
-2026-02-20T18:21:01.472012Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.30.rum.ass (37954 bytes)
-2026-02-20T18:21:01.472049Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.31.rus.ass (42070 bytes)
-2026-02-20T18:21:01.472086Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.32.scr.ass (33509 bytes)
-2026-02-20T18:21:01.472122Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.33.spa.ass (34203 bytes)
-2026-02-20T18:21:01.472159Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.34.spa.ass (33105 bytes)
-2026-02-20T18:21:01.472206Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.35.swe.ass (29891 bytes)
-2026-02-20T18:21:01.472244Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.36.tha.ass (53369 bytes)
-2026-02-20T18:21:01.472280Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.37.tur.ass (33663 bytes)
-2026-02-20T18:21:01.472315Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 38 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.38.ukr.ass (41697 bytes)
-2026-02-20T18:21:01.472351Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 39 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/2e82287f-191b-4c6d-a19e-a00fdbecdb24/Black.Mirror.S06E04.Mazey.Day.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.39.vie.ass (39548 bytes)
-2026-02-20T18:21:03.893528Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.2.und.ass (59738 bytes)
-2026-02-20T18:21:03.893603Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.3.und.ass (58897 bytes)
-2026-02-20T18:21:03.893649Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.4.ara.ass (80235 bytes)
-2026-02-20T18:21:03.893694Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.5.bul.ass (73460 bytes)
-2026-02-20T18:21:03.893740Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.6.chi.ass (63504 bytes)
-2026-02-20T18:21:03.893786Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.7.chi.ass (62309 bytes)
-2026-02-20T18:21:03.893829Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.8.cze.ass (60431 bytes)
-2026-02-20T18:21:03.893874Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.9.dan.ass (55288 bytes)
-2026-02-20T18:21:03.893918Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.10.dut.ass (58799 bytes)
-2026-02-20T18:21:03.893965Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.11.eng.ass (65805 bytes)
-2026-02-20T18:21:03.894009Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.12.eng.ass (76976 bytes)
-2026-02-20T18:21:03.894054Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.13.fin.ass (53753 bytes)
-2026-02-20T18:21:03.894097Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.14.fre.ass (58303 bytes)
-2026-02-20T18:21:03.894141Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.15.ger.ass (57396 bytes)
-2026-02-20T18:21:03.894185Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.16.gre.ass (80000 bytes)
-2026-02-20T18:21:03.894229Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.17.heb.ass (74060 bytes)
-2026-02-20T18:21:03.894274Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.18.hun.ass (56379 bytes)
-2026-02-20T18:21:03.894319Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.19.ice.ass (59333 bytes)
-2026-02-20T18:21:03.894362Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.20.ind.ass (59487 bytes)
-2026-02-20T18:21:03.894406Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.21.ita.ass (58684 bytes)
-2026-02-20T18:21:03.894451Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.22.jpn.ass (62053 bytes)
-2026-02-20T18:21:03.894500Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.23.kor.ass (68155 bytes)
-2026-02-20T18:21:03.894548Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.24.nob.ass (55970 bytes)
-2026-02-20T18:21:03.894592Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.25.pol.ass (58483 bytes)
-2026-02-20T18:21:03.894636Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.26.por.ass (58817 bytes)
-2026-02-20T18:21:03.894679Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.27.por.ass (59491 bytes)
-2026-02-20T18:21:03.894724Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.28.rum.ass (64717 bytes)
-2026-02-20T18:21:03.894767Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.29.rus.ass (73893 bytes)
-2026-02-20T18:21:03.894811Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.30.scr.ass (57810 bytes)
-2026-02-20T18:21:03.894856Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.31.spa.ass (60152 bytes)
-2026-02-20T18:21:03.894901Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.32.spa.ass (58689 bytes)
-2026-02-20T18:21:03.894944Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.33.swe.ass (52816 bytes)
-2026-02-20T18:21:03.894988Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.34.tha.ass (93536 bytes)
-2026-02-20T18:21:03.895035Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.35.tur.ass (59362 bytes)
-2026-02-20T18:21:03.895079Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.36.ukr.ass (73231 bytes)
-2026-02-20T18:21:03.895122Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/19e5cba8-bf76-4571-b7d1-9e63cc47db05/Black.Mirror.S06E02.Loch.Henry.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.37.vie.ass (69670 bytes)
-2026-02-20T18:21:09.386473Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.2.und.ass (69148 bytes)
-2026-02-20T18:21:09.386561Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.3.und.ass (68962 bytes)
-2026-02-20T18:21:09.386605Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.4.ara.ass (92658 bytes)
-2026-02-20T18:21:09.386646Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.5.bul.ass (84290 bytes)
-2026-02-20T18:21:09.386690Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.6.chi.ass (75105 bytes)
-2026-02-20T18:21:09.386733Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.7.chi.ass (72369 bytes)
-2026-02-20T18:21:09.386775Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.8.cze.ass (70157 bytes)
-2026-02-20T18:21:09.386818Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.9.dan.ass (64965 bytes)
-2026-02-20T18:21:09.386859Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.10.dut.ass (68988 bytes)
-2026-02-20T18:21:09.386902Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.11.eng.ass (84830 bytes)
-2026-02-20T18:21:09.386943Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.12.eng.ass (101067 bytes)
-2026-02-20T18:21:09.386983Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.13.fin.ass (62017 bytes)
-2026-02-20T18:21:09.387025Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.14.fre.ass (68186 bytes)
-2026-02-20T18:21:09.387067Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.15.ger.ass (68264 bytes)
-2026-02-20T18:21:09.387107Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.16.gre.ass (92313 bytes)
-2026-02-20T18:21:09.387148Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.17.heb.ass (87659 bytes)
-2026-02-20T18:21:09.387192Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.18.hun.ass (67324 bytes)
-2026-02-20T18:21:09.387236Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.19.ice.ass (70254 bytes)
-2026-02-20T18:21:09.387278Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.20.ind.ass (69927 bytes)
-2026-02-20T18:21:09.387318Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.21.ita.ass (68050 bytes)
-2026-02-20T18:21:09.387359Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.22.jpn.ass (70389 bytes)
-2026-02-20T18:21:09.387399Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.23.kor.ass (79730 bytes)
-2026-02-20T18:21:09.387439Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.24.nob.ass (65873 bytes)
-2026-02-20T18:21:09.387479Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.25.pol.ass (68810 bytes)
-2026-02-20T18:21:09.387519Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.26.por.ass (68049 bytes)
-2026-02-20T18:21:09.387559Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.27.por.ass (69239 bytes)
-2026-02-20T18:21:09.387600Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.28.rum.ass (74899 bytes)
-2026-02-20T18:21:09.387641Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.29.rus.ass (86771 bytes)
-2026-02-20T18:21:09.387681Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.30.scr.ass (67744 bytes)
-2026-02-20T18:21:09.387721Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.31.spa.ass (70844 bytes)
-2026-02-20T18:21:09.387762Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.32.spa.ass (68073 bytes)
-2026-02-20T18:21:09.387804Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.33.swe.ass (63789 bytes)
-2026-02-20T18:21:09.387844Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.34.tha.ass (111730 bytes)
-2026-02-20T18:21:09.387887Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.35.tur.ass (70071 bytes)
-2026-02-20T18:21:09.387927Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.36.ukr.ass (85417 bytes)
-2026-02-20T18:21:09.387968Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/660ee877-ded6-4ef7-8286-53dd92b14da1/Black.Mirror.S06E05.Demon.79.EAC3.5.1.1080p.WEBRip.x265-iVy.embedded.37.vie.ass (81211 bytes)
-2026-02-20T18:21:10.109779Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.2.ara.ass (91790 bytes)
-2026-02-20T18:21:10.109852Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.3.chi.ass (67699 bytes)
-2026-02-20T18:21:10.109917Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.4.chi.ass (68649 bytes)
-2026-02-20T18:21:10.109968Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.5.hrv.ass (64671 bytes)
-2026-02-20T18:21:10.110012Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.6.cze.ass (65410 bytes)
-2026-02-20T18:21:10.110058Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.7.cze.ass (65864 bytes)
-2026-02-20T18:21:10.110102Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.8.dan.ass (63900 bytes)
-2026-02-20T18:21:10.110145Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.9.dut.ass (63805 bytes)
-2026-02-20T18:21:10.110189Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.10.eng.ass (85110 bytes)
-2026-02-20T18:21:10.110235Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.11.fin.ass (56462 bytes)
-2026-02-20T18:21:10.110295Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.12.fre.ass (86895 bytes)
-2026-02-20T18:21:10.110371Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.13.fre.ass (72247 bytes)
-2026-02-20T18:21:10.110419Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.14.fre.ass (66455 bytes)
-2026-02-20T18:21:10.110465Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.15.fil.ass (64454 bytes)
-2026-02-20T18:21:10.110512Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.16.ger.ass (73236 bytes)
-2026-02-20T18:21:10.110560Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.17.ger.ass (67675 bytes)
-2026-02-20T18:21:10.110613Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.18.gre.ass (84577 bytes)
-2026-02-20T18:21:10.110664Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.19.heb.ass (84653 bytes)
-2026-02-20T18:21:10.110707Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.20.hun.ass (65406 bytes)
-2026-02-20T18:21:10.110750Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.21.hun.ass (63733 bytes)
-2026-02-20T18:21:10.110793Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.22.ind.ass (67553 bytes)
-2026-02-20T18:21:10.110836Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.23.ita.ass (67214 bytes)
-2026-02-20T18:21:10.110878Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.24.ita.ass (65234 bytes)
-2026-02-20T18:21:10.110923Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.25.jpn.ass (70647 bytes)
-2026-02-20T18:21:10.110966Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.26.kor.ass (74246 bytes)
-2026-02-20T18:21:10.111011Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.27.may.ass (68200 bytes)
-2026-02-20T18:21:10.111053Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.28.nob.ass (63577 bytes)
-2026-02-20T18:21:10.111103Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.29.pol.ass (51918 bytes)
-2026-02-20T18:21:10.111155Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.30.pol.ass (67067 bytes)
-2026-02-20T18:21:10.111202Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.31.por.ass (67976 bytes)
-2026-02-20T18:21:10.111248Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.32.por.ass (65410 bytes)
-2026-02-20T18:21:10.111293Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.33.por.ass (68356 bytes)
-2026-02-20T18:21:10.111338Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.34.rum.ass (66660 bytes)
-2026-02-20T18:21:10.111385Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.35.rus.ass (85578 bytes)
-2026-02-20T18:21:10.111429Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 36 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.36.spa.ass (72482 bytes)
-2026-02-20T18:21:10.111475Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 37 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.37.spa.ass (80996 bytes)
-2026-02-20T18:21:10.111523Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 38 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.38.spa.ass (70076 bytes)
-2026-02-20T18:21:10.111578Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 39 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.39.spa.ass (62280 bytes)
-2026-02-20T18:21:10.111630Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 40 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.40.spa.ass (68110 bytes)
-2026-02-20T18:21:10.111673Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 41 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.41.swe.ass (58876 bytes)
-2026-02-20T18:21:10.111718Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 42 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.42.tha.ass (105530 bytes)
-2026-02-20T18:21:10.111763Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 43 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.43.tur.ass (64623 bytes)
-2026-02-20T18:21:10.111806Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 44 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.44.tur.ass (68462 bytes)
-2026-02-20T18:21:10.111849Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 45 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.45.ukr.ass (77528 bytes)
-2026-02-20T18:21:10.111894Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 46 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.46.ukr.ass (83849 bytes)
-2026-02-20T18:21:10.111941Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 47 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/0ab0a704-c222-4351-88c9-682b1dce83a9/Black.Mirror.S07E01.Common.People.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.47.vie.ass (72723 bytes)
-2026-02-20T18:21:16.577843Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 2 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.2.ara.ass (86693 bytes)
-2026-02-20T18:21:16.577893Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 3 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.3.chi.ass (64195 bytes)
-2026-02-20T18:21:16.577953Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 4 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.4.chi.ass (65224 bytes)
-2026-02-20T18:21:16.578020Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 5 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.5.hrv.ass (58729 bytes)
-2026-02-20T18:21:16.578063Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 6 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.6.cze.ass (61100 bytes)
-2026-02-20T18:21:16.578108Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 7 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.7.dan.ass (58560 bytes)
-2026-02-20T18:21:16.578150Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 8 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.8.dut.ass (58585 bytes)
-2026-02-20T18:21:16.578190Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 9 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.9.eng.ass (69131 bytes)
-2026-02-20T18:21:16.578232Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 10 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.10.eng.ass (78445 bytes)
-2026-02-20T18:21:16.578275Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 11 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.11.fin.ass (52906 bytes)
-2026-02-20T18:21:16.578316Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 12 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.12.fre.ass (58880 bytes)
-2026-02-20T18:21:16.578358Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 13 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.13.fil.ass (60218 bytes)
-2026-02-20T18:21:16.578399Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 14 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.14.ger.ass (60756 bytes)
-2026-02-20T18:21:16.578439Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 15 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.15.gre.ass (76280 bytes)
-2026-02-20T18:21:16.578480Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 16 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.16.heb.ass (78466 bytes)
-2026-02-20T18:21:16.578519Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 17 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.17.hun.ass (58428 bytes)
-2026-02-20T18:21:16.578579Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 18 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.18.ind.ass (60300 bytes)
-2026-02-20T18:21:16.578639Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 19 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.19.ita.ass (59418 bytes)
-2026-02-20T18:21:16.578682Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 20 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.20.jpn.ass (62096 bytes)
-2026-02-20T18:21:16.578724Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 21 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.21.kor.ass (68904 bytes)
-2026-02-20T18:21:16.578767Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 22 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.22.may.ass (60460 bytes)
-2026-02-20T18:21:16.578809Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 23 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.23.nob.ass (57523 bytes)
-2026-02-20T18:21:16.578849Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 24 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.24.pol.ass (60691 bytes)
-2026-02-20T18:21:16.578889Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 25 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.25.por.ass (61745 bytes)
-2026-02-20T18:21:16.578928Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 26 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.26.por.ass (60369 bytes)
-2026-02-20T18:21:16.578979Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 27 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.27.rum.ass (60890 bytes)
-2026-02-20T18:21:16.579025Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 28 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.28.rus.ass (75461 bytes)
-2026-02-20T18:21:16.579075Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 29 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.29.spa.ass (62531 bytes)
-2026-02-20T18:21:16.579125Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 30 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.30.spa.ass (60336 bytes)
-2026-02-20T18:21:16.579168Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 31 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.31.swe.ass (55487 bytes)
-2026-02-20T18:21:16.579213Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 32 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.32.tha.ass (97747 bytes)
-2026-02-20T18:21:16.579260Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 33 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.33.tur.ass (63046 bytes)
-2026-02-20T18:21:16.579303Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 34 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.34.ukr.ass (76548 bytes)
-2026-02-20T18:21:16.579347Z  INFO ferrite_scanner::extract: Extracted embedded subtitle: stream 35 (ass) → /mnt/mpathj/badchiefy/ferrite/data/cache/subtitles/4a6cf540-0234-4a2c-847e-f0412a3d2e47/Black.Mirror.S07E02.Bête.Noire.1080p.WEBRip.10bit.EAC3.5.1.x265-iVy.embedded.35.vie.ass (67988 bytes)
+PS C:\Users\ryans\source\repos\ferrite> cargo run
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.43s
+Running `target\debug\ferrite.exe`
+2026-02-22T04:45:50.253806Z  INFO ferrite: Loaded config from config/ferrite.toml
+2026-02-22T04:45:50.254458Z  INFO ferrite_core::config: Data directory: C:\Users\ryans\source\repos\ferrite
+2026-02-22T04:45:50.303959Z  INFO ferrite_transcode::hwaccel: HW encoder detection: nvenc=true, qsv=true, vaapi=true
+2026-02-22T04:45:50.304100Z  INFO ferrite_transcode::hwaccel: Auto-selected HW encoder: NVENC
+2026-02-22T04:45:50.304345Z  INFO ferrite: Video encoder: h264_nvenc (backend=nvenc)
+2026-02-22T04:45:50.312360Z  INFO ferrite_db: Database connected at C:\Users\ryans\source\repos\ferrite\ferrite.db
+2026-02-22T04:45:50.312909Z  INFO ferrite_db: Database migrations applied
+2026-02-22T04:45:50.515362Z  INFO ferrite_api::router: Serving SPA from: ferrite-ui/dist
+2026-02-22T04:45:50.516608Z  INFO ferrite: DLNA server enabled (Ferrite Media Server)
+2026-02-22T04:45:50.518380Z  INFO ferrite_scanner::watcher: Watching 1 library directories for changes
+2026-02-22T04:45:50.518659Z  INFO ferrite: Filesystem watcher started
+2026-02-22T04:45:50.518741Z  INFO ferrite: Ferrite starting on http://0.0.0.0:8080
+2026-02-22T04:45:50.518823Z  INFO ferrite: Open http://localhost:8080 in your browser
+2026-02-22T04:45:50.519168Z  INFO ferrite_dlna::ssdp: SSDP server listening on 239.255.255.250:1900
+2026-02-22T04:46:05.180031Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_api::handlers::stream: Transcode permit acquired: op=hls-master media_id=5dbce626-0946-435a-aa93-f7837292a783 wait_ms=0.0
+2026-02-22T04:46:05.180286Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: Creating 4 ABR variant sessions for media 5dbce626-0946-435a-aa93-f7837292a783 (source=1920x1080)
+2026-02-22T04:46:05.181305Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: Creating HLS session 1fb90c41-4ce6-4981-9e4c-af27429fbd15 for media 5dbce626-0946-435a-aa93-f7837292a783 at 0.0s variant=1080p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:05.181536Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:05.181902Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p", "-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll", "-rc", "vbr", "-cq", "23", "-profile:v", "high", "-level", "4.1", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "192k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:05.200168Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: Creating HLS session b47461b6-4c7d-47d3-90c1-c0118124723c for media 5dbce626-0946-435a-aa93-f7837292a783 at 0.0s variant=720p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:05.200668Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS variant scaling active — falling back to software encoder
+2026-02-22T04:46:05.200843Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:05.200993Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p,scale=-2:720", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-profile:v", "high", "-level", "4.1", "-b:v", "2800k", "-maxrate", "4200k", "-bufsize", "5600k", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:05.219561Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: Creating HLS session 036082ae-984f-4ac5-8eb6-0fd21378633b for media 5dbce626-0946-435a-aa93-f7837292a783 at 0.0s variant=480p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:05.220145Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS variant scaling active — falling back to software encoder
+2026-02-22T04:46:05.220792Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:05.221398Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p,scale=-2:480", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-profile:v", "high", "-level", "4.1", "-b:v", "1400k", "-maxrate", "2100k", "-bufsize", "2800k", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:05.232406Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:05.233107Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Metadata:
+2026-02-22T04:46:05.233395Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:05.233588Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:05.233742Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:05.233927Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:     Metadata:
+2026-02-22T04:46:05.234094Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       BPS             : 9130526
+2026-02-22T04:46:05.234237Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:05.234377Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:05.234514Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.234659Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.234798Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:05.234970Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:05.235110Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:05.235279Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:     Metadata:
+2026-02-22T04:46:05.235405Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       BPS             : 640000
+2026-02-22T04:46:05.235542Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:05.235676Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:05.235803Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.235926Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.236049Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:05.236167Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:05.236299Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:     Metadata:
+2026-02-22T04:46:05.236426Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       title           : English [SDH]
+2026-02-22T04:46:05.236559Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       BPS             : 106
+2026-02-22T04:46:05.236681Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:05.236794Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:05.236917Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.237038Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.237167Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:05.237289Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:05.237498Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: Stream mapping:
+2026-02-22T04:46:05.237620Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (h264_nvenc))
+2026-02-22T04:46:05.237733Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:05.241982Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: Creating HLS session 03e343a2-c1a0-450b-9e63-5f658180a051 for media 5dbce626-0946-435a-aa93-f7837292a783 at 0.0s variant=360p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:05.242379Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS variant scaling active — falling back to software encoder
+2026-02-22T04:46:05.242626Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:05.242928Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p,scale=-2:360", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-profile:v", "high", "-level", "4.1", "-b:v", "800k", "-maxrate", "1200k", "-bufsize", "1600k", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "96k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:05.252833Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:05.253833Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Metadata:
+2026-02-22T04:46:05.254824Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:05.255001Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:05.255274Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:05.255420Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:     Metadata:
+2026-02-22T04:46:05.255573Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       BPS             : 9130526
+2026-02-22T04:46:05.255902Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:05.255993Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:05.256148Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.256291Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.256657Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:05.256778Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:05.256878Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:05.257007Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:     Metadata:
+2026-02-22T04:46:05.257186Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       BPS             : 640000
+2026-02-22T04:46:05.257288Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:05.257404Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:05.257495Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.257849Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.259319Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:05.259694Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:05.259895Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:     Metadata:
+2026-02-22T04:46:05.260233Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       title           : English [SDH]
+2026-02-22T04:46:05.260490Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       BPS             : 106
+2026-02-22T04:46:05.260895Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:05.261134Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:05.261275Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.261476Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.261897Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:05.262221Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:05.262524Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: Stream mapping:
+2026-02-22T04:46:05.263514Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (libx264))
+2026-02-22T04:46:05.263720Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:05.292948Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:05.293423Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Metadata:
+2026-02-22T04:46:05.293631Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:05.293951Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:05.294072Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:05.294237Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:     Metadata:
+2026-02-22T04:46:05.294663Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       BPS             : 9130526
+2026-02-22T04:46:05.294894Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:05.295032Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:05.295344Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.295527Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.296332Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:05.296522Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:05.296670Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:05.296866Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:     Metadata:
+2026-02-22T04:46:05.297101Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       BPS             : 640000
+2026-02-22T04:46:05.297268Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:05.297589Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:05.297705Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.297823Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.298312Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:05.298805Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:05.299199Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:     Metadata:
+2026-02-22T04:46:05.299543Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       title           : English [SDH]
+2026-02-22T04:46:05.299673Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       BPS             : 106
+2026-02-22T04:46:05.299854Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:05.300354Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:05.300520Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.300913Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.301435Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:05.301865Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:05.302565Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: Stream mapping:
+2026-02-22T04:46:05.303632Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (libx264))
+2026-02-22T04:46:05.304348Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:05.343256Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [libx264 @ 000002220cecb640] using SAR=1/1
+2026-02-22T04:46:05.344065Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [libx264 @ 000002220cecb640] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+2026-02-22T04:46:05.346080Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [libx264 @ 000002220cecb640] profile High, level 4.1, 4:2:0, 8-bit
+2026-02-22T04:46:05.346726Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [libx264 @ 000002220cecb640] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=1 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=2 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=22 lookahead_threads=5 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=1 keyint=48 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=10 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 vbv_maxrate=4200 vbv_bufsize=5600 crf_max=0.0 nal_hrd=none filler=0 ip_ratio=1.40 aq=1:1.00
+2026-02-22T04:46:05.347107Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'init.mp4' for writing
+2026-02-22T04:46:05.347505Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:05.347906Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Metadata:
+2026-02-22T04:46:05.348270Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:05.348366Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:05.348500Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Metadata:
+2026-02-22T04:46:05.349120Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:05.349309Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:05.348752Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Stream #0:0: Video: h264, yuv420p(tv, bt709, progressive), 1280x720 [SAR 1:1 DAR 16:9], q=2-31, 2800 kb/s, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:05.349769Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:05.350224Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:     Metadata:
+2026-02-22T04:46:05.350621Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:     Metadata:
+2026-02-22T04:46:05.350938Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       encoder         : Lavc62.11.100 libx264
+2026-02-22T04:46:05.351087Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       BPS             : 9130526
+2026-02-22T04:46:05.351794Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       BPS             : 9130526
+2026-02-22T04:46:05.352189Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:05.352260Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:05.353115Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:05.352659Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:05.353269Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.353620Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.354432Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.354640Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.354830Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:05.355844Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:05.355070Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:05.356022Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:05.356173Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:     Side data:
+2026-02-22T04:46:05.356958Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       cpb: bitrate max/min/avg: 4200000/0/2800000 buffer size: 5600000 vbv_delay: N/A
+2026-02-22T04:46:05.356617Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:     Metadata:
+2026-02-22T04:46:05.357091Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 128 kb/s (default)
+2026-02-22T04:46:05.357603Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       BPS             : 640000
+2026-02-22T04:46:05.358221Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:     Metadata:
+2026-02-22T04:46:05.358350Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:05.358512Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:05.358774Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       BPS             : 640000
+2026-02-22T04:46:05.358646Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:05.358938Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:05.359602Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:05.359471Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.360016Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.359752Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.360273Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:05.361101Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:05.360999Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.361429Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:     Metadata:
+2026-02-22T04:46:05.361877Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       title           : English [SDH]
+2026-02-22T04:46:05.361564Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:05.362665Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       BPS             : 106
+2026-02-22T04:46:05.363779Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:05.364007Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:05.364714Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.365607Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.366331Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:05.366581Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:05.366850Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: Stream mapping:
+2026-02-22T04:46:05.367390Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (libx264))
+2026-02-22T04:46:05.367648Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:05.382740Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [libx264 @ 000001b0b927b640] using SAR=1280/1281
+2026-02-22T04:46:05.384972Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [libx264 @ 000001b0b927b640] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+2026-02-22T04:46:05.387292Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [libx264 @ 000001b0b927b640] profile High, level 4.1, 4:2:0, 8-bit
+2026-02-22T04:46:05.387740Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [libx264 @ 000001b0b927b640] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=1 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=2 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=15 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=1 keyint=48 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=10 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 vbv_maxrate=2100 vbv_bufsize=2800 crf_max=0.0 nal_hrd=none filler=0 ip_ratio=1.40 aq=1:1.00
+2026-02-22T04:46:05.388246Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'init.mp4' for writing
+2026-02-22T04:46:05.388493Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:05.388698Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Metadata:
+2026-02-22T04:46:05.388875Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:05.389297Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Stream #0:0: Video: h264, yuv420p(tv, bt709, progressive), 854x480 [SAR 1280:1281 DAR 16:9], q=2-31, 1400 kb/s, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:05.389901Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:     Metadata:
+2026-02-22T04:46:05.390818Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       encoder         : Lavc62.11.100 libx264
+2026-02-22T04:46:05.391310Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       BPS             : 9130526
+2026-02-22T04:46:05.391460Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:05.393243Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:05.394078Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.394861Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.395774Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:05.396611Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:     Side data:
+2026-02-22T04:46:05.396817Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       cpb: bitrate max/min/avg: 2100000/0/1400000 buffer size: 2800000 vbv_delay: N/A
+2026-02-22T04:46:05.397108Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 128 kb/s (default)
+2026-02-22T04:46:05.397351Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:     Metadata:
+2026-02-22T04:46:05.397466Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:05.399203Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       BPS             : 640000
+2026-02-22T04:46:05.400677Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:05.400978Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:05.401185Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.401779Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.403147Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:05.461870Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [libx264 @ 000001f1eecba180] using SAR=1/1
+2026-02-22T04:46:05.462252Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [libx264 @ 000001f1eecba180] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+2026-02-22T04:46:05.466215Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [libx264 @ 000001f1eecba180] profile High, level 4.1, 4:2:0, 8-bit
+2026-02-22T04:46:05.466488Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [libx264 @ 000001f1eecba180] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=1 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=2 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=11 lookahead_threads=2 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=1 keyint=48 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=10 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 vbv_maxrate=1200 vbv_bufsize=1600 crf_max=0.0 nal_hrd=none filler=0 ip_ratio=1.40 aq=1:1.00
+2026-02-22T04:46:05.466805Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'init.mp4' for writing
+2026-02-22T04:46:05.467164Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:05.467367Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Metadata:
+2026-02-22T04:46:05.467663Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:05.467881Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Stream #0:0: Video: h264, yuv420p(tv, bt709, progressive), 640x360 [SAR 1:1 DAR 16:9], q=2-31, 800 kb/s, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:05.468087Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:     Metadata:
+2026-02-22T04:46:05.468471Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       encoder         : Lavc62.11.100 libx264
+2026-02-22T04:46:05.469090Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       BPS             : 9130526
+2026-02-22T04:46:05.469645Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:05.470792Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:05.471035Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.471166Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.471392Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:05.471580Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:     Side data:
+2026-02-22T04:46:05.472099Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       cpb: bitrate max/min/avg: 1200000/0/800000 buffer size: 1600000 vbv_delay: N/A
+2026-02-22T04:46:05.474005Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 96 kb/s (default)
+2026-02-22T04:46:05.474288Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:     Metadata:
+2026-02-22T04:46:05.474488Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:05.474664Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       BPS             : 640000
+2026-02-22T04:46:05.474871Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:05.475062Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:05.475232Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.475404Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.475526Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:05.522731Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'init.mp4' for writing
+2026-02-22T04:46:05.523240Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:05.524537Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Metadata:
+2026-02-22T04:46:05.525163Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:05.525412Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Stream #0:0: Video: h264 (High), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:05.528684Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:     Metadata:
+2026-02-22T04:46:05.531855Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       encoder         : Lavc62.11.100 h264_nvenc
+2026-02-22T04:46:05.532270Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       BPS             : 9130526
+2026-02-22T04:46:05.533048Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:05.533297Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:05.533550Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.533693Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.533993Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:05.534337Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:     Side data:
+2026-02-22T04:46:05.534693Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+2026-02-22T04:46:05.534837Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 192 kb/s (default)
+2026-02-22T04:46:05.534979Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:     Metadata:
+2026-02-22T04:46:05.535109Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:05.536071Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       BPS             : 640000
+2026-02-22T04:46:05.536604Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:05.536751Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:05.541524Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:05.541998Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:05.542170Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:05.748822Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'seg_000.m4s.tmp' for writing
+2026-02-22T04:46:05.767713Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=   49 fp[hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writinglapsed=0:00:00.51
+2026-02-22T04:46:05.836915Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS session 1fb90c41-4ce6-4981-9e4c-af27429fbd15 ready (first segment generated in 0.6s)
+2026-02-22T04:46:05.881436Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=   57 fp[hls @ 000002220cf33a40] Opening 'seg_000.m4s.tmp' for writing elapsed=0:00:00.50
+2026-02-22T04:46:05.907425Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:05.980637Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS session b47461b6-4c7d-47d3-90c1-c0118124723c ready (first segment generated in 0.8s)
+2026-02-22T04:46:05.986451Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'seg_001.m4s.tmp' for writing
+2026-02-22T04:46:06.013514Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.020705Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=   55 fp[hls @ 000001b0b92e3a40] Opening 'seg_000.m4s.tmp' for writing elapsed=0:00:00.51
+2026-02-22T04:46:06.042898Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.099341Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'seg_001.m4s.tmp' for writing
+2026-02-22T04:46:06.110005Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS session 036082ae-984f-4ac5-8eb6-0fd21378633b ready (first segment generated in 0.9s)
+2026-02-22T04:46:06.117816Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=   49 fp[hls @ 000001f1eed24ac0] Opening 'seg_000.m4s.tmp' for writing elapsed=0:00:00.51
+2026-02-22T04:46:06.119291Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.133374Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.180979Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_stream::hls: HLS session 03e343a2-c1a0-450b-9e63-5f658180a051 ready (first segment generated in 0.9s)
+2026-02-22T04:46:06.182027Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_api::handlers::stream: HLS master playlist for 5dbce626-0946-435a-aa93-f7837292a783: variants=4 reused=false mode=fast seek_source=none db=1ms seek=0ms session=1001ms total=1003ms
+2026-02-22T04:46:06.225351Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'seg_001.m4s.tmp' for writing
+2026-02-22T04:46:06.242294Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.244117Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'seg_002.m4s.tmp' for writing
+2026-02-22T04:46:06.261823Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.300462Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  165 fp[hls @ 000002220cf33a40] Opening 'seg_002.m4s.tmp' for writing elapsed=0:00:01.02
+2026-02-22T04:46:06.325192Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.337914Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'seg_001.m4s.tmp' for writing
+2026-02-22T04:46:06.358680Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.461569Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  160 fp[hls @ 000001b0b92e3a40] Opening 'seg_002.m4s.tmp' for writing elapsed=0:00:01.02
+2026-02-22T04:46:06.489204Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.506148Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'seg_003.m4s.tmp' for writing
+2026-02-22T04:46:06.534958Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.600812Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  142 fp[hls @ 000001f1eed24ac0] Opening 'seg_002.m4s.tmp' for writing elapsed=0:00:01.03
+2026-02-22T04:46:06.625100Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.631091Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  147 fp[hls @ 000001c76b6c3d40] Opening 'seg_003.m4s.tmp' for writing elapsed=0:00:01.02
+2026-02-22T04:46:06.651143Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.696092Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'seg_003.m4s.tmp' for writing
+2026-02-22T04:46:06.717895Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.752609Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'seg_004.m4s.tmp' for writing
+2026-02-22T04:46:06.775507Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.844855Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'seg_003.m4s.tmp' for writing
+2026-02-22T04:46:06.864445Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.891256Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  216 fp[hls @ 000001c76b6c3d40] Opening 'seg_004.m4s.tmp' for writing elapsed=0:00:01.53
+2026-02-22T04:46:06.917755Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.928284Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  263 fp[hls @ 000001b0b92e3a40] Opening 'seg_004.m4s.tmp' for writing elapsed=0:00:01.54
+2026-02-22T04:46:06.950392Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:06.973553Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  271 fp[hls @ 000002220cf33a40] Opening 'seg_005.m4s.tmp' for writing elapsed=0:00:01.53
+2026-02-22T04:46:06.993723Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.110522Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  245 fp[hls @ 000001f1eed24ac0] Opening 'seg_004.m4s.tmp' for writing elapsed=0:00:01.54
+2026-02-22T04:46:07.138259Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.147068Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'seg_005.m4s.tmp' for writing
+2026-02-22T04:46:07.188646Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.207447Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'seg_005.m4s.tmp' for writing
+2026-02-22T04:46:07.210764Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'seg_006.m4s.tmp' for writing
+2026-02-22T04:46:07.227426Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.227730Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.376928Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'seg_005.m4s.tmp' for writing
+2026-02-22T04:46:07.379570Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  367 fp[hls @ 000001b0b92e3a40] Opening 'seg_006.m4s.tmp' for writing elapsed=0:00:02.06
+2026-02-22T04:46:07.400037Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.400302Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.438922Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  385 fp[hls @ 000002220cf33a40] Opening 'seg_007.m4s.tmp' for writing elapsed=0:00:02.05
+2026-02-22T04:46:07.487106Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.541782Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  343 fp[hls @ 000001f1eed24ac0] Opening 'seg_006.m4s.tmp' for writing elapsed=0:00:02.07
+2026-02-22T04:46:07.567249Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'seg_007.m4s.tmp' for writing
+2026-02-22T04:46:07.570072Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.584071Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.599137Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  303 fp[hls @ 000001c76b6c3d40] Opening 'seg_006.m4s.tmp' for writing elapsed=0:00:02.06
+2026-02-22T04:46:07.644411Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.710790Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'seg_008.m4s.tmp' for writing
+2026-02-22T04:46:07.743620Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.766930Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'seg_008.m4s.tmp' for writing
+2026-02-22T04:46:07.770813Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'seg_007.m4s.tmp' for writing
+2026-02-22T04:46:07.788484Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.805400Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.912798Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  365 fp[hls @ 000001c76b6c3d40] Opening 'seg_007.m4s.tmp' for writing elapsed=0:00:02.57
+2026-02-22T04:46:07.928177Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.936748Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  478 fp[hls @ 000002220cf33a40] Opening 'seg_009.m4s.tmp' for writing elapsed=0:00:02.57
+2026-02-22T04:46:07.953667Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:07.973098Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  456 fp[hls @ 000001f1eed24ac0] Opening 'seg_008.m4s.tmp' for writing elapsed=0:00:02.58
+2026-02-22T04:46:08.020035Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.028783Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  477 fp[hls @ 000001b0b92e3a40] Opening 'seg_009.m4s.tmp' for writing elapsed=0:00:02.58
+2026-02-22T04:46:08.045166Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.124896Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'seg_008.m4s.tmp' for writing
+2026-02-22T04:46:08.152098Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.193582Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'seg_009.m4s.tmp' for writing
+2026-02-22T04:46:08.217652Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.218984Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'seg_010.m4s.tmp' for writing
+2026-02-22T04:46:08.233356Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.284478Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'seg_010.m4s.tmp' for writing
+2026-02-22T04:46:08.420912Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.479025Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  475 fp[hls @ 000001c76b6c3d40] Opening 'seg_009.m4s.tmp' for writing elapsed=0:00:03.11
+2026-02-22T04:46:08.482425Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  546 fp[hls @ 000001f1eed24ac0] Opening 'seg_010.m4s.tmp' for writing elapsed=0:00:03.10
+2026-02-22T04:46:08.527711Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.535894Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.769577Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  556 fp[hls @ 000002220cf33a40] Opening 'seg_011.m4s.tmp' for writing elapsed=0:00:03.10
+2026-02-22T04:46:08.816142Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.820859Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  555 fp[hls @ 000001b0b92e3a40] Opening 'seg_011.m4s.tmp' for writing elapsed=0:00:03.10
+2026-02-22T04:46:08.870832Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  526 fp[hls @ 000001c76b6c3d40] Opening 'seg_010.m4s.tmp' for writing elapsed=0:00:03.62
+2026-02-22T04:46:08.874414Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.917836Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:08.929328Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'seg_011.m4s.tmp' for writing
+2026-02-22T04:46:08.968565Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:09.278041Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'seg_011.m4s.tmp' for writing
+2026-02-22T04:46:09.300968Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  605 fp[hls @ 000002220cf33a40] Opening 'seg_012.m4s.tmp' for writing elapsed=0:00:03.62
+2026-02-22T04:46:09.331665Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:09.337555Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:09.406062Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  596 fp[hls @ 000001f1eed24ac0] Opening 'seg_012.m4s.tmp' for writing elapsed=0:00:03.62
+2026-02-22T04:46:09.444223Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:09.462577Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  596 fp[hls @ 000001b0b92e3a40] Opening 'seg_012.m4s.tmp' for writing/A speed=6.43x elapsed=0:00:04.13
+2026-02-22T04:46:09.499087Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:09.815868Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  655 fp[hls @ 000001f1eed24ac0] Opening 'seg_013.m4s.tmp' for writing elapsed=0:00:04.14
+2026-02-22T04:46:09.841410Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  582 fp[hls @ 000001c76b6c3d40] Opening 'seg_012.m4s.tmp' for writing elapsed=0:00:04.13
+2026-02-22T04:46:09.861475Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  652 fp[hls @ 000002220cf33a40] Opening 'seg_013.m4s.tmp' for writing elapsed=0:00:04.13
+2026-02-22T04:46:09.877490Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:09.887547Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:09.895584Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:10.035056Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  684 fp[hls @ 000001b0b92e3a40] Opening 'seg_013.m4s.tmp' for writing elapsed=0:00:04.65
+2026-02-22T04:46:10.074712Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:10.254335Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  625 fp[hls @ 000001c76b6c3d40] Opening 'seg_013.m4s.tmp' for writing elapsed=0:00:04.66
+2026-02-22T04:46:10.313242Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:10.358122Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  710 fp[hls @ 000001f1eed24ac0] Opening 'seg_014.m4s.tmp' for writing elapsed=0:00:04.65
+2026-02-22T04:46:10.393970Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:10.405063Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  692 fp[hls @ 000002220cf33a40] Opening 'seg_014.m4s.tmp' for writing elapsed=0:00:04.65
+2026-02-22T04:46:10.449271Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  740 fp[hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writinglapsed=0:00:05.17
+2026-02-22T04:46:10.604775Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  728 fp[hls @ 000001b0b92e3a40] Opening 'seg_014.m4s.tmp' for writing elapsed=0:00:05.16
+2026-02-22T04:46:10.675080Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:10.836158Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  684 fp[hls @ 000001c76b6c3d40] Opening 'seg_014.m4s.tmp' for writing elapsed=0:00:05.17
+2026-02-22T04:46:10.883190Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  758 fp[hls @ 000001f1eed24ac0] Opening 'seg_015.m4s.tmp' for writing elapsed=0:00:05.18
+2026-02-22T04:46:10.889607Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:10.989791Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: [hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:11.014069Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  782 fp[hls @ 000002220cf33a40] Opening 'seg_015.m4s.tmp' for writing elapsed=0:00:05.68
+2026-02-22T04:46:11.055971Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:11.277075Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  769 fp[hls @ 000001b0b92e3a40] Opening 'seg_015.m4s.tmp' for writing elapsed=0:00:05.69
+2026-02-22T04:46:11.327583Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: [hls @ 000001b0b92e3a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:11.336698Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  721 fp[hls @ 000001c76b6c3d40] Opening 'seg_015.m4s.tmp' for writing elapsed=0:00:05.69
+2026-02-22T04:46:11.428094Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: [hls @ 000001c76b6c3d40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:11.536113Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  800 fp[hls @ 000001f1eed24ac0] Opening 'seg_016.m4s.tmp' for writing elapsed=0:00:05.71
+2026-02-22T04:46:11.622445Z  WARN ferrite_stream::hls: ffmpeg HLS [03e343a2-c1a0-450b-9e63-5f658180a051]: frame=  836 fp[hls @ 000001f1eed24ac0] Opening 'playlist.m3u8.tmp' for writinglapsed=0:00:06.22
+2026-02-22T04:46:11.623781Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: frame=  823 fp[hls @ 000002220cf33a40] Opening 'seg_016.m4s.tmp' for writing elapsed=0:00:06.19
+2026-02-22T04:46:11.624656Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_api::handlers::stream: Transcode permit acquired: op=hls-seek media_id=5dbce626-0946-435a-aa93-f7837292a783 wait_ms=0.0
+2026-02-22T04:46:11.657808Z  WARN ferrite_stream::hls: ffmpeg HLS [b47461b6-4c7d-47d3-90c1-c0118124723c]: [hls @ 000002220cf33a40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:11.685892Z  WARN ferrite_stream::hls: ffmpeg HLS [036082ae-984f-4ac5-8eb6-0fd21378633b]: frame=  806 fps=130 q=28.0 size=N/A time=00:00:33.53 bitrate=N/A speed= 5.4x elapsed=0:00:06.20
+2026-02-22T04:46:11.710751Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Destroyed HLS session 03e343a2-c1a0-450b-9e63-5f658180a051
+2026-02-22T04:46:11.717959Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Destroyed HLS session 036082ae-984f-4ac5-8eb6-0fd21378633b
+2026-02-22T04:46:11.723025Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Destroyed HLS session b47461b6-4c7d-47d3-90c1-c0118124723c
+2026-02-22T04:46:11.746834Z  WARN ferrite_stream::hls: ffmpeg HLS [1fb90c41-4ce6-4981-9e4c-af27429fbd15]: frame=  769 fps=124 q=16.0 size=N/A time=00:00:32.15 bitrate=N/A speed=5.17x elapsed=0:00:06.21
+2026-02-22T04:46:11.803902Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Destroyed HLS session 1fb90c41-4ce6-4981-9e4c-af27429fbd15
+2026-02-22T04:46:11.804278Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Creating single HLS session for seek: media 5dbce626-0946-435a-aa93-f7837292a783 at 329.2s variant=1080p
+2026-02-22T04:46:11.805842Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Creating HLS session b39f9019-134e-4e25-b794-4c0bd7bbb351 for media 5dbce626-0946-435a-aa93-f7837292a783 at 329.2s variant=1080p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:11.806336Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:11.806692Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-ss", "329.152", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-ss", "0.000", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p", "-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll", "-rc", "vbr", "-cq", "23", "-profile:v", "high", "-level", "4.1", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "192k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:11.878115Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:11.878539Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Metadata:
+2026-02-22T04:46:11.878722Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:11.879297Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:11.879637Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:11.880092Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:     Metadata:
+2026-02-22T04:46:11.880435Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       BPS             : 9130526
+2026-02-22T04:46:11.880793Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:11.881178Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:11.881505Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:11.881979Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:11.882387Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:11.882850Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:11.883287Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:11.883592Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:     Metadata:
+2026-02-22T04:46:11.883870Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       BPS             : 640000
+2026-02-22T04:46:11.884213Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:11.884472Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:11.884781Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:11.885079Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:11.885374Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:11.885713Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:11.886071Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:     Metadata:
+2026-02-22T04:46:11.886408Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       title           : English [SDH]
+2026-02-22T04:46:11.886719Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       BPS             : 106
+2026-02-22T04:46:11.886986Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:11.887390Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:11.887536Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:11.887676Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:11.887891Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:11.888606Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:11.888909Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: Stream mapping:
+2026-02-22T04:46:11.889354Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (h264_nvenc))
+2026-02-22T04:46:11.889720Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:12.228293Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'init.mp4' for writing
+2026-02-22T04:46:12.228894Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:12.229691Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Metadata:
+2026-02-22T04:46:12.230374Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:12.231221Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Stream #0:0: Video: h264 (High), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:12.233114Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:     Metadata:
+2026-02-22T04:46:12.233830Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       encoder         : Lavc62.11.100 h264_nvenc
+2026-02-22T04:46:12.234405Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       BPS             : 9130526
+2026-02-22T04:46:12.235967Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:12.236139Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:12.236510Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:12.237467Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:12.238013Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:12.238336Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:     Side data:
+2026-02-22T04:46:12.238669Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+2026-02-22T04:46:12.239219Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 192 kb/s (default)
+2026-02-22T04:46:12.239474Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:     Metadata:
+2026-02-22T04:46:12.239676Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:12.239910Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       BPS             : 640000
+2026-02-22T04:46:12.240142Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:12.240374Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:12.240573Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:12.240824Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:12.241102Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:12.468767Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: frame=   49 fp[hls @ 0000027c8d8f3b80] Opening 'seg_000.m4s.tmp' for writing elapsed=0:00:00.51
+2026-02-22T04:46:12.476575Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:12.700598Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: HLS session b39f9019-134e-4e25-b794-4c0bd7bbb351 ready (first segment generated in 0.9s)
+2026-02-22T04:46:12.701929Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=329.152&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_api::handlers::stream: HLS seek for 5dbce626-0946-435a-aa93-f7837292a783: start=329.2s mode=fast seek_source=requested db=7ms seek=1ms session=1032ms total=1085ms
+2026-02-22T04:46:12.756046Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=329.152&playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_api::handlers::stream: HLS master playlist for 5dbce626-0946-435a-aa93-f7837292a783: variants=1 reused=true mode=fast seek_source=requested db=3ms seek=1ms session=0ms total=4ms
+2026-02-22T04:46:13.195239Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'seg_001.m4s.tmp' for writing
+2026-02-22T04:46:13.197511Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:13.408596Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: frame=   97 fp[hls @ 0000027c8d8f3b80] Opening 'seg_002.m4s.tmp' for writing elapsed=0:00:01.04
+2026-02-22T04:46:13.416019Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:13.548646Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: frame=  156 fp[hls @ 0000027c8d8f3b80] Opening 'seg_003.m4s.tmp' for writing elapsed=0:00:01.55
+2026-02-22T04:46:13.561890Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:13.707186Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'seg_004.m4s.tmp' for writing
+2026-02-22T04:46:14.024434Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: frame=  241 fp[hls @ 0000027c8d8f3b80] Opening 'playlist.m3u8.tmp' for writinglapsed=0:00:02.07
+2026-02-22T04:46:14.132347Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'seg_005.m4s.tmp' for writing
+2026-02-22T04:46:14.140424Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:14.241602Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'seg_006.m4s.tmp' for writing
+2026-02-22T04:46:14.250534Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:14.345561Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'seg_007.m4s.tmp' for writing
+2026-02-22T04:46:14.355198Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:14.574319Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: [hls @ 0000027c8d8f3b80] Opening 'seg_008.m4s.tmp' for writing
+2026-02-22T04:46:14.589213Z  WARN ferrite_stream::hls: ffmpeg HLS [b39f9019-134e-4e25-b794-4c0bd7bbb351]: frame=  433 fp[hls @ 0000027c8d8f3b80] Opening 'playlist.m3u8.tmp' for writinglapsed=0:00:02.58
+2026-02-22T04:46:14.744224Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=736.832&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_api::handlers::stream: Transcode permit acquired: op=hls-seek media_id=5dbce626-0946-435a-aa93-f7837292a783 wait_ms=0.0
+2026-02-22T04:46:14.853951Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=736.832&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Destroyed HLS session b39f9019-134e-4e25-b794-4c0bd7bbb351
+2026-02-22T04:46:14.854386Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=736.832&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Creating single HLS session for seek: media 5dbce626-0946-435a-aa93-f7837292a783 at 736.8s variant=1080p
+2026-02-22T04:46:14.855669Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=736.832&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Creating HLS session 095aaf19-6e9a-4dfc-af5e-d28afb90e2a8 for media 5dbce626-0946-435a-aa93-f7837292a783 at 736.8s variant=1080p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:14.855944Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=736.832&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:14.856230Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=736.832&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-ss", "736.832", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-ss", "0.000", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p", "-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll", "-rc", "vbr", "-cq", "23", "-profile:v", "high", "-level", "4.1", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "192k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:14.937093Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:14.937637Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Metadata:
+2026-02-22T04:46:14.938023Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:14.938209Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:14.938601Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:14.938875Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:     Metadata:
+2026-02-22T04:46:14.939161Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       BPS             : 9130526
+2026-02-22T04:46:14.939341Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:14.939509Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:14.939746Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:14.939997Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:14.940341Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:14.940749Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:14.940956Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:14.941295Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:     Metadata:
+2026-02-22T04:46:14.941696Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       BPS             : 640000
+2026-02-22T04:46:14.942010Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:14.942353Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:14.942681Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:14.942951Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:14.943323Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:14.943668Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:14.944202Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:     Metadata:
+2026-02-22T04:46:14.944530Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       title           : English [SDH]
+2026-02-22T04:46:14.944718Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       BPS             : 106
+2026-02-22T04:46:14.945254Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:14.945757Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:14.946381Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:14.947208Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:14.947728Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:14.948238Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:14.948529Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: Stream mapping:
+2026-02-22T04:46:14.948710Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (h264_nvenc))
+2026-02-22T04:46:14.948888Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:15.275327Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'init.mp4' for writing
+2026-02-22T04:46:15.276007Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:15.276293Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Metadata:
+2026-02-22T04:46:15.276624Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:15.276879Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Stream #0:0: Video: h264 (High), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:15.277117Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:     Metadata:
+2026-02-22T04:46:15.277338Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       encoder         : Lavc62.11.100 h264_nvenc
+2026-02-22T04:46:15.277651Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       BPS             : 9130526
+2026-02-22T04:46:15.277878Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:15.278166Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:15.278369Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:15.278601Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:15.278831Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:15.279064Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:     Side data:
+2026-02-22T04:46:15.279298Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+2026-02-22T04:46:15.279683Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 192 kb/s (default)
+2026-02-22T04:46:15.279904Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:     Metadata:
+2026-02-22T04:46:15.280128Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:15.280394Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       BPS             : 640000
+2026-02-22T04:46:15.280915Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:15.281291Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:15.281682Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:15.282102Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:15.283314Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:15.382324Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_000.m4s.tmp' for writing
+2026-02-22T04:46:15.391875Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:15.441804Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=736.832&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: HLS session 095aaf19-6e9a-4dfc-af5e-d28afb90e2a8 ready (first segment generated in 0.6s)
+2026-02-22T04:46:15.443284Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=736.832&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_api::handlers::stream: HLS seek for 5dbce626-0946-435a-aa93-f7837292a783: start=736.8s mode=fast seek_source=requested db=125ms seek=2ms session=663ms total=980ms
+2026-02-22T04:46:15.466372Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=736.832&playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_api::handlers::stream: HLS master playlist for 5dbce626-0946-435a-aa93-f7837292a783: variants=1 reused=true mode=fast seek_source=requested db=1ms seek=1ms session=0ms total=3ms
+2026-02-22T04:46:15.486704Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: frame=   81 fp[hls @ 000002640c1e3b80] Opening 'seg_001.m4s.tmp' for writing0 speed= 6.6x elapsed=0:00:00.51
+2026-02-22T04:46:15.498244Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:15.592218Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_002.m4s.tmp' for writing
+2026-02-22T04:46:15.604128Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:15.704525Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_003.m4s.tmp' for writing
+2026-02-22T04:46:15.715168Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:15.836444Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_004.m4s.tmp' for writing
+2026-02-22T04:46:15.846861Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:15.944264Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_005.m4s.tmp' for writing
+2026-02-22T04:46:15.954321Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.050454Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: frame=  296 fp[hls @ 000002640c1e3b80] Opening 'seg_006.m4s.tmp' for writing0 speed=  12x elapsed=0:00:01.02
+2026-02-22T04:46:16.059774Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.154549Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_007.m4s.tmp' for writing
+2026-02-22T04:46:16.165704Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.260727Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_008.m4s.tmp' for writing
+2026-02-22T04:46:16.274819Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.370123Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_009.m4s.tmp' for writing
+2026-02-22T04:46:16.381498Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.473152Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_010.m4s.tmp' for writing
+2026-02-22T04:46:16.482206Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.573981Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: frame=  529 fp[hls @ 000002640c1e3b80] Opening 'seg_011.m4s.tmp' for writing0 speed=14.4x elapsed=0:00:01.54
+2026-02-22T04:46:16.582978Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.669147Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_012.m4s.tmp' for writing
+2026-02-22T04:46:16.678548Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.769135Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_013.m4s.tmp' for writing
+2026-02-22T04:46:16.777947Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.868194Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_014.m4s.tmp' for writing
+2026-02-22T04:46:16.879451Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:16.969695Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_015.m4s.tmp' for writing
+2026-02-22T04:46:16.978146Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:17.069058Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: frame=  785 fp[hls @ 000002640c1e3b80] Opening 'seg_016.m4s.tmp' for writing0 speed=15.9x elapsed=0:00:02.06
+2026-02-22T04:46:17.078305Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:17.166902Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_017.m4s.tmp' for writing
+2026-02-22T04:46:17.175136Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:17.266486Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_018.m4s.tmp' for writing
+2026-02-22T04:46:17.275453Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:17.363482Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'seg_019.m4s.tmp' for writing
+2026-02-22T04:46:17.371060Z  WARN ferrite_stream::hls: ffmpeg HLS [095aaf19-6e9a-4dfc-af5e-d28afb90e2a8]: [hls @ 000002640c1e3b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:17.384088Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=190.474&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_api::handlers::stream: Transcode permit acquired: op=hls-seek media_id=5dbce626-0946-435a-aa93-f7837292a783 wait_ms=0.0
+2026-02-22T04:46:17.465466Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=190.474&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Destroyed HLS session 095aaf19-6e9a-4dfc-af5e-d28afb90e2a8
+2026-02-22T04:46:17.465817Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=190.474&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Creating single HLS session for seek: media 5dbce626-0946-435a-aa93-f7837292a783 at 190.5s variant=1080p
+2026-02-22T04:46:17.466986Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=190.474&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Creating HLS session 1f2b4e31-b738-4890-9ca7-bc0bf10eb892 for media 5dbce626-0946-435a-aa93-f7837292a783 at 190.5s variant=1080p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:17.467270Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=190.474&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:17.467731Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=190.474&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-ss", "190.474", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-ss", "0.000", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p", "-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll", "-rc", "vbr", "-cq", "23", "-profile:v", "high", "-level", "4.1", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "192k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:17.542312Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:17.542646Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Metadata:
+2026-02-22T04:46:17.542823Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:17.542970Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:17.543343Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:17.543546Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:     Metadata:
+2026-02-22T04:46:17.543742Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       BPS             : 9130526
+2026-02-22T04:46:17.544912Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:17.545447Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:17.545896Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:17.546223Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:17.546401Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:17.546770Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:17.546973Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:17.547159Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:     Metadata:
+2026-02-22T04:46:17.547660Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       BPS             : 640000
+2026-02-22T04:46:17.548017Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:17.548312Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:17.549340Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:17.549700Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:17.550014Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:17.550180Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:17.550370Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:     Metadata:
+2026-02-22T04:46:17.550517Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       title           : English [SDH]
+2026-02-22T04:46:17.550628Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       BPS             : 106
+2026-02-22T04:46:17.550737Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:17.550848Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:17.550948Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:17.551061Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:17.551173Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:17.551444Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:17.551636Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: Stream mapping:
+2026-02-22T04:46:17.551813Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (h264_nvenc))
+2026-02-22T04:46:17.551957Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:17.790550Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'init.mp4' for writing
+2026-02-22T04:46:17.791136Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:17.791390Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Metadata:
+2026-02-22T04:46:17.791760Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:17.792020Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Stream #0:0: Video: h264 (High), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:17.792245Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:     Metadata:
+2026-02-22T04:46:17.792539Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       encoder         : Lavc62.11.100 h264_nvenc
+2026-02-22T04:46:17.792905Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       BPS             : 9130526
+2026-02-22T04:46:17.793371Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:17.793718Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:17.793975Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:17.794256Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:17.794899Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:17.795352Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:     Side data:
+2026-02-22T04:46:17.795537Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+2026-02-22T04:46:17.796304Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 192 kb/s (default)
+2026-02-22T04:46:17.796747Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:     Metadata:
+2026-02-22T04:46:17.797054Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:17.797484Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       BPS             : 640000
+2026-02-22T04:46:17.797867Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:17.798072Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:17.799144Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:17.799869Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:17.800597Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:17.914083Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_000.m4s.tmp' for writing
+2026-02-22T04:46:17.922591Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:17.977079Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=190.474&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: HLS session 1f2b4e31-b738-4890-9ca7-bc0bf10eb892 ready (first segment generated in 0.5s)
+2026-02-22T04:46:17.977778Z  INFO http_request{method=POST uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/seek?start=190.474&playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_api::handlers::stream: HLS seek for 5dbce626-0946-435a-aa93-f7837292a783: start=190.5s mode=fast seek_source=requested db=1ms seek=1ms session=593ms total=596ms
+2026-02-22T04:46:17.991538Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=190.474&playback_session_id=e7437d42%2Db1c9%2D4ae1%2Db3f2%2D27134056d86a}: ferrite_api::handlers::stream: HLS master playlist for 5dbce626-0946-435a-aa93-f7837292a783: variants=1 reused=true mode=fast seek_source=requested db=1ms seek=0ms session=0ms total=2ms
+2026-02-22T04:46:18.069323Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: frame=   97 fp[hls @ 00000277c0a83b80] Opening 'seg_001.m4s.tmp' for writing elapsed=0:00:00.52
+2026-02-22T04:46:18.090248Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:18.215678Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_002.m4s.tmp' for writing
+2026-02-22T04:46:18.225735Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:18.349231Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_003.m4s.tmp' for writing
+2026-02-22T04:46:18.358466Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:18.469733Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_004.m4s.tmp' for writing
+2026-02-22T04:46:18.478915Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:18.585301Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: frame=  287 fp[hls @ 00000277c0a83b80] Opening 'seg_005.m4s.tmp' for writing elapsed=0:00:01.02
+2026-02-22T04:46:18.595305Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:18.687176Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_006.m4s.tmp' for writing
+2026-02-22T04:46:18.696102Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:18.798163Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_007.m4s.tmp' for writing
+2026-02-22T04:46:18.807547Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:18.900625Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_008.m4s.tmp' for writing
+2026-02-22T04:46:18.909774Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.001788Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_009.m4s.tmp' for writing
+2026-02-22T04:46:19.010464Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.101293Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: frame=  527 fp[hls @ 00000277c0a83b80] Opening 'seg_010.m4s.tmp' for writing elapsed=0:00:01.55
+2026-02-22T04:46:19.112670Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.202669Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_011.m4s.tmp' for writing
+2026-02-22T04:46:19.214145Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.305239Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_012.m4s.tmp' for writing
+2026-02-22T04:46:19.315859Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.407134Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_013.m4s.tmp' for writing
+2026-02-22T04:46:19.416448Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.506048Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_014.m4s.tmp' for writing
+2026-02-22T04:46:19.511294Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.601023Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_015.m4s.tmp' for writing
+2026-02-22T04:46:19.605772Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.693025Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: frame=  769 fp[hls @ 00000277c0a83b80] Opening 'seg_016.m4s.tmp' for writing elapsed=0:00:02.06
+2026-02-22T04:46:19.697661Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.785682Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_017.m4s.tmp' for writing
+2026-02-22T04:46:19.791460Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.879769Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'seg_018.m4s.tmp' for writing
+2026-02-22T04:46:19.883582Z  WARN ferrite_stream::hls: ffmpeg HLS [1f2b4e31-b738-4890-9ca7-bc0bf10eb892]: [hls @ 00000277c0a83b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:19.989902Z  INFO http_request{method=DELETE uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/session/stop?playback_session_id=e7437d42-b1c9-4ae1-b3f2-27134056d86a}: ferrite_stream::hls: Destroyed HLS session 1f2b4e31-b738-4890-9ca7-bc0bf10eb892
+2026-02-22T04:46:22.331980Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_api::handlers::stream: Transcode permit acquired: op=hls-master media_id=5dbce626-0946-435a-aa93-f7837292a783 wait_ms=0.0
+2026-02-22T04:46:22.332196Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: Creating 4 ABR variant sessions for media 5dbce626-0946-435a-aa93-f7837292a783 (source=1920x1080)
+2026-02-22T04:46:22.333492Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: Creating HLS session 51941939-3e4d-4cad-aaa4-10ae36a6781b for media 5dbce626-0946-435a-aa93-f7837292a783 at 192.2s variant=1080p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:22.333799Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:22.334067Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-ss", "192.158", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-ss", "0.000", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p", "-c:v", "h264_nvenc", "-preset", "p4", "-tune", "ll", "-rc", "vbr", "-cq", "23", "-profile:v", "high", "-level", "4.1", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "192k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:22.356267Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: Creating HLS session 0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a for media 5dbce626-0946-435a-aa93-f7837292a783 at 192.2s variant=720p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:22.356609Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS variant scaling active — falling back to software encoder
+2026-02-22T04:46:22.357141Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:22.358195Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-ss", "192.158", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-ss", "0.000", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p,scale=-2:720", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-profile:v", "high", "-level", "4.1", "-b:v", "2800k", "-maxrate", "4200k", "-bufsize", "5600k", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:22.384622Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: Creating HLS session 5e396190-60e0-425c-87d3-afff2131b752 for media 5dbce626-0946-435a-aa93-f7837292a783 at 192.2s variant=480p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:22.385461Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS variant scaling active — falling back to software encoder
+2026-02-22T04:46:22.385930Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:22.386501Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-ss", "192.158", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-ss", "0.000", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p,scale=-2:480", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-profile:v", "high", "-level", "4.1", "-b:v", "1400k", "-maxrate", "2100k", "-bufsize", "2800k", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:22.395185Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:22.395726Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Metadata:
+2026-02-22T04:46:22.396336Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:22.396700Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:22.396942Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:22.397411Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:     Metadata:
+2026-02-22T04:46:22.397577Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       BPS             : 9130526
+2026-02-22T04:46:22.398130Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:22.398266Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:22.398385Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.398721Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.399311Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:22.399459Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:22.399594Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:22.399722Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:     Metadata:
+2026-02-22T04:46:22.400075Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       BPS             : 640000
+2026-02-22T04:46:22.400449Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:22.400802Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:22.401216Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.401689Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.401990Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:22.402155Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:22.402452Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:     Metadata:
+2026-02-22T04:46:22.403369Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       title           : English [SDH]
+2026-02-22T04:46:22.403611Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       BPS             : 106
+2026-02-22T04:46:22.403775Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:22.403929Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:22.404074Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.404220Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.404570Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:22.405278Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:22.406739Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: Stream mapping:
+2026-02-22T04:46:22.406865Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (h264_nvenc))
+2026-02-22T04:46:22.407084Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:22.410627Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: Creating HLS session cee7f91c-0d8f-4af5-810a-eb7926783150 for media 5dbce626-0946-435a-aa93-f7837292a783 at 192.2s variant=360p (C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv)
+2026-02-22T04:46:22.410842Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS variant scaling active — falling back to software encoder
+2026-02-22T04:46:22.411058Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: 10-bit SDR detected (pix=yuv420p10le, transfer=Some("bt709")), applying bit-depth conversion only
+2026-02-22T04:46:22.411351Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS ffmpeg args: ["-hide_banner", "-nostdin", "-ss", "192.158", "-i", "C:\\Users\\ryans\\Movies\\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv", "-ss", "0.000", "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p,scale=-2:360", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-profile:v", "high", "-level", "4.1", "-b:v", "800k", "-maxrate", "1200k", "-bufsize", "1600k", "-g", "48", "-keyint_min", "48", "-c:a", "aac", "-b:a", "96k", "-ac", "2", "-f", "hls", "-hls_time", "2", "-hls_list_size", "30", "-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", "seg_%03d.m4s", "-hls_flags", "independent_segments+delete_segments+temp_file", "playlist.m3u8"]
+2026-02-22T04:46:22.427337Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:22.427783Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Metadata:
+2026-02-22T04:46:22.428081Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:22.428586Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:22.428752Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:22.429108Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:     Metadata:
+2026-02-22T04:46:22.429331Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       BPS             : 9130526
+2026-02-22T04:46:22.429704Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:22.429851Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:22.430153Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.430536Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.430730Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:22.430962Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:22.431566Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:22.432018Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:     Metadata:
+2026-02-22T04:46:22.432252Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       BPS             : 640000
+2026-02-22T04:46:22.432623Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:22.432981Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:22.433106Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.433222Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.433618Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:22.433926Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:22.434248Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:     Metadata:
+2026-02-22T04:46:22.434651Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       title           : English [SDH]
+2026-02-22T04:46:22.434940Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       BPS             : 106
+2026-02-22T04:46:22.435177Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:22.436332Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:22.436523Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.436734Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.436966Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:22.437407Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:22.437584Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: Stream mapping:
+2026-02-22T04:46:22.437767Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (libx264))
+2026-02-22T04:46:22.437931Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:22.467802Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:22.468794Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Metadata:
+2026-02-22T04:46:22.469685Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:22.470734Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:22.471840Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:22.472431Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:     Metadata:
+2026-02-22T04:46:22.473754Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       BPS             : 9130526
+2026-02-22T04:46:22.474009Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:22.474245Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:22.474784Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.475389Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.476286Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:22.476873Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:22.477683Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:22.478736Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:     Metadata:
+2026-02-22T04:46:22.479009Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       BPS             : 640000
+2026-02-22T04:46:22.479511Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:22.480123Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:22.480908Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.482933Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.483935Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:22.484317Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:22.484594Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:     Metadata:
+2026-02-22T04:46:22.484920Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       title           : English [SDH]
+2026-02-22T04:46:22.485197Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       BPS             : 106
+2026-02-22T04:46:22.485871Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:22.486165Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:22.487131Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.487469Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.487683Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:22.488459Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:22.489408Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: Stream mapping:
+2026-02-22T04:46:22.489831Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (libx264))
+2026-02-22T04:46:22.490069Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:22.662765Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: Input #0, matroska,webm, from 'C:\Users\ryans\Movies\Star.Trek.Lower.Decks.2020.S05E05.1080p.HEVC.x265-MeGusta.mkv':
+2026-02-22T04:46:22.663476Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Metadata:
+2026-02-22T04:46:22.663904Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:     ENCODER         : Lavf61.5.101
+2026-02-22T04:46:22.664925Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Duration: 00:24:29.21, start: 0.000000, bitrate: 1428 kb/s
+2026-02-22T04:46:22.666911Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Stream #0:0: Video: hevc (Main 10), yuv420p10le(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+2026-02-22T04:46:22.676940Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:     Metadata:
+2026-02-22T04:46:22.678155Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       BPS             : 9130526
+2026-02-22T04:46:22.679979Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:22.680424Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:22.680846Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.681425Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.682389Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       ENCODER         : Lavc61.11.100 libx265
+2026-02-22T04:46:22.682789Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:22.683097Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s, start 0.024000 (default)
+2026-02-22T04:46:22.683904Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:     Metadata:
+2026-02-22T04:46:22.684421Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       BPS             : 640000
+2026-02-22T04:46:22.684829Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:22.685176Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:22.685600Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.685937Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.686454Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:22.686728Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Stream #0:2(eng): Subtitle: ass (ssa)
+2026-02-22T04:46:22.687218Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:     Metadata:
+2026-02-22T04:46:22.687854Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       title           : English [SDH]
+2026-02-22T04:46:22.688316Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       BPS             : 106
+2026-02-22T04:46:22.689238Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_FRAMES: 588
+2026-02-22T04:46:22.690151Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_BYTES : 19142
+2026-02-22T04:46:22.690844Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.691240Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.691554Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       ENCODER         : Lavc61.11.100 ssa
+2026-02-22T04:46:22.692556Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       DURATION        : 00:24:21.372000000
+2026-02-22T04:46:22.693530Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: Stream mapping:
+2026-02-22T04:46:22.694778Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Stream #0:0 -> #0:0 (hevc (native) -> h264 (libx264))
+2026-02-22T04:46:22.695109Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Stream #0:1 -> #0:1 (eac3 (native) -> aac (native))
+2026-02-22T04:46:22.706845Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: [libx264 @ 0000020cd8a9fac0] using SAR=1/1
+2026-02-22T04:46:22.708074Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: [libx264 @ 0000020cd8a9fac0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+2026-02-22T04:46:22.715707Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: [libx264 @ 0000020cd8a9fac0] profile High, level 4.1, 4:2:0, 8-bit
+2026-02-22T04:46:22.716777Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: [libx264 @ 0000020cd8a9fac0] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=1 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=2 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=22 lookahead_threads=5 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=1 keyint=48 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=10 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 vbv_maxrate=4200 vbv_bufsize=5600 crf_max=0.0 nal_hrd=none filler=0 ip_ratio=1.40 aq=1:1.00
+2026-02-22T04:46:22.717871Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: [hls @ 0000020cd8a94f40] Opening 'init.mp4' for writing
+2026-02-22T04:46:22.718240Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:22.718972Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Metadata:
+2026-02-22T04:46:22.719352Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:22.719679Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Stream #0:0: Video: h264, yuv420p(tv, bt709, progressive), 1280x720 [SAR 1:1 DAR 16:9], q=2-31, 2800 kb/s, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:22.720302Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:     Metadata:
+2026-02-22T04:46:22.720558Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       encoder         : Lavc62.11.100 libx264
+2026-02-22T04:46:22.721393Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       BPS             : 9130526
+2026-02-22T04:46:22.722139Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:22.722488Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:22.723261Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.723711Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.725881Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:22.728911Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:     Side data:
+2026-02-22T04:46:22.730533Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       cpb: bitrate max/min/avg: 4200000/0/2800000 buffer size: 5600000 vbv_delay: N/A
+2026-02-22T04:46:22.732956Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 128 kb/s (default)
+2026-02-22T04:46:22.733386Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:     Metadata:
+2026-02-22T04:46:22.735399Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:22.736211Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       BPS             : 640000
+2026-02-22T04:46:22.736706Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:22.737553Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:22.738168Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.739006Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.740365Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:22.829230Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [libx264 @ 000002b50527fac0] using SAR=1280/1281
+2026-02-22T04:46:22.830023Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [libx264 @ 000002b50527fac0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+2026-02-22T04:46:22.836686Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [libx264 @ 000002b50527fac0] profile High, level 4.1, 4:2:0, 8-bit
+2026-02-22T04:46:22.837581Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [libx264 @ 000002b50527fac0] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=1 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=2 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=15 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=1 keyint=48 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=10 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 vbv_maxrate=2100 vbv_bufsize=2800 crf_max=0.0 nal_hrd=none filler=0 ip_ratio=1.40 aq=1:1.00
+2026-02-22T04:46:22.838279Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [hls @ 000002b505274f40] Opening 'init.mp4' for writing
+2026-02-22T04:46:22.838718Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:22.839795Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Metadata:
+2026-02-22T04:46:22.842534Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:22.847613Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Stream #0:0: Video: h264, yuv420p(tv, bt709, progressive), 854x480 [SAR 1280:1281 DAR 16:9], q=2-31, 1400 kb/s, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:22.851779Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:     Metadata:
+2026-02-22T04:46:22.855088Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       encoder         : Lavc62.11.100 libx264
+2026-02-22T04:46:22.863273Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       BPS             : 9130526
+2026-02-22T04:46:22.867841Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:22.868642Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:22.869474Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.869857Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.870233Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:22.871119Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:     Side data:
+2026-02-22T04:46:22.871469Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       cpb: bitrate max/min/avg: 2100000/0/1400000 buffer size: 2800000 vbv_delay: N/A
+2026-02-22T04:46:22.873524Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 128 kb/s (default)
+2026-02-22T04:46:22.875001Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:     Metadata:
+2026-02-22T04:46:22.875276Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:22.875487Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       BPS             : 640000
+2026-02-22T04:46:22.875903Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:22.877116Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:22.877443Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.879011Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.879855Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:22.925693Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'init.mp4' for writing
+2026-02-22T04:46:22.927678Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:22.928377Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Metadata:
+2026-02-22T04:46:22.928886Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:22.929560Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Stream #0:0: Video: h264 (High), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:22.930004Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:     Metadata:
+2026-02-22T04:46:22.933866Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       encoder         : Lavc62.11.100 h264_nvenc
+2026-02-22T04:46:22.934141Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       BPS             : 9130526
+2026-02-22T04:46:22.934349Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:22.934926Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:22.936648Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.937254Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.937564Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:22.937896Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:     Side data:
+2026-02-22T04:46:22.938167Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+2026-02-22T04:46:22.938581Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 192 kb/s (default)
+2026-02-22T04:46:22.938806Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:     Metadata:
+2026-02-22T04:46:22.942238Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:22.942654Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       BPS             : 640000
+2026-02-22T04:46:22.943162Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:22.943545Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:22.944337Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:22.955948Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:22.962759Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:23.098216Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [libx264 @ 00000295454ffac0] using SAR=1/1
+2026-02-22T04:46:23.099063Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [libx264 @ 00000295454ffac0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+2026-02-22T04:46:23.103247Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [libx264 @ 00000295454ffac0] profile High, level 4.1, 4:2:0, 8-bit
+2026-02-22T04:46:23.104660Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [libx264 @ 00000295454ffac0] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=1 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=2 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=11 lookahead_threads=2 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=1 keyint=48 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=10 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 vbv_maxrate=1200 vbv_bufsize=1600 crf_max=0.0 nal_hrd=none filler=0 ip_ratio=1.40 aq=1:1.00
+2026-02-22T04:46:23.105559Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [hls @ 00000295454f4f40] Opening 'init.mp4' for writing
+2026-02-22T04:46:23.105850Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: Output #0, hls, to 'playlist.m3u8':
+2026-02-22T04:46:23.106697Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Metadata:
+2026-02-22T04:46:23.107561Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:     encoder         : Lavf62.3.100
+2026-02-22T04:46:23.109082Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Stream #0:0: Video: h264, yuv420p(tv, bt709, progressive), 640x360 [SAR 1:1 DAR 16:9], q=2-31, 800 kb/s, 23.98 fps, 24k tbn (default)
+2026-02-22T04:46:23.109449Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:     Metadata:
+2026-02-22T04:46:23.109750Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       encoder         : Lavc62.11.100 libx264
+2026-02-22T04:46:23.110002Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       BPS             : 9130526
+2026-02-22T04:46:23.110226Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_FRAMES: 35225
+2026-02-22T04:46:23.111046Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_BYTES : 1676793787
+2026-02-22T04:46:23.112467Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:23.114234Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:23.115667Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       DURATION        : 00:24:29.176000000
+2026-02-22T04:46:23.116308Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:     Side data:
+2026-02-22T04:46:23.116614Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       cpb: bitrate max/min/avg: 1200000/0/800000 buffer size: 1600000 vbv_delay: N/A
+2026-02-22T04:46:23.117130Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:   Stream #0:1(eng): Audio: aac (LC), 48000 Hz, stereo, fltp, 96 kb/s (default)
+2026-02-22T04:46:23.119647Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:     Metadata:
+2026-02-22T04:46:23.120072Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       encoder         : Lavc62.11.100 aac
+2026-02-22T04:46:23.125518Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       BPS             : 640000
+2026-02-22T04:46:23.129574Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_FRAMES: 45912
+2026-02-22T04:46:23.129984Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       NUMBER_OF_BYTES : 117534720
+2026-02-22T04:46:23.130459Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_WRITING_APP: mkvmerge v84.0 ('Sleeper') 64-bit
+2026-02-22T04:46:23.130874Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       _STATISTICS_TAGS: BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+2026-02-22T04:46:23.133873Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]:       DURATION        : 00:24:29.208000000
+2026-02-22T04:46:23.285099Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'seg_000.m4s.tmp' for writing
+2026-02-22T04:46:23.324181Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:23.335316Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS session 51941939-3e4d-4cad-aaa4-10ae36a6781b ready (first segment generated in 1.0s)
+2026-02-22T04:46:23.472279Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: frame=    0 fp[hls @ 0000020cd8a94f40] Opening 'seg_000.m4s.tmp' for writing/A elapsed=0:00:00.51
+2026-02-22T04:46:23.472297Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: frame=    0 fp[hls @ 000002b505274f40] Opening 'seg_000.m4s.tmp' for writing/A elapsed=0:00:00.50
+2026-02-22T04:46:23.494788Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: frame=   49 fp[hls @ 0000020cd8a94f40] Opening 'playlist.m3u8.tmp' for writingspeed=1.93x elapsed=0:00:01.03
+2026-02-22T04:46:23.495967Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [hls @ 000002b505274f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:23.522029Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS session 0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a ready (first segment generated in 1.1s)
+2026-02-22T04:46:23.526102Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS session 5e396190-60e0-425c-87d3-afff2131b752 ready (first segment generated in 1.1s)
+2026-02-22T04:46:23.595006Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: frame=    0 fp[hls @ 00000295454f4f40] Opening 'seg_000.m4s.tmp' for writing/A elapsed=0:00:00.51
+2026-02-22T04:46:23.616707Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [hls @ 00000295454f4f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:23.629178Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: frame=   71 fp[hls @ 00000271a2e33b80] Opening 'seg_001.m4s.tmp' for writing0 speed=2.84x elapsed=0:00:01.04
+2026-02-22T04:46:23.643979Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_stream::hls: HLS session cee7f91c-0d8f-4af5-810a-eb7926783150 ready (first segment generated in 1.2s)
+2026-02-22T04:46:23.645131Z  INFO http_request{method=GET uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/master.m3u8?start=192.158&playback_session_id=81e2ed1e%2D740d%2D4dbc%2Da35d%2D8b3ab6ee7b3f}: ferrite_api::handlers::stream: HLS master playlist for 5dbce626-0946-435a-aa93-f7837292a783: variants=4 reused=false mode=fast seek_source=requested db=1ms seek=0ms session=1313ms total=1315ms
+2026-02-22T04:46:23.656411Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:24.022204Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: frame=   62 fp[hls @ 00000295454f4f40] Opening 'seg_001.m4s.tmp' for writing0 speed=2.43x elapsed=0:00:01.02
+2026-02-22T04:46:24.023395Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: frame=  141 fp[hls @ 00000271a2e33b80] Opening 'seg_002.m4s.tmp' for writing0 speed=3.69x elapsed=0:00:01.55
+2026-02-22T04:46:24.052842Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [hls @ 00000295454f4f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:24.055018Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:24.251528Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: frame=   53 fp[hls @ 000002b505274f40] Opening 'seg_001.m4s.tmp' for writing/A dup=1 drop=0 speed=3.05x elapsed=0:00:01.54
+2026-02-22T04:46:24.252145Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: frame=  113 fp[hls @ 0000020cd8a94f40] Opening 'seg_001.m4s.tmp' for writing0 speed=2.98x elapsed=0:00:01.55
+2026-02-22T04:46:24.289043Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [hls @ 000002b505274f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:24.291269Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: [hls @ 0000020cd8a94f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:24.485947Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: frame=  191 fp[hls @ 00000271a2e33b80] Opening 'seg_003.m4s.tmp' for writing0 speed=3.85x elapsed=0:00:02.06
+2026-02-22T04:46:24.522234Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:24.681724Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: frame=  169 fp[hls @ 0000020cd8a94f40] Opening 'seg_002.m4s.tmp' for writing0 speed=3.38x elapsed=0:00:02.06
+2026-02-22T04:46:24.712513Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: [hls @ 0000020cd8a94f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:24.718843Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: frame=  171 fp[hls @ 000002b505274f40] Opening 'seg_002.m4s.tmp' for writing0 speed=3.43x elapsed=0:00:02.05
+2026-02-22T04:46:24.737350Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [hls @ 000002b505274f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:24.761400Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: frame=  120 fp[hls @ 00000295454f4f40] Opening 'seg_002.m4s.tmp' for writing/A dup=1 drop=0 speed=3.74x elapsed=0:00:02.05
+2026-02-22T04:46:24.802035Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [hls @ 00000295454f4f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:24.973646Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'seg_004.m4s.tmp' for writing
+2026-02-22T04:46:25.016206Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: frame=  241 fp[hls @ 00000271a2e33b80] Opening 'playlist.m3u8.tmp' for writingspeed=3.93x elapsed=0:00:02.57
+2026-02-22T04:46:25.063732Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: frame=  231 fp[hls @ 0000020cd8a94f40] Opening 'seg_003.m4s.tmp' for writing0 speed=3.69x elapsed=0:00:02.59
+2026-02-22T04:46:25.105688Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: frame=  228 fp[hls @ 000002b505274f40] Opening 'seg_003.m4s.tmp' for writing0 speed=3.67x elapsed=0:00:02.56
+2026-02-22T04:46:25.105982Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: [hls @ 0000020cd8a94f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:25.134255Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [hls @ 000002b505274f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:25.216327Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [hls @ 00000295454f4f40] Opening 'seg_003.m4s.tmp' for writing
+2026-02-22T04:46:25.239493Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [hls @ 00000295454f4f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:25.431578Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'seg_005.m4s.tmp' for writing
+2026-02-22T04:46:25.459545Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [hls @ 000002b505274f40] Opening 'seg_004.m4s.tmp' for writing
+2026-02-22T04:46:25.504864Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: frame=  237 fp[hls @ 00000295454f4f40] Opening 'seg_004.m4s.tmp' for writing0 speed=3.84x elapsed=0:00:02.57
+2026-02-22T04:46:25.563989Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: frame=  289 fp[hls @ 00000271a2e33b80] Opening 'playlist.m3u8.tmp' for writingspeed= 3.9x elapsed=0:00:03.11
+2026-02-22T04:46:25.572032Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [hls @ 00000295454f4f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:25.578253Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [hls @ 000002b505274f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:25.591542Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: frame=  284 fp[hls @ 0000020cd8a94f40] Opening 'seg_004.m4s.tmp' for writing0 speed=3.78x elapsed=0:00:03.11
+2026-02-22T04:46:25.660680Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: [hls @ 0000020cd8a94f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:25.937346Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'seg_006.m4s.tmp' for writing
+2026-02-22T04:46:25.981434Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:26.144742Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: frame=  301 fp[hls @ 00000295454f4f40] Opening 'seg_005.m4s.tmp' for writing0 speed=4.04x elapsed=0:00:03.08
+2026-02-22T04:46:26.244627Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: [hls @ 00000295454f4f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:26.244613Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: frame=  285 fp[hls @ 000002b505274f40] Opening 'seg_005.m4s.tmp' for writing/A dup=1 drop=0 speed= 3.7x elapsed=0:00:03.61
+2026-02-22T04:46:26.299831Z  WARN ferrite_stream::hls: ffmpeg HLS [5e396190-60e0-425c-87d3-afff2131b752]: [hls @ 000002b505274f40] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:26.342477Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: frame=  348 fp[hls @ 00000271a2e33b80] Opening 'seg_007.m4s.tmp' for writing0 speed=3.99x elapsed=0:00:03.63
+2026-02-22T04:46:26.391556Z  WARN ferrite_stream::hls: ffmpeg HLS [0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a]: frame=  307 fp[hls @ 0000020cd8a94f40] Opening 'seg_005.m4s.tmp' for writing0 speed=3.51x elapsed=0:00:03.62
+2026-02-22T04:46:26.402843Z  WARN ferrite_stream::hls: ffmpeg HLS [51941939-3e4d-4cad-aaa4-10ae36a6781b]: [hls @ 00000271a2e33b80] Opening 'playlist.m3u8.tmp' for writing
+2026-02-22T04:46:26.425580Z  WARN ferrite_stream::hls: ffmpeg HLS [cee7f91c-0d8f-4af5-810a-eb7926783150]: frame=  335 fps= 93 q=28.0 size=N/A time=00:00:14.05 bitrate=N/A dup=1 drop=0 speed=3.88x elapsed=0:00:03.62
+2026-02-22T04:46:26.457602Z  INFO http_request{method=DELETE uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/session/stop?playback_session_id=81e2ed1e-740d-4dbc-a35d-8b3ab6ee7b3f}: ferrite_stream::hls: Destroyed HLS session cee7f91c-0d8f-4af5-810a-eb7926783150
+2026-02-22T04:46:26.461555Z  INFO http_request{method=DELETE uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/session/stop?playback_session_id=81e2ed1e-740d-4dbc-a35d-8b3ab6ee7b3f}: ferrite_stream::hls: Destroyed HLS session 5e396190-60e0-425c-87d3-afff2131b752
+2026-02-22T04:46:26.472588Z  INFO http_request{method=DELETE uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/session/stop?playback_session_id=81e2ed1e-740d-4dbc-a35d-8b3ab6ee7b3f}: ferrite_stream::hls: Destroyed HLS session 0fc36760-0f3c-4cdc-b7d9-c9390da8ae4a
+2026-02-22T04:46:26.538337Z  INFO http_request{method=DELETE uri=/api/stream/5dbce626-0946-435a-aa93-f7837292a783/hls/session/stop?playback_session_id=81e2ed1e-740d-4dbc-a35d-8b3ab6ee7b3f}: ferrite_stream::hls: Destroyed HLS session 51941939-3e4d-4cad-aaa4-10ae36a6781b

@@ -20,13 +20,18 @@ pub struct HlsSession {
     pub segment_duration: u64,
     ffmpeg_handle: Mutex<Option<Child>>,
     pub created_at: Instant,
-    last_accessed: Mutex<Instant>,
-    /// Updated only when a segment or init file is actually served (not playlist polls).
+    /// Epoch-millis timestamp of last access (playlist or segment request).
+    /// AtomicU64 avoids async Mutex contention on the hot path.
+    last_accessed_epoch_ms: std::sync::atomic::AtomicU64,
+    /// Epoch-millis timestamp of last segment/init file served.
     /// Used to kill FFmpeg promptly when the client stops consuming (e.g. paused).
-    last_segment_request: Mutex<Instant>,
+    last_segment_request_epoch_ms: std::sync::atomic::AtomicU64,
     /// Set to true when FFmpeg stderr indicates a fatal error (corrupt file, disk full, etc.).
     /// Causes get_segment() to short-circuit instead of waiting the full 30s timeout.
     pub ffmpeg_failed: std::sync::atomic::AtomicBool,
+    /// Cached count of .m4s segment files on disk, updated when segments are served.
+    /// Avoids synchronous std::fs::read_dir on every buffered_secs() call.
+    segment_count: std::sync::atomic::AtomicU64,
     pub duration_secs: Option<f64>,
     pub width: Option<u32>,
     pub height: Option<u32>,
@@ -84,26 +89,61 @@ fn output_audio_codec_rfc6381(source_audio_codec: Option<&str>) -> String {
     }
 }
 
+/// Current wall-clock time as milliseconds since UNIX epoch.
+fn epoch_ms_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
 impl HlsSession {
-    pub async fn touch(&self) {
-        *self.last_accessed.lock().await = Instant::now();
+    /// Mark the session as recently accessed (lock-free).
+    pub fn touch(&self) {
+        self.last_accessed_epoch_ms
+            .store(epoch_ms_now(), std::sync::atomic::Ordering::Release);
     }
 
-    pub async fn idle_secs(&self) -> u64 {
-        self.last_accessed.lock().await.elapsed().as_secs()
+    /// Seconds since last access (lock-free).
+    pub fn idle_secs(&self) -> u64 {
+        let last = self
+            .last_accessed_epoch_ms
+            .load(std::sync::atomic::Ordering::Acquire);
+        epoch_ms_now().saturating_sub(last) / 1000
     }
 
-    /// Seconds since a segment or init file was last served to the client.
-    pub async fn segment_idle_secs(&self) -> u64 {
-        self.last_segment_request.lock().await.elapsed().as_secs()
+    /// Seconds since a segment or init file was last served to the client (lock-free).
+    pub fn segment_idle_secs(&self) -> u64 {
+        let last = self
+            .last_segment_request_epoch_ms
+            .load(std::sync::atomic::Ordering::Acquire);
+        epoch_ms_now().saturating_sub(last) / 1000
     }
 
-    /// How many seconds of content have been transcoded so far (based on segment files on disk).
+    /// Record that a segment was just served (lock-free).
+    fn touch_segment(&self) {
+        let now = epoch_ms_now();
+        self.last_accessed_epoch_ms
+            .store(now, std::sync::atomic::Ordering::Release);
+        self.last_segment_request_epoch_ms
+            .store(now, std::sync::atomic::Ordering::Release);
+    }
+
+    /// How many seconds of content have been transcoded so far (based on cached segment count).
     /// Used to decide whether a seek target is already within the buffered range.
     pub fn buffered_secs(&self) -> f64 {
+        let count = self
+            .segment_count
+            .load(std::sync::atomic::Ordering::Acquire);
+        count as f64 * self.segment_duration as f64
+    }
+
+    /// Scan the output directory and update the cached segment count.
+    /// Called after a segment is confirmed ready (listed in playlist).
+    pub fn refresh_segment_count(&self) {
         let mut count = 0u64;
-        if let Ok(mut rd) = std::fs::read_dir(&self.output_dir) {
-            while let Some(Ok(entry)) = rd.next() {
+        if let Ok(rd) = std::fs::read_dir(&self.output_dir) {
+            for entry in rd.flatten() {
                 let name = entry.file_name();
                 let s = name.to_string_lossy();
                 if s.starts_with("seg_") && s.ends_with(".m4s") {
@@ -111,7 +151,8 @@ impl HlsSession {
                 }
             }
         }
-        count as f64 * self.segment_duration as f64
+        self.segment_count
+            .store(count, std::sync::atomic::Ordering::Release);
     }
 
     /// Kill the FFmpeg process without destroying the session or its files.
@@ -274,7 +315,7 @@ impl HlsSessionManager {
                 // Reuse if the start offset is close enough (within one segment)
                 let offset_diff = (session.start_secs - start_secs).abs();
                 if offset_diff < self.segment_duration as f64 {
-                    session.touch().await;
+                    session.touch();
                     return Ok(session.clone());
                 }
                 // Different start position — destroy old session first
@@ -397,6 +438,7 @@ impl HlsSessionManager {
         let video_codec_rfc6381 = output_video_codec_rfc6381(video_codec, video_copied);
         let audio_codec_rfc6381 = output_audio_codec_rfc6381(audio_codec);
 
+        let now_epoch = epoch_ms_now();
         let session = Arc::new(HlsSession {
             session_id: session_id.clone(),
             media_id: media_id.to_string(),
@@ -404,9 +446,10 @@ impl HlsSessionManager {
             segment_duration: self.segment_duration,
             ffmpeg_handle: Mutex::new(Some(child)),
             created_at: Instant::now(),
-            last_accessed: Mutex::new(Instant::now()),
-            last_segment_request: Mutex::new(Instant::now()),
+            last_accessed_epoch_ms: std::sync::atomic::AtomicU64::new(now_epoch),
+            last_segment_request_epoch_ms: std::sync::atomic::AtomicU64::new(now_epoch),
             ffmpeg_failed: std::sync::atomic::AtomicBool::new(false),
+            segment_count: std::sync::atomic::AtomicU64::new(0),
             duration_secs,
             width: session_w,
             height: session_h,
@@ -449,19 +492,29 @@ impl HlsSessionManager {
                 .insert(media_id.to_string(), session_id.clone());
         }
 
-        // Wait for first segment to appear (up to 15 seconds)
-        let playlist_path = output_dir.join("playlist.m3u8");
+        Self::wait_for_first_segment(&session).await;
+
+        Ok(session)
+    }
+
+    /// Wait for the first HLS segment to appear in a session's playlist.
+    /// Uses adaptive backoff: 50ms×20 (1s), 100ms×40 (4s), 250ms×40 (10s) ≈ 15s total.
+    async fn wait_for_first_segment(session: &HlsSession) {
+        let playlist_path = session.output_dir.join("playlist.m3u8");
         let mut ready = false;
-        for _ in 0..150 {
-            if playlist_path.exists() {
-                if let Ok(content) = tokio::fs::read_to_string(&playlist_path).await {
-                    if content.contains("#EXTINF:") {
-                        ready = true;
-                        break;
+        let poll_schedule: &[(u64, u32)] = &[(50, 20), (100, 40), (250, 40)];
+        'outer: for &(interval_ms, count) in poll_schedule {
+            for _ in 0..count {
+                if playlist_path.exists() {
+                    if let Ok(content) = tokio::fs::read_to_string(&playlist_path).await {
+                        if content.contains("#EXTINF:") {
+                            ready = true;
+                            break 'outer;
+                        }
                     }
                 }
+                tokio::time::sleep(std::time::Duration::from_millis(interval_ms)).await;
             }
-            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         }
 
         if !ready {
@@ -475,6 +528,146 @@ impl HlsSessionManager {
                 session.session_id,
                 session.created_at.elapsed().as_secs_f64()
             );
+        }
+    }
+
+    /// Same as `create_session` but does NOT wait for the first segment.
+    /// Used by `create_variant_sessions_owned` to spawn all FFmpeg processes
+    /// first, then wait for all segments in parallel.
+    #[allow(clippy::too_many_arguments)]
+    async fn create_session_no_wait(
+        &self,
+        media_id: &str,
+        file_path: &Path,
+        duration_secs: Option<f64>,
+        width: Option<u32>,
+        height: Option<u32>,
+        bitrate_kbps: Option<u32>,
+        start_secs: f64,
+        requested_secs: f64,
+        subtitle_path: Option<&Path>,
+        variant: Option<&QualityVariant>,
+        pixel_format: Option<&str>,
+        audio_stream_index: Option<u32>,
+        frame_rate: Option<&str>,
+        audio_codec: Option<&str>,
+        video_codec: Option<&str>,
+        color_transfer: Option<&str>,
+        color_primaries: Option<&str>,
+    ) -> Result<Arc<HlsSession>> {
+        // Destroy any existing session for this media (single-variant path)
+        if variant.is_none() {
+            if let Some(sid) = self.media_sessions.get(media_id) {
+                let old_sid = sid.clone();
+                drop(sid);
+                self.destroy_session(&old_sid).await;
+            }
+        }
+
+        // Create new session
+        let session_id = uuid::Uuid::new_v4().to_string();
+        let output_dir = self.cache_dir.join(&session_id);
+        tokio::fs::create_dir_all(&output_dir).await?;
+
+        let variant_label = variant.map(|v| v.label.clone());
+        info!(
+            "Creating HLS session {} for media {} at {:.1}s variant={} ({})",
+            session_id,
+            media_id,
+            start_secs,
+            variant_label.as_deref().unwrap_or("native"),
+            file_path.display()
+        );
+
+        // Spawn FFmpeg (with -ss if starting from a non-zero position)
+        let (child, stderr, video_copied) = self
+            .spawn_ffmpeg(
+                file_path,
+                &output_dir,
+                start_secs,
+                requested_secs,
+                subtitle_path,
+                variant,
+                height,
+                pixel_format,
+                audio_stream_index,
+                frame_rate,
+                audio_codec,
+                video_codec,
+                color_transfer,
+                color_primaries,
+            )
+            .await?;
+
+        let (session_w, session_h, session_bw) = match variant {
+            Some(v) => (Some(v.width), Some(v.height), v.bandwidth_bps),
+            None => (
+                width,
+                height,
+                bitrate_kbps.map(|k| (k as u64) * 1000).unwrap_or(5_000_000),
+            ),
+        };
+
+        let effective_start = if video_copied {
+            start_secs
+        } else {
+            requested_secs
+        };
+
+        let video_codec_rfc6381 = output_video_codec_rfc6381(video_codec, video_copied);
+        let audio_codec_rfc6381 = output_audio_codec_rfc6381(audio_codec);
+
+        let now_epoch = epoch_ms_now();
+        let session = Arc::new(HlsSession {
+            session_id: session_id.clone(),
+            media_id: media_id.to_string(),
+            output_dir: output_dir.clone(),
+            segment_duration: self.segment_duration,
+            ffmpeg_handle: Mutex::new(Some(child)),
+            created_at: Instant::now(),
+            last_accessed_epoch_ms: std::sync::atomic::AtomicU64::new(now_epoch),
+            last_segment_request_epoch_ms: std::sync::atomic::AtomicU64::new(now_epoch),
+            ffmpeg_failed: std::sync::atomic::AtomicBool::new(false),
+            segment_count: std::sync::atomic::AtomicU64::new(0),
+            duration_secs,
+            width: session_w,
+            height: session_h,
+            bitrate_kbps: variant.map(|v| v.video_bitrate_kbps).or(bitrate_kbps),
+            start_secs: effective_start,
+            variant_label,
+            bandwidth_bps: session_bw,
+            video_codec_rfc6381,
+            audio_codec_rfc6381,
+            video_copied,
+        });
+
+        // Wire the stderr reader to the session's ffmpeg_failed flag.
+        if let Some(stderr) = stderr {
+            let session_id_log = session_id.clone();
+            let session_arc = session.clone();
+            tokio::spawn(async move {
+                use tokio::io::AsyncBufReadExt;
+                let reader = tokio::io::BufReader::new(stderr);
+                let mut lines = reader.lines();
+                while let Ok(Some(line)) = lines.next_line().await {
+                    warn!("ffmpeg HLS [{}]: {}", session_id_log, line);
+                    if is_ffmpeg_fatal_error(&line) {
+                        warn!(
+                            "ffmpeg HLS [{}]: fatal error detected, marking session failed",
+                            session_id_log
+                        );
+                        session_arc
+                            .ffmpeg_failed
+                            .store(true, std::sync::atomic::Ordering::Release);
+                    }
+                }
+            });
+        }
+
+        self.sessions.insert(session_id.clone(), session.clone());
+        if variant.is_none() {
+            self.media_sessions
+                .insert(media_id.to_string(), session_id.clone());
         }
 
         Ok(session)
@@ -574,9 +767,10 @@ impl HlsSessionManager {
         let mut sessions = Vec::with_capacity(variants.len());
         let mut session_ids = Vec::with_capacity(variants.len());
 
+        // Phase 1: Spawn all FFmpeg processes without waiting for segments.
         for variant in &variants {
             let session = self
-                .create_session(
+                .create_session_no_wait(
                     media_id,
                     file_path,
                     duration_secs,
@@ -599,6 +793,14 @@ impl HlsSessionManager {
             session_ids.push(session.session_id.clone());
             sessions.push(session);
         }
+
+        // Phase 2: Wait for all first segments in parallel.
+        // This reduces ABR startup from N×(spawn+wait) to N×spawn + max(wait).
+        let wait_futures: Vec<_> = sessions
+            .iter()
+            .map(|s| Self::wait_for_first_segment(s))
+            .collect();
+        futures::future::join_all(wait_futures).await;
 
         self.media_variant_sessions
             .insert(owner_key.to_string(), session_ids);
@@ -735,23 +937,34 @@ impl HlsSessionManager {
     }
 
     /// Destroy all sessions for an ownership key (media_id fallback, or media_id::playback_session_id).
+    /// Destroys sessions concurrently to minimize cleanup latency.
     pub async fn destroy_owner_sessions(&self, owner_key: &str) {
-        // Destroy single-variant session
+        let mut session_ids = Vec::new();
+
+        // Collect single-variant session ID
         if let Some(sid) = self.media_sessions.get(owner_key) {
-            let old_sid = sid.clone();
+            session_ids.push(sid.clone());
             drop(sid);
-            self.destroy_session(&old_sid).await;
         }
-        // Destroy all variant sessions
+        // Collect all variant session IDs
         if let Some((_, sids)) = self.media_variant_sessions.remove(owner_key) {
-            for sid in sids {
-                self.destroy_session(&sid).await;
-            }
+            session_ids.extend(sids);
         }
+
+        if session_ids.is_empty() {
+            return;
+        }
+
+        // Destroy all sessions concurrently
+        let futs: Vec<_> = session_ids
+            .iter()
+            .map(|sid| self.destroy_session(sid))
+            .collect();
+        futures::future::join_all(futs).await;
     }
 
     /// Return a snapshot of all currently active HLS sessions.
-    pub async fn list_active_sessions(&self) -> Vec<ActiveSessionInfo> {
+    pub fn list_active_sessions(&self) -> Vec<ActiveSessionInfo> {
         let mut result = Vec::new();
         for entry in self.sessions.iter() {
             let s = entry.value();
@@ -763,7 +976,7 @@ impl HlsSessionManager {
                 width: s.width,
                 height: s.height,
                 bitrate_kbps: s.bitrate_kbps,
-                idle_secs: s.idle_secs().await,
+                idle_secs: s.idle_secs(),
                 age_secs: s.created_at.elapsed().as_secs(),
             });
         }
@@ -918,11 +1131,13 @@ impl HlsSessionManager {
 
         // Precise seek after input (only when re-encoding): decode from the
         // keyframe but trim output to the exact requested time.
-        if !can_copy_video {
-            let precise_delta = requested_secs - start_secs;
-            if precise_delta > 0.1 {
-                args.extend(["-ss".into(), format!("{:.3}", precise_delta)]);
-            }
+        // Always add post-input -ss when seeking, even if the delta is tiny —
+        // without it, FFmpeg's HLS muxer starts the first segment from the
+        // nearest keyframe the demuxer landed on, which can be 10-20s before
+        // the target depending on GOP size.
+        if !can_copy_video && requested_secs > 0.5 {
+            let precise_delta = (requested_secs - start_secs).max(0.0);
+            args.extend(["-ss".into(), format!("{:.3}", precise_delta)]);
         }
 
         args.extend(["-map".into(), "0:v:0".into(), "-map".into(), audio_map]);
@@ -1083,7 +1298,7 @@ impl HlsSessionManager {
         media_id: &str,
         token: Option<&str>,
     ) -> Result<String> {
-        session.touch().await;
+        session.touch();
 
         let playlist_path = session.output_dir.join("playlist.m3u8");
         let raw = tokio::fs::read_to_string(&playlist_path)
@@ -1113,8 +1328,7 @@ impl HlsSessionManager {
         session: &HlsSession,
         filename: &str,
     ) -> Result<Option<std::path::PathBuf>> {
-        session.touch().await;
-        *session.last_segment_request.lock().await = Instant::now();
+        session.touch_segment();
 
         // Validate filename to prevent path traversal
         if filename.contains("..") || filename.contains('/') || filename.contains('\\') {
@@ -1124,8 +1338,10 @@ impl HlsSessionManager {
         let path = session.output_dir.join(filename);
 
         // init.mp4 is written once before any segments — serve as soon as it exists.
+        // Poll at 100ms (not 500ms) because FFmpeg writes init.mp4 almost immediately
+        // and this is on the critical path for time-to-first-frame.
         if filename == "init.mp4" {
-            for _ in 0..60 {
+            for _ in 0..300 {
                 if path.exists() {
                     return Ok(Some(path));
                 }
@@ -1137,7 +1353,7 @@ impl HlsSessionManager {
                     );
                     return Ok(None);
                 }
-                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             }
             return Ok(None);
         }
@@ -1161,6 +1377,7 @@ impl HlsSessionManager {
                         last_playlist_mtime = Some(mtime);
                         if let Ok(playlist) = tokio::fs::read_to_string(&playlist_path).await {
                             if segment_listed_in_playlist(&playlist, filename) {
+                                session.refresh_segment_count();
                                 return Ok(Some(path));
                             }
                         }
@@ -1299,10 +1516,10 @@ impl HlsSessionManager {
 
             for entry in self.sessions.iter() {
                 let session = entry.value();
-                if session.idle_secs().await > self.session_timeout_secs {
+                if session.idle_secs() > self.session_timeout_secs {
                     expired.push(entry.key().clone());
                 } else if session.is_ffmpeg_alive().await
-                    && session.segment_idle_secs().await > self.ffmpeg_idle_secs
+                    && session.segment_idle_secs() > self.ffmpeg_idle_secs
                 {
                     ffmpeg_to_kill.push(session.clone());
                 }
@@ -1489,6 +1706,7 @@ mod tests {
     }
 
     fn make_test_session(media_id: &str, session_id: &str, output_dir: PathBuf) -> Arc<HlsSession> {
+        let now_epoch = epoch_ms_now();
         Arc::new(HlsSession {
             session_id: session_id.to_string(),
             media_id: media_id.to_string(),
@@ -1496,9 +1714,10 @@ mod tests {
             segment_duration: 2,
             ffmpeg_handle: Mutex::new(None),
             created_at: Instant::now(),
-            last_accessed: Mutex::new(Instant::now()),
-            last_segment_request: Mutex::new(Instant::now()),
+            last_accessed_epoch_ms: std::sync::atomic::AtomicU64::new(now_epoch),
+            last_segment_request_epoch_ms: std::sync::atomic::AtomicU64::new(now_epoch),
             ffmpeg_failed: AtomicBool::new(false),
+            segment_count: std::sync::atomic::AtomicU64::new(0),
             duration_secs: Some(60.0),
             width: Some(1920),
             height: Some(1080),

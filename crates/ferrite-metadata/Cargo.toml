@@ -20,3 +20,4 @@ async-trait = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 sqlx = { workspace = true }
+futures = { workspace = true }

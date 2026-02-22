@@ -1,10 +1,13 @@
 use crate::image_cache::ImageCache;
-use crate::provider::MetadataProvider;
+use crate::provider::{MetadataProvider, TvSearchResult};
 use crate::tmdb;
 use anyhow::Result;
 use ferrite_db::{movie_repo, tv_repo};
+use futures::stream::{self, StreamExt};
 use sqlx::SqlitePool;
 use tracing::{debug, info, warn};
+
+const EPISODE_STILL_DOWNLOAD_CONCURRENCY: usize = 8;
 
 /// Strip a trailing 4-digit year from a title string.
 /// Handles both bare years ("Cosmos 2014") and parenthesized years ("Cosmos (2014)").
@@ -41,6 +44,80 @@ fn strip_trailing_year(title: &str) -> (String, Option<i32>) {
     }
 
     (trimmed.to_string(), None)
+}
+
+/// Build candidate search queries for TV matching.
+///
+/// This keeps the original title first, then tries a few lightweight fallback
+/// rewrites for common abbreviations and aliases seen in real-world filenames
+/// (e.g. "Survivor AU" -> "Australian Survivor").
+fn build_tv_search_candidates(search_title: &str) -> Vec<String> {
+    let base = search_title.trim();
+    if base.is_empty() {
+        return Vec::new();
+    }
+
+    let mut candidates = vec![base.to_string()];
+    let parts: Vec<&str> = base.split_whitespace().collect();
+
+    // Country suffix aliases often appear in scene-style names.
+    // e.g. "Survivor AU" / "Survivor Australia" -> "Australian Survivor"
+    if parts.len() >= 2 {
+        let suffix = parts.last().copied().unwrap_or_default().to_ascii_lowercase();
+        let stem = parts[..parts.len() - 1].join(" ");
+        if !stem.is_empty() && matches!(suffix.as_str(), "au" | "australia") {
+            candidates.push(format!("{} Australia", stem));
+            candidates.push(format!("Australian {}", stem));
+        }
+    }
+
+    if base.contains('&') {
+        candidates.push(base.replace('&', "and"));
+    }
+
+    // Deduplicate while preserving order.
+    let mut deduped = Vec::with_capacity(candidates.len());
+    for candidate in candidates {
+        let normalized = candidate.split_whitespace().collect::<Vec<_>>().join(" ");
+        if normalized.is_empty() {
+            continue;
+        }
+        if !deduped
+            .iter()
+            .any(|existing: &String| existing.eq_ignore_ascii_case(&normalized))
+        {
+            deduped.push(normalized);
+        }
+    }
+
+    deduped
+}
+
+/// Search TMDB using one or more candidate queries and return the first
+/// candidate that yields a high-confidence match.
+async fn find_best_tv_match(
+    provider: &dyn MetadataProvider,
+    search_title: &str,
+    year: Option<i32>,
+) -> Option<(TvSearchResult, String, usize)> {
+    for candidate in build_tv_search_candidates(search_title) {
+        let results = match provider.search_tv(&candidate, year).await {
+            Ok(r) => r,
+            Err(e) => {
+                warn!(
+                    "TMDB TV search failed for '{}' (candidate='{}'): {}",
+                    search_title, candidate, e
+                );
+                continue;
+            }
+        };
+
+        if let Some(best) = tmdb::pick_best_tv_match(&results, &candidate, year) {
+            return Some((best, candidate, results.len()));
+        }
+    }
+
+    None
 }
 
 /// Enrich all movies in a library that don't have metadata yet.
@@ -191,18 +268,14 @@ pub async fn enrich_library_shows(
         let (search_title, parsed_year) = strip_trailing_year(title);
         let year_i32 = year.map(|y| y as i32).or(parsed_year);
 
-        // Search TMDB
-        let results = match provider.search_tv(&search_title, year_i32).await {
-            Ok(r) => r,
-            Err(e) => {
-                warn!("TMDB TV search failed for '{}': {}", title, e);
-                continue;
-            }
-        };
-
-        // Pick best match
-        let best = match tmdb::pick_best_tv_match(&results, &search_title, year_i32) {
-            Some(m) => m,
+        let (best, matched_query, result_count) = match find_best_tv_match(
+            provider,
+            &search_title,
+            year_i32,
+        )
+        .await
+        {
+            Some(found) => found,
             None => {
                 debug!(
                     "No TMDB match for TV show '{}' (searched: '{}')",
@@ -211,6 +284,13 @@ pub async fn enrich_library_shows(
                 continue;
             }
         };
+
+        if !matched_query.eq_ignore_ascii_case(&search_title) {
+            debug!(
+                "TMDB TV match fallback used for '{}': '{}' ({} results)",
+                title, matched_query, result_count
+            );
+        }
 
         // Get full details
         let details = match provider.get_tv_details(best.tmdb_id).await {
@@ -441,26 +521,30 @@ pub async fn enrich_single_show(
 ) -> Result<bool> {
     let (search_title, parsed_year) = strip_trailing_year(title);
 
-    let results = match provider.search_tv(&search_title, parsed_year).await {
-        Ok(r) => r,
-        Err(e) => {
-            warn!("TMDB TV search failed for '{}': {}", title, e);
-            return Ok(false);
-        }
-    };
-
-    let best = match tmdb::pick_best_tv_match(&results, &search_title, parsed_year) {
-        Some(m) => m,
+    let (best, matched_query, result_count) = match find_best_tv_match(
+        provider,
+        &search_title,
+        parsed_year,
+    )
+    .await
+    {
+        Some(found) => found,
         None => {
             warn!(
-                "No TMDB match for TV show '{}' (searched: '{}', {} results returned)",
+                "No TMDB match for TV show '{}' (searched: '{}')",
                 title,
                 search_title,
-                results.len()
             );
             return Ok(false);
         }
     };
+
+    if !matched_query.eq_ignore_ascii_case(&search_title) {
+        info!(
+            "TMDB TV match fallback used for '{}': '{}' ({} results)",
+            title, matched_query, result_count
+        );
+    }
 
     let details = match provider.get_tv_details(best.tmdb_id).await {
         Ok(d) => d,
@@ -522,7 +606,21 @@ pub async fn enrich_single_show(
     }
 
     let mut season_data: Vec<SeasonData> = Vec::with_capacity(seasons_snapshot.len());
-    for (_season_id, season_number) in &seasons_snapshot {
+    for (season_id, season_number) in &seasons_snapshot {
+        let on_disk_episodes = match tv_repo::get_episode_numbers_for_season(pool, season_id).await {
+            Ok(numbers) => numbers,
+            Err(e) => {
+                warn!(
+                    "Failed to load on-disk episodes for '{}' season {}: {}",
+                    title, season_number, e
+                );
+                continue;
+            }
+        };
+        if on_disk_episodes.is_empty() {
+            continue;
+        }
+
         let episodes = match provider
             .get_season_episodes(details.tmdb_id, *season_number)
             .await
@@ -536,35 +634,46 @@ pub async fn enrich_single_show(
                 continue;
             }
         };
-        let mut ep_data: Vec<EpisodeData> = Vec::with_capacity(episodes.len());
-        for ep in &episodes {
-            let still_local = if let Some(ref sp) = ep.still_path {
-                match image_cache
-                    .ensure_still(sp, details.tmdb_id, *season_number, ep.episode_number)
-                    .await
-                {
-                    Ok(f) => Some(f),
-                    Err(e) => {
-                        debug!(
-                            "Still download failed S{}E{}: {}",
-                            season_number, ep.episode_number, e
-                        );
-                        None
+
+        let on_disk_set: std::collections::HashSet<i64> = on_disk_episodes.into_iter().collect();
+        let filtered: Vec<_> = episodes
+            .into_iter()
+            .filter(|ep| on_disk_set.contains(&(ep.episode_number as i64)))
+            .collect();
+
+        let tmdb_id = details.tmdb_id;
+        let season = *season_number;
+        let ep_data: Vec<EpisodeData> = stream::iter(filtered)
+            .map(|ep| async move {
+                let still_local = if let Some(sp) = ep.still_path.as_deref() {
+                    match image_cache
+                        .ensure_still(sp, tmdb_id, season, ep.episode_number)
+                        .await
+                    {
+                        Ok(f) => Some(f),
+                        Err(e) => {
+                            debug!("Still download failed S{}E{}: {}", season, ep.episode_number, e);
+                            None
+                        }
                     }
+                } else {
+                    None
+                };
+
+                EpisodeData {
+                    episode_number: ep.episode_number as i64,
+                    ep_title: ep.title,
+                    overview: ep.overview,
+                    air_date: ep.air_date,
+                    still_local,
                 }
-            } else {
-                None
-            };
-            ep_data.push(EpisodeData {
-                episode_number: ep.episode_number as i64,
-                ep_title: ep.title.clone(),
-                overview: ep.overview.clone(),
-                air_date: ep.air_date.clone(),
-                still_local,
-            });
-        }
+            })
+            .buffer_unordered(EPISODE_STILL_DOWNLOAD_CONCURRENCY)
+            .collect()
+            .await;
+
         debug!(
-            "Fetched {} episode(s) for '{}' season {}",
+            "Fetched {} on-disk episode(s) for '{}' season {}",
             ep_data.len(),
             title,
             season_number

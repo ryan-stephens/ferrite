@@ -536,7 +536,13 @@ pub async fn hls_master_playlist(
     let t1 = Instant::now();
     let existing_variants = state.hls_sessions.get_variant_sessions_owned(&owner_key);
     let mut reused = !existing_variants.is_empty();
-    let should_promote_ladder = reused && existing_variants.len() == 1;
+    // Promote a single-variant session (from initial playback) to full ABR,
+    // BUT skip promotion if the single variant was just created by hls_seek
+    // for the same start position — promoting would destroy the seek session
+    // and create 4 new FFmpeg processes, doubling seek latency for no benefit.
+    let seek_created_single = existing_variants.len() == 1
+        && (existing_variants[0].start_secs - requested_start).abs() < 1.0;
+    let should_promote_ladder = reused && existing_variants.len() == 1 && !seek_created_single;
     let sessions = if should_promote_ladder {
         let _permit = acquire_transcode_permit(&state, &id, "hls-master").await?;
         reused = false;
@@ -571,7 +577,7 @@ pub async fn hls_master_playlist(
     } else if reused {
         // Reuse existing variant sessions (touch them to keep alive)
         for s in &existing_variants {
-            s.touch().await;
+            s.touch();
         }
         existing_variants
     } else {
@@ -716,12 +722,12 @@ pub async fn hls_session_heartbeat(
     let sessions = state.hls_sessions.get_variant_sessions_owned(&owner_key);
     if sessions.is_empty() {
         if let Some(session) = state.hls_sessions.get_session_for_owner(&owner_key) {
-            session.touch().await;
+            session.touch();
             touched = 1;
         }
     } else {
         for session in sessions {
-            session.touch().await;
+            session.touch();
             touched += 1;
         }
     }
@@ -881,7 +887,7 @@ pub async fn hls_seek(
             buffered_end,
             existing.is_ffmpeg_alive().await,
         ) {
-            existing.touch().await;
+            existing.touch();
             let total_ms = t0.elapsed().as_secs_f64() * 1000.0;
             info!(
                 "HLS seek for {} reused session {} (target={:.1}s buffered=[{:.1}s,{:.1}s)) total={:.0}ms",
