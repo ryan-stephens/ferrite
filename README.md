@@ -163,7 +163,7 @@ Ferrite requires FFmpeg and FFprobe for transcoding. Options:
 curl -sSL https://raw.githubusercontent.com/ryan-stephens/ferrite/main/scripts/install-whatbox.sh | bash
 
 # Install with custom port
-curl -sSL https://raw.githubusercontent.com/ryan-stephens/ferrite/main/scripts/install-whatbox.sh | bash -s 12345
+curl -sSL https://raw.githubusercontent.com/ryan-stephens/ferrite/main/scripts/install-whatbox.sh | bash -s 12335
 ```
 
 ### Manual Install

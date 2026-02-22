@@ -60,10 +60,10 @@ ssh your-username@your-server.whatbox.ca
 # Pick a port that's not in use (check with: ss -tlnp | grep LISTEN)
 # Whatbox typically uses ports 10000-32767 for custom apps
 
-curl -sSL https://raw.githubusercontent.com/ryan-stephens/ferrite/main/scripts/install-whatbox.sh | bash -s 12345
+curl -sSL https://raw.githubusercontent.com/ryan-stephens/ferrite/main/scripts/install-whatbox.sh | bash -s 12335
 ```
 
-Replace `12345` with your chosen port.
+Replace `12335` with your chosen port.
 
 ### Option B: Manual Install
 
@@ -88,7 +88,7 @@ which ffmpeg
 # echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
 
 # 4. Initialize config
-./ferrite init --port 12345
+./ferrite init --port 12335
 
 # 5. Start Ferrite
 ./ferrite
@@ -99,7 +99,7 @@ You should see output like:
 INFO Loaded config from config/ferrite.toml
 INFO Data directory: /home/user/ferrite/data
 INFO Serving SPA from: /home/user/ferrite/static
-INFO Ferrite starting on http://0.0.0.0:12345
+INFO Ferrite starting on http://0.0.0.0:12335
 ```
 
 Press `Ctrl+C` to stop, then start it in the background:
@@ -120,7 +120,7 @@ screen -ls | grep ferrite
 
 Try opening in your browser:
 ```
-http://your-server.whatbox.ca:12345
+http://your-server.whatbox.ca:12335
 ```
 
 If this works, you'll see the Ferrite login/setup page.
@@ -132,7 +132,7 @@ If this works, you'll see the Ferrite login/setup page.
 3. Click **"Add a custom app"**
 4. Fill in:
    - **Name**: `Ferrite` (this creates the subdomain `ferrite`)
-   - **Port**: `12345` (whatever port you chose)
+   - **Port**: `12335` (whatever port you chose)
 5. Save
 
 Now you can access Ferrite at:
@@ -192,7 +192,7 @@ crontab -l
 
 ### "Connection refused" in browser
 - Check Ferrite is running: `screen -ls | grep ferrite`
-- Check the port: `ss -tlnp | grep 12345`
+- Check the port: `ss -tlnp | grep 12335`
 - Try a different port — yours might be blocked
 
 ### "No SPA directory found" in logs
