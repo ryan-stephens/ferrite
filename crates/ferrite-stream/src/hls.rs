@@ -51,6 +51,10 @@ pub struct HlsSession {
     /// With copy, fmp4 segments retain original file PTS so the frontend
     /// must NOT add an offset (videoRef.currentTime is already absolute).
     pub video_copied: bool,
+    /// True when this session was created as a single-variant for fast initial TTFF
+    /// and should be promoted to the full ABR ladder on the next master playlist poll.
+    /// Set to false for seek-created sessions (which should stay single-variant).
+    pub awaiting_promotion: std::sync::atomic::AtomicBool,
 }
 
 /// RFC6381 video codec emitted by the HLS pipeline.
@@ -154,27 +158,64 @@ impl HlsSession {
             .store(count, std::sync::atomic::Ordering::Release);
     }
 
+    /// Parse the playlist from disk to determine the actual available segment range.
+    /// Returns `(available_start_secs, available_end_secs)` relative to the media timeline.
+    /// Uses segment filenames (seg_NNN.m4s) rather than EXTINF count because the playlist
+    /// is a sliding window (hls_list_size + delete_segments) — the count is capped but
+    /// segment numbers keep incrementing.
+    pub async fn playlist_available_range(&self) -> Option<(f64, f64)> {
+        let playlist_path = self.output_dir.join("playlist.m3u8");
+        let content = tokio::fs::read_to_string(&playlist_path).await.ok()?;
+
+        let mut min_seg: Option<u64> = None;
+        let mut max_seg: Option<u64> = None;
+
+        for line in content.lines() {
+            let line = line.trim();
+            if let Some(num_str) = line
+                .strip_prefix("seg_")
+                .and_then(|s| s.strip_suffix(".m4s"))
+            {
+                if let Ok(n) = num_str.parse::<u64>() {
+                    min_seg = Some(min_seg.map_or(n, |m: u64| m.min(n)));
+                    max_seg = Some(max_seg.map_or(n, |m: u64| m.max(n)));
+                }
+            }
+        }
+
+        let seg_dur = self.segment_duration as f64;
+        Some((
+            self.start_secs + min_seg? as f64 * seg_dur,
+            self.start_secs + (max_seg? + 1) as f64 * seg_dur,
+        ))
+    }
+
     /// Kill the FFmpeg process without destroying the session or its files.
     /// Called when the client stops consuming segments (paused) to free resources.
     pub async fn kill_ffmpeg(&self) {
         if let Some(mut child) = self.ffmpeg_handle.lock().await.take() {
-            // On Unix: send SIGTERM first so FFmpeg can flush write buffers and
-            // close the playlist cleanly (prevents truncated final segments),
-            // then wait up to 2s before escalating to SIGKILL.
+            // On Unix: send SIGTERM so FFmpeg can flush write buffers and close
+            // the playlist cleanly, then hand off the 2-second SIGKILL escalation
+            // to a background task so the caller returns immediately.
             // On Windows: kill immediately (no SIGTERM concept).
             #[cfg(unix)]
             {
                 if let Some(pid) = child.id() {
                     // SAFETY: pid is a valid process ID from a child we own.
                     unsafe { libc::kill(pid as libc::pid_t, libc::SIGTERM) };
-                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    debug!("Sent SIGTERM to FFmpeg for session {}", self.session_id);
+                    let session_id = self.session_id.clone();
+                    tokio::spawn(async move {
+                        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        let _ = child.kill().await;
+                        debug!("Sent SIGKILL to FFmpeg for session {}", session_id);
+                    });
+                    return;
                 }
             }
+            // Windows / no pid: kill immediately.
             let _ = child.kill().await;
-            debug!(
-                "Killed FFmpeg for session {} (SIGTERM+SIGKILL)",
-                self.session_id
-            );
+            debug!("Killed FFmpeg for session {} (immediate)", self.session_id);
         }
     }
 
@@ -459,6 +500,7 @@ impl HlsSessionManager {
             video_codec_rfc6381,
             audio_codec_rfc6381,
             video_copied,
+            awaiting_promotion: std::sync::atomic::AtomicBool::new(false),
         });
 
         // Wire the stderr reader to the session's ffmpeg_failed flag.
@@ -638,6 +680,7 @@ impl HlsSessionManager {
             video_codec_rfc6381,
             audio_codec_rfc6381,
             video_copied,
+            awaiting_promotion: std::sync::atomic::AtomicBool::new(false),
         });
 
         // Wire the stderr reader to the session's ffmpeg_failed flag.
@@ -810,6 +853,8 @@ impl HlsSessionManager {
     /// Create a single HLS session at the highest quality for fast seeking.
     /// Only spawns ONE FFmpeg process instead of one per variant, dramatically
     /// reducing seek latency. Returns a single-element Vec for API compatibility.
+    /// If `awaiting_promotion` is true, the session will be promoted to the full
+    /// ABR ladder on the next master playlist poll.
     #[allow(clippy::too_many_arguments)]
     pub async fn create_single_variant_session(
         &self,
@@ -829,6 +874,7 @@ impl HlsSessionManager {
         video_codec: Option<&str>,
         color_transfer: Option<&str>,
         color_primaries: Option<&str>,
+        awaiting_promotion: bool,
     ) -> Result<Vec<Arc<HlsSession>>> {
         self.create_single_variant_session_owned(
             media_id,
@@ -848,6 +894,7 @@ impl HlsSessionManager {
             video_codec,
             color_transfer,
             color_primaries,
+            awaiting_promotion,
         )
         .await
     }
@@ -874,6 +921,7 @@ impl HlsSessionManager {
         video_codec: Option<&str>,
         color_transfer: Option<&str>,
         color_primaries: Option<&str>,
+        awaiting_promotion: bool,
     ) -> Result<Vec<Arc<HlsSession>>> {
         // Serialize creates for this ownership key so concurrent calls don't
         // destroy each other's session mapping and orphan FFmpeg processes.
@@ -897,8 +945,8 @@ impl HlsSessionManager {
             .ok_or_else(|| anyhow!("No quality variants available"))?;
 
         info!(
-            "Creating single HLS session for seek: media {} at {:.1}s variant={}",
-            media_id, start_secs, variant.label,
+            "Creating single HLS session for media {} at {:.1}s variant={} awaiting_promotion={}",
+            media_id, start_secs, variant.label, awaiting_promotion,
         );
 
         let session = self
@@ -922,6 +970,11 @@ impl HlsSessionManager {
                 color_primaries,
             )
             .await?;
+
+        // Mark the session for ABR ladder promotion if requested
+        session
+            .awaiting_promotion
+            .store(awaiting_promotion, std::sync::atomic::Ordering::Release);
 
         let session_ids = vec![session.session_id.clone()];
         self.media_variant_sessions
@@ -1219,7 +1272,11 @@ impl HlsSessionManager {
             "-hls_time".into(),
             self.segment_duration.to_string(),
             "-hls_list_size".into(),
-            self.playlist_window_segments.to_string(),
+            if can_copy_video {
+                "0".into() // Unlimited: keep all segments in playlist for copy mode
+            } else {
+                self.playlist_window_segments.to_string()
+            },
             "-hls_segment_type".into(),
             "fmp4".into(),
             "-hls_fmp4_init_filename".into(),
@@ -1227,7 +1284,14 @@ impl HlsSessionManager {
             "-hls_segment_filename".into(),
             "seg_%03d.m4s".into(),
             "-hls_flags".into(),
-            "independent_segments+delete_segments+temp_file".into(),
+            if can_copy_video {
+                // Video-copy remuxes at disk speed (much faster than real-time).
+                // Keep all segments so the player can fetch from the start.
+                "independent_segments+temp_file".into()
+            } else {
+                // Real-time transcode: sliding window keeps disk usage bounded.
+                "independent_segments+delete_segments+temp_file".into()
+            },
             "playlist.m3u8".into(),
         ]);
 
@@ -1363,54 +1427,64 @@ impl HlsSessionManager {
         let playlist_path = session.output_dir.join("playlist.m3u8");
         let mut last_playlist_mtime: Option<std::time::SystemTime> = None;
 
-        // Poll up to 30 seconds (120 × 250ms).
+        // Adaptive polling: fast at first (most segments arrive within 500ms),
+        // fall back to slower polling for segments that take longer (e.g. HDR transcode).
+        // Total timeout: 10×50ms + 10×100ms + 116×250ms = 500ms + 1000ms + 29000ms = 30.5s
+        let poll_schedule: &[(u64, u32)] = &[
+            (50, 10),   //  0 – 500ms:  poll every  50ms
+            (100, 10),  //  0.5 – 1.5s: poll every 100ms
+            (250, 116), //  1.5 – 30.5s: poll every 250ms
+        ];
+
         // Only re-read playlist when it changed on disk to reduce I/O churn.
-        for _ in 0..120 {
-            if let Ok(meta) = tokio::fs::metadata(&playlist_path).await {
-                if let Ok(mtime) = meta.modified() {
-                    let changed = match last_playlist_mtime {
-                        Some(prev) => mtime != prev,
-                        None => true,
-                    };
-                    if changed {
-                        last_playlist_mtime = Some(mtime);
-                        if let Ok(playlist) = tokio::fs::read_to_string(&playlist_path).await {
-                            if segment_listed_in_playlist(&playlist, filename) {
-                                session.refresh_segment_count();
-                                return Ok(Some(path));
+        for &(interval_ms, count) in poll_schedule {
+            for _ in 0..count {
+                if let Ok(meta) = tokio::fs::metadata(&playlist_path).await {
+                    if let Ok(mtime) = meta.modified() {
+                        let changed = match last_playlist_mtime {
+                            Some(prev) => mtime != prev,
+                            None => true,
+                        };
+                        if changed {
+                            last_playlist_mtime = Some(mtime);
+                            if let Ok(playlist) = tokio::fs::read_to_string(&playlist_path).await {
+                                if segment_listed_in_playlist(&playlist, filename) {
+                                    session.refresh_segment_count();
+                                    return Ok(Some(path));
+                                }
                             }
                         }
                     }
                 }
-            }
-            // Short-circuit if FFmpeg reported a fatal error via stderr
-            // (e.g. corrupt file, permission denied, disk full).
-            if session
-                .ffmpeg_failed
-                .load(std::sync::atomic::Ordering::Acquire)
-            {
-                warn!(
-                    "FFmpeg fatal error detected for session {}, aborting segment wait for '{}'",
-                    session.session_id, filename
-                );
-                return Ok(None);
-            }
-            // Bail early if FFmpeg has crashed — no point waiting for segments
-            // that will never be written.
-            if !session.is_ffmpeg_alive().await {
-                // One final check: FFmpeg may have written this segment before dying
-                if let Ok(playlist) = tokio::fs::read_to_string(&playlist_path).await {
-                    if segment_listed_in_playlist(&playlist, filename) {
-                        return Ok(Some(path));
-                    }
+                // Short-circuit if FFmpeg reported a fatal error via stderr
+                // (e.g. corrupt file, permission denied, disk full).
+                if session
+                    .ffmpeg_failed
+                    .load(std::sync::atomic::Ordering::Acquire)
+                {
+                    warn!(
+                        "FFmpeg fatal error detected for session {}, aborting segment wait for '{}'",
+                        session.session_id, filename
+                    );
+                    return Ok(None);
                 }
-                warn!(
-                    "FFmpeg exited before segment '{}' was ready for session {}",
-                    filename, session.session_id
-                );
-                return Ok(None);
+                // Bail early if FFmpeg has crashed — no point waiting for segments
+                // that will never be written.
+                if !session.is_ffmpeg_alive().await {
+                    // One final check: FFmpeg may have written this segment before dying
+                    if let Ok(playlist) = tokio::fs::read_to_string(&playlist_path).await {
+                        if segment_listed_in_playlist(&playlist, filename) {
+                            return Ok(Some(path));
+                        }
+                    }
+                    warn!(
+                        "FFmpeg exited before segment '{}' was ready for session {}",
+                        filename, session.session_id
+                    );
+                    return Ok(None);
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(interval_ms)).await;
             }
-            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
         }
 
         // Final check after timeout
@@ -1727,6 +1801,7 @@ mod tests {
             video_codec_rfc6381: "avc1.64001f".to_string(),
             audio_codec_rfc6381: "mp4a.40.2".to_string(),
             video_copied: false,
+            awaiting_promotion: AtomicBool::new(false),
         })
     }
 

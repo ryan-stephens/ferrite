@@ -193,6 +193,7 @@ async fn concurrent_media_sessions_are_isolated() {
             Some("h264"),
             None,
             None,
+            false,
         )
         .await
         .expect("create session A");
@@ -215,6 +216,7 @@ async fn concurrent_media_sessions_are_isolated() {
             Some("h264"),
             None,
             None,
+            false,
         )
         .await
         .expect("create session B");
@@ -258,6 +260,7 @@ async fn same_media_different_owner_keys_do_not_interfere() {
             Some("h264"),
             None,
             None,
+            false,
         )
         .await
         .expect("create owner A session");
@@ -281,6 +284,7 @@ async fn same_media_different_owner_keys_do_not_interfere() {
             Some("h264"),
             None,
             None,
+            false,
         )
         .await
         .expect("create owner B session");
@@ -558,6 +562,7 @@ async fn seek_creates_new_session_and_replaces_old_mapping() {
             Some("h264"),
             None,
             None,
+            false,
         )
         .await
         .expect("create initial session");
@@ -582,6 +587,7 @@ async fn seek_creates_new_session_and_replaces_old_mapping() {
             Some("h264"),
             None,
             None,
+            false,
         )
         .await
         .expect("create seek session");

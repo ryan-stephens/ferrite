@@ -536,13 +536,14 @@ pub async fn hls_master_playlist(
     let t1 = Instant::now();
     let existing_variants = state.hls_sessions.get_variant_sessions_owned(&owner_key);
     let mut reused = !existing_variants.is_empty();
-    // Promote a single-variant session (from initial playback) to full ABR,
-    // BUT skip promotion if the single variant was just created by hls_seek
-    // for the same start position — promoting would destroy the seek session
-    // and create 4 new FFmpeg processes, doubling seek latency for no benefit.
-    let seek_created_single = existing_variants.len() == 1
-        && (existing_variants[0].start_secs - requested_start).abs() < 1.0;
-    let should_promote_ladder = reused && existing_variants.len() == 1 && !seek_created_single;
+    // Promote a single-variant session (from initial playback) to full ABR ladder.
+    // Only promotes if the session has the awaiting_promotion flag set (initial play path).
+    // Seek-created sessions have awaiting_promotion=false and stay single-variant.
+    let should_promote_ladder = reused
+        && existing_variants.len() == 1
+        && existing_variants[0]
+            .awaiting_promotion
+            .load(std::sync::atomic::Ordering::Acquire);
     let sessions = if should_promote_ladder {
         let _permit = acquire_transcode_permit(&state, &id, "hls-master").await?;
         reused = false;
@@ -583,9 +584,12 @@ pub async fn hls_master_playlist(
     } else {
         let _permit = acquire_transcode_permit(&state, &id, "hls-master").await?;
 
+        // Start with a single variant at the highest quality for fastest TTFF.
+        // The player re-polls master.m3u8 within a few seconds; the
+        // should_promote_ladder check will then spawn the full ABR ladder.
         let create_result = state
             .hls_sessions
-            .create_variant_sessions_owned(
+            .create_single_variant_session_owned(
                 &owner_key,
                 &id,
                 file_path,
@@ -603,6 +607,7 @@ pub async fn hls_master_playlist(
                 item.video_codec.as_deref(),
                 color_transfer.as_deref(),
                 color_primaries.as_deref(),
+                true, // awaiting_promotion = true for initial play
             )
             .await;
 
@@ -879,19 +884,35 @@ pub async fn hls_seek(
     // This avoids destroying and recreating an FFmpeg process for seeks that land
     // within the already-transcoded buffer (e.g. sequential +10s presses).
     if let Some(existing) = state.hls_sessions.get_session_for_owner(&owner_key) {
-        let buffered_end = existing.start_secs + existing.buffered_secs();
-        // Reuse if the target is within the buffered window and FFmpeg is still alive.
-        if can_reuse_seek_session(
-            requested_start,
-            existing.start_secs,
-            buffered_end,
-            existing.is_ffmpeg_alive().await,
-        ) {
+        let ffmpeg_alive = existing.is_ffmpeg_alive().await;
+        // Read the playlist to get the true available window on disk, accounting
+        // for both the encode-ahead (upper bound) and segment deletion (lower bound).
+        let reuse = if let Some((available_start, available_end)) =
+            existing.playlist_available_range().await
+        {
+            can_reuse_seek_session(
+                requested_start,
+                available_start,
+                available_end,
+                ffmpeg_alive,
+            )
+        } else {
+            // Playlist unreadable — fall back to cached estimate
+            let buffered_end = existing.start_secs + existing.buffered_secs();
+            can_reuse_seek_session(
+                requested_start,
+                existing.start_secs,
+                buffered_end,
+                ffmpeg_alive,
+            )
+        };
+
+        if reuse {
             existing.touch();
             let total_ms = t0.elapsed().as_secs_f64() * 1000.0;
             info!(
-                "HLS seek for {} reused session {} (target={:.1}s buffered=[{:.1}s,{:.1}s)) total={:.0}ms",
-                id, existing.session_id, requested_start, existing.start_secs, buffered_end, total_ms
+                "HLS seek for {} reused session {} (target={:.1}s) total={:.0}ms",
+                id, existing.session_id, requested_start, total_ms
             );
             state.playback_metrics.record_timing(
                 "seek_latency_ms",
@@ -956,6 +977,7 @@ pub async fn hls_seek(
             item.video_codec.as_deref(),
             color_transfer.as_deref(),
             color_primaries.as_deref(),
+            false, // awaiting_promotion = false for seek
         )
         .await
         .map_err(|e| {
