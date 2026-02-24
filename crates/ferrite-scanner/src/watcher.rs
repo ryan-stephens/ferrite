@@ -15,14 +15,9 @@ const MAX_INCREMENTAL_BATCH_PATHS: usize = 256;
 /// Commands sent to the running watcher task for dynamic library management.
 pub enum WatcherCmd {
     /// Start watching a new library directory.
-    Watch {
-        library_id: String,
-        path: PathBuf,
-    },
+    Watch { library_id: String, path: PathBuf },
     /// Stop watching a library directory (e.g. on library deletion).
-    Unwatch {
-        library_id: String,
-    },
+    Unwatch { library_id: String },
 }
 
 /// Handle returned by `LibraryWatcher::start()` that allows callers to
@@ -48,11 +43,7 @@ impl WatcherHandle {
     /// Unregister a library directory so it is no longer watched.
     /// Also drains any pending filesystem events for this library.
     pub async fn unwatch_library(&self, library_id: String) {
-        if let Err(e) = self
-            .cmd_tx
-            .send(WatcherCmd::Unwatch { library_id })
-            .await
-        {
+        if let Err(e) = self.cmd_tx.send(WatcherCmd::Unwatch { library_id }).await {
             warn!("Failed to send unwatch command to watcher task: {}", e);
         }
     }
@@ -70,6 +61,7 @@ pub struct LibraryWatcher {
 }
 
 impl LibraryWatcher {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pool: SqlitePool,
         ffprobe_path: String,
@@ -325,14 +317,20 @@ async fn enrich_library_after_scan(
     let library = match library_repo::get_library(pool, library_id).await {
         Ok(lib) => lib,
         Err(e) => {
-            warn!("Failed to load library '{}' for enrichment: {}", library_id, e);
+            warn!(
+                "Failed to load library '{}' for enrichment: {}",
+                library_id, e
+            );
             return;
         }
     };
 
     match library.library_type {
         LibraryType::Tv => {
-            info!("Enriching TV metadata after incremental scan for '{}'", library.name);
+            info!(
+                "Enriching TV metadata after incremental scan for '{}'",
+                library.name
+            );
             match ferrite_metadata::enrichment::enrich_library_shows(
                 pool,
                 library_id,
@@ -347,7 +345,10 @@ async fn enrich_library_after_scan(
             }
         }
         LibraryType::Movie => {
-            info!("Enriching movie metadata after incremental scan for '{}'", library.name);
+            info!(
+                "Enriching movie metadata after incremental scan for '{}'",
+                library.name
+            );
             match ferrite_metadata::enrichment::enrich_library_movies(
                 pool,
                 library_id,
@@ -383,18 +384,18 @@ mod tests {
     #[test]
     fn picks_most_specific_library_path_for_nested_roots() {
         let libs = vec![
-            (PathBuf::from(r"C:\media"), "root".to_string()),
-            (PathBuf::from(r"C:\media\tv"), "tv".to_string()),
+            (PathBuf::from("/media"), "root".to_string()),
+            (PathBuf::from("/media/tv"), "tv".to_string()),
         ];
 
-        let matched = find_library_for_path(Path::new(r"C:\media\tv\show\ep1.mkv"), &libs);
+        let matched = find_library_for_path(Path::new("/media/tv/show/ep1.mkv"), &libs);
         assert_eq!(matched.as_deref(), Some("tv"));
     }
 
     #[test]
     fn returns_none_when_path_is_outside_all_libraries() {
-        let libs = vec![(PathBuf::from(r"C:\media"), "root".to_string())];
-        let matched = find_library_for_path(Path::new(r"C:\other\movie.mkv"), &libs);
+        let libs = vec![(PathBuf::from("/media"), "root".to_string())];
+        let matched = find_library_for_path(Path::new("/other/movie.mkv"), &libs);
         assert!(matched.is_none());
     }
 }

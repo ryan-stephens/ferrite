@@ -129,7 +129,11 @@ pub async fn delete_library(
                 let dir = subtitle_cache_dir.join(mid);
                 if dir.exists() {
                     if let Err(e) = tokio::fs::remove_dir_all(&dir).await {
-                        tracing::warn!("Failed to remove subtitle cache dir {}: {}", dir.display(), e);
+                        tracing::warn!(
+                            "Failed to remove subtitle cache dir {}: {}",
+                            dir.display(),
+                            e
+                        );
                     } else {
                         removed += 1;
                     }

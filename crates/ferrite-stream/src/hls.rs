@@ -57,13 +57,12 @@ pub struct HlsSession {
 /// Video is currently always H.264 when transcoded, and passthrough is only
 /// enabled for H.264 sources.
 fn output_video_codec_rfc6381(source_video_codec: Option<&str>, video_copied: bool) -> String {
-    if video_copied {
-        if source_video_codec
+    if video_copied
+        && source_video_codec
             .map(|c| c.eq_ignore_ascii_case("h264") || c.eq_ignore_ascii_case("avc1"))
             .unwrap_or(false)
-        {
-            return "avc1.64001f".to_string();
-        }
+    {
+        return "avc1.64001f".to_string();
     }
     "avc1.64001f".to_string()
 }

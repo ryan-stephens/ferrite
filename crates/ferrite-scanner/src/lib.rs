@@ -36,6 +36,7 @@ pub use watcher::WatcherHandle;
 /// `scan_state` tracks live progress for the status API endpoint.
 /// `tmdb_provider` and `image_cache` are optional — if provided, metadata
 /// enrichment runs inline as each new show/movie is first encountered.
+#[allow(clippy::too_many_arguments)]
 pub async fn scan_library(
     pool: &SqlitePool,
     library_id: &str,
@@ -202,7 +203,7 @@ pub async fn scan_library(
                 let mut tx = pool.begin().await?;
 
                 let mid = media_repo::insert_media_item(
-                    &mut *tx,
+                    &mut tx,
                     &library_uuid,
                     &media_type,
                     &file_path_str,
@@ -213,33 +214,33 @@ pub async fn scan_library(
                 ).await?;
 
                 if !streams.is_empty() {
-                    if let Err(e) = ferrite_db::stream_repo::replace_streams(&mut *tx, &mid, &streams).await {
+                    if let Err(e) = ferrite_db::stream_repo::replace_streams(&mut tx, &mid, &streams).await {
                         warn!("Failed to store streams for '{}': {}", title, e);
                     }
                 }
                 if !chapters.is_empty() {
-                    if let Err(e) = ferrite_db::chapter_repo::replace_chapters(&mut *tx, &mid, &chapters).await {
+                    if let Err(e) = ferrite_db::chapter_repo::replace_chapters(&mut tx, &mid, &chapters).await {
                         warn!("Failed to store chapters for '{}': {}", title, e);
                     }
                 }
                 if let Some(keyframes_ms) = keyframe_index_ms.as_ref() {
-                    if let Err(e) = ferrite_db::keyframe_repo::replace_keyframes(&mut *tx, &mid, keyframes_ms).await {
+                    if let Err(e) = ferrite_db::keyframe_repo::replace_keyframes(&mut tx, &mid, keyframes_ms).await {
                         warn!("Failed to store keyframe index for '{}': {}", title, e);
                     }
                 }
                 if is_movie_library {
-                    if let Err(e) = movie_repo::upsert_movie_skeleton(&mut *tx, &mid, &title, year.map(|y| y as i64)).await {
+                    if let Err(e) = movie_repo::upsert_movie_skeleton(&mut tx, &mid, &title, year.map(|y| y as i64)).await {
                         warn!("Failed to create movie skeleton for '{}': {}", title, e);
                     }
                 }
 
                 let _show_id: Option<String> = if is_tv_library {
                     if let ParsedFilename::Episode(ParsedEpisode { show_name, season, episode }) = &parsed {
-                        match tv_repo::upsert_tv_show(&mut *tx, &library_id, show_name).await {
+                        match tv_repo::upsert_tv_show(&mut tx, &library_id, show_name).await {
                             Ok(show_id) => {
-                                match tv_repo::upsert_season(&mut *tx, &show_id, *season).await {
+                                match tv_repo::upsert_season(&mut tx, &show_id, *season).await {
                                     Ok(season_id) => {
-                                        if let Err(e) = tv_repo::upsert_episode(&mut *tx, &mid, &season_id, *episode).await {
+                                        if let Err(e) = tv_repo::upsert_episode(&mut tx, &mid, &season_id, *episode).await {
                                             warn!("Failed to create episode for '{}' S{:02}E{:02}: {}", show_name, season, episode, e);
                                         }
                                     }
@@ -317,7 +318,9 @@ pub async fn scan_library(
         scan_state.set_status(ScanStatus::Enriching).await;
 
         if is_tv_library {
-            scan_state.set_current("Enriching TV show metadata...").await;
+            scan_state
+                .set_current("Enriching TV show metadata...")
+                .await;
             match ferrite_metadata::enrichment::enrich_library_shows(
                 pool,
                 library_id,
@@ -655,7 +658,7 @@ pub async fn scan_library_incremental(
         let mut tx = pool.begin().await?;
 
         let mid = media_repo::insert_media_item(
-            &mut *tx,
+            &mut tx,
             &library.id,
             media_type,
             &file_path_str,
@@ -667,21 +670,21 @@ pub async fn scan_library_incremental(
         .await?;
 
         if !streams.is_empty() {
-            if let Err(e) = ferrite_db::stream_repo::replace_streams(&mut *tx, &mid, &streams).await
+            if let Err(e) = ferrite_db::stream_repo::replace_streams(&mut tx, &mid, &streams).await
             {
                 warn!("Failed to store streams for '{}': {}", title, e);
             }
         }
         if !chapters.is_empty() {
             if let Err(e) =
-                ferrite_db::chapter_repo::replace_chapters(&mut *tx, &mid, &chapters).await
+                ferrite_db::chapter_repo::replace_chapters(&mut tx, &mid, &chapters).await
             {
                 warn!("Failed to store chapters for '{}': {}", title, e);
             }
         }
         if let Some(keyframes_ms) = keyframe_index_ms.as_ref() {
             if let Err(e) =
-                ferrite_db::keyframe_repo::replace_keyframes(&mut *tx, &mid, keyframes_ms).await
+                ferrite_db::keyframe_repo::replace_keyframes(&mut tx, &mid, keyframes_ms).await
             {
                 warn!("Failed to store keyframe index for '{}': {}", title, e);
             }
@@ -689,7 +692,7 @@ pub async fn scan_library_incremental(
 
         if is_movie_library {
             if let Err(e) =
-                movie_repo::upsert_movie_skeleton(&mut *tx, &mid, &title, year.map(|y| y as i64))
+                movie_repo::upsert_movie_skeleton(&mut tx, &mid, &title, year.map(|y| y as i64))
                     .await
             {
                 warn!("Failed to create movie skeleton for '{}': {}", title, e);
@@ -703,26 +706,23 @@ pub async fn scan_library_incremental(
                 episode,
             }) = &parsed
             {
-                match tv_repo::upsert_tv_show(&mut *tx, library_id, show_name).await {
-                    Ok(show_id) => {
-                        match tv_repo::upsert_season(&mut *tx, &show_id, *season).await {
-                            Ok(season_id) => {
-                                if let Err(e) =
-                                    tv_repo::upsert_episode(&mut *tx, &mid, &season_id, *episode)
-                                        .await
-                                {
-                                    warn!(
-                                        "Failed to create episode for '{}' S{:02}E{:02}: {}",
-                                        show_name, season, episode, e
-                                    );
-                                }
+                match tv_repo::upsert_tv_show(&mut tx, library_id, show_name).await {
+                    Ok(show_id) => match tv_repo::upsert_season(&mut tx, &show_id, *season).await {
+                        Ok(season_id) => {
+                            if let Err(e) =
+                                tv_repo::upsert_episode(&mut tx, &mid, &season_id, *episode).await
+                            {
+                                warn!(
+                                    "Failed to create episode for '{}' S{:02}E{:02}: {}",
+                                    show_name, season, episode, e
+                                );
                             }
-                            Err(e) => warn!(
-                                "Failed to create season for '{}' S{:02}: {}",
-                                show_name, season, e
-                            ),
                         }
-                    }
+                        Err(e) => warn!(
+                            "Failed to create season for '{}' S{:02}: {}",
+                            show_name, season, e
+                        ),
+                    },
                     Err(e) => warn!("Failed to create TV show '{}': {}", show_name, e),
                 }
             }

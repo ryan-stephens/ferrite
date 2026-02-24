@@ -186,11 +186,10 @@ pub async fn list_media_item_ids_for_library(
     pool: &SqlitePool,
     library_id: &str,
 ) -> Result<Vec<String>> {
-    let rows: Vec<(String,)> =
-        sqlx::query_as("SELECT id FROM media_items WHERE library_id = ?")
-            .bind(library_id)
-            .fetch_all(pool)
-            .await?;
+    let rows: Vec<(String,)> = sqlx::query_as("SELECT id FROM media_items WHERE library_id = ?")
+        .bind(library_id)
+        .fetch_all(pool)
+        .await?;
     Ok(rows.into_iter().map(|(id,)| id).collect())
 }
 
