@@ -33,18 +33,27 @@ pub async fn replace_chapters(
         .execute(&mut *executor)
         .await?;
 
-    for c in chapters {
-        sqlx::query(
-            r#"INSERT INTO chapters (media_item_id, chapter_index, title, start_time_ms, end_time_ms)
-               VALUES (?, ?, ?, ?, ?)"#,
-        )
-        .bind(media_item_id)
-        .bind(c.chapter_index as i64)
-        .bind(&c.title)
-        .bind(c.start_time_ms as i64)
-        .bind(c.end_time_ms as i64)
-        .execute(&mut *executor)
-        .await?;
+    if chapters.is_empty() {
+        return Ok(());
+    }
+
+    // Batch insert: 5 bind params per row, chunks of 150 (750 < SQLite's 999 limit)
+    for chunk in chapters.chunks(150) {
+        let placeholders: Vec<&str> = chunk.iter().map(|_| "(?, ?, ?, ?, ?)").collect();
+        let sql = format!(
+            "INSERT INTO chapters (media_item_id, chapter_index, title, start_time_ms, end_time_ms) VALUES {}",
+            placeholders.join(", ")
+        );
+        let mut query = sqlx::query(&sql);
+        for c in chunk {
+            query = query
+                .bind(media_item_id)
+                .bind(c.chapter_index as i64)
+                .bind(&c.title)
+                .bind(c.start_time_ms as i64)
+                .bind(c.end_time_ms as i64);
+        }
+        query.execute(&mut *executor).await?;
     }
 
     Ok(())

@@ -228,7 +228,7 @@ export interface Episode {
 
 export interface ScanProgress {
   scanning: boolean;
-  status: 'scanning' | 'enriching' | 'complete' | 'failed';
+  status: 'scanning' | 'enriching' | 'subtitles' | 'complete' | 'failed';
   total_files: number;
   files_probed: number;
   files_inserted: number;
@@ -237,6 +237,8 @@ export interface ScanProgress {
   errors: number;
   current_item: string;
   elapsed_seconds: number;
+  phase_elapsed_seconds: number;
+  estimated_remaining_seconds: number | null;
   percent: number;
 }
 
@@ -404,7 +406,7 @@ export const api = {
   setupStatus: () => apiFetch<{ has_users: boolean }>('GET', '/api/users/setup'),
 
   // System Update
-  checkForUpdate: () => apiFetch<UpdateCheckResult>('GET', '/api/system/update/check'),
+  checkForUpdate: (force = false) => apiFetch<UpdateCheckResult>('GET', `/api/system/update/check${force ? '?force=true' : ''}`),
   applyUpdate: () => apiFetch<{ status: string; message: string }>('POST', '/api/system/update/apply'),
   updateStatus: () => apiFetch<UpdateProgress>('GET', '/api/system/update/status'),
   rollbackUpdate: () => apiFetch<{ status: string; message: string }>('POST', '/api/system/update/rollback'),

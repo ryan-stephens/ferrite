@@ -1,7 +1,7 @@
 use crate::auth::AuthUser;
 use crate::error::ApiError;
 use crate::state::AppState;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::response::{Html, IntoResponse, Json};
 use axum::Extension;
 use ferrite_db::user_repo;
@@ -142,9 +142,11 @@ async fn ensure_admin_if_present(
 
 /// GET /api/system/update/check — check GitHub for a newer release (admin-only).
 /// Results are cached in-memory for 15 minutes to avoid hitting the GitHub API rate limit.
+/// Pass `?force=true` to bypass the cache (e.g. when the user clicks "Check for Updates").
 pub async fn check_for_update(
     State(state): State<AppState>,
     auth_user: Option<Extension<AuthUser>>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, ApiError> {
     ensure_admin_if_present(&state, auth_user.as_ref()).await?;
 
@@ -152,8 +154,10 @@ pub async fn check_for_update(
         return Err(ApiError::bad_request("Self-update is disabled in config"));
     }
 
-    // Return cached result if still fresh (15 minutes)
-    {
+    let force = params.get("force").is_some_and(|v| v == "true");
+
+    // Return cached result if still fresh (15 minutes) and not forced
+    if !force {
         let cache = state.update_state.cached.lock().await;
         if let Some((ts, ref result)) = *cache {
             if ts.elapsed() < std::time::Duration::from_secs(15 * 60) {

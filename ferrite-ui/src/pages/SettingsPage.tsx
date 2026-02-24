@@ -101,11 +101,11 @@ export default function SettingsPage() {
     if (updatePollInterval) clearInterval(updatePollInterval);
   });
 
-  async function handleCheckForUpdate() {
+  async function handleCheckForUpdate(force = false) {
     if (updateChecking()) return;
     setUpdateChecking(true);
     try {
-      const info = await api.checkForUpdate();
+      const info = await api.checkForUpdate(force);
       setUpdateInfo(info);
     } catch { /* ignore — update check is best-effort */ }
     setUpdateChecking(false);
@@ -267,7 +267,7 @@ export default function SettingsPage() {
             <h2 class="text-sm font-semibold text-surface-800 uppercase tracking-wider">System Update</h2>
             <button
               class="btn-ghost text-xs flex items-center gap-1.5"
-              onClick={handleCheckForUpdate}
+              onClick={() => handleCheckForUpdate(true)}
               disabled={updateChecking() || updateApplying()}
             >
               <RefreshCw class={`w-3.5 h-3.5 ${updateChecking() ? 'animate-spin' : ''}`} />
@@ -533,7 +533,12 @@ export default function SettingsPage() {
                         <Show when={(progress()?.errors ?? 0) > 0}>
                           <span class="text-red-400">{progress()!.errors} errors</span>
                         </Show>
-                        <span class="ml-auto">{Math.floor((progress()?.elapsed_seconds ?? 0) / 60)}m {(progress()?.elapsed_seconds ?? 0) % 60}s</span>
+                        <span class="ml-auto">
+                          {Math.floor((progress()?.elapsed_seconds ?? 0) / 60)}m {(progress()?.elapsed_seconds ?? 0) % 60}s
+                          {progress()?.estimated_remaining_seconds != null && (
+                            <span class="text-surface-500"> — ~{Math.floor(progress()!.estimated_remaining_seconds! / 60)}m remaining</span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   </Show>

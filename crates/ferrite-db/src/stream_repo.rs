@@ -41,41 +41,51 @@ pub async fn replace_streams(
         .execute(&mut *executor)
         .await?;
 
-    // Insert all new streams
-    for s in streams {
-        sqlx::query(
-            r#"INSERT INTO media_streams (
-                media_item_id, stream_index, stream_type, codec_name, codec_long_name,
-                profile, language, title, is_default, is_forced,
-                width, height, frame_rate, pixel_format, bit_depth,
-                color_space, color_transfer, color_primaries,
-                channels, channel_layout, sample_rate, bitrate_bps
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
-        )
-        .bind(media_item_id)
-        .bind(s.stream_index as i64)
-        .bind(&s.stream_type)
-        .bind(&s.codec_name)
-        .bind(&s.codec_long_name)
-        .bind(&s.profile)
-        .bind(&s.language)
-        .bind(&s.title)
-        .bind(s.is_default as i32)
-        .bind(s.is_forced as i32)
-        .bind(s.width.map(|v| v as i64))
-        .bind(s.height.map(|v| v as i64))
-        .bind(&s.frame_rate)
-        .bind(&s.pixel_format)
-        .bind(s.bit_depth.map(|v| v as i64))
-        .bind(&s.color_space)
-        .bind(&s.color_transfer)
-        .bind(&s.color_primaries)
-        .bind(s.channels.map(|v| v as i64))
-        .bind(&s.channel_layout)
-        .bind(s.sample_rate.map(|v| v as i64))
-        .bind(s.bitrate_bps.map(|v| v as i64))
-        .execute(&mut *executor)
-        .await?;
+    if streams.is_empty() {
+        return Ok(());
+    }
+
+    // Batch insert: 22 bind params per row, chunks of 40 (880 < SQLite's 999 limit)
+    let row_placeholder = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    for chunk in streams.chunks(40) {
+        let placeholders: Vec<&str> = chunk.iter().map(|_| row_placeholder).collect();
+        let sql = format!(
+            "INSERT INTO media_streams (\
+                media_item_id, stream_index, stream_type, codec_name, codec_long_name, \
+                profile, language, title, is_default, is_forced, \
+                width, height, frame_rate, pixel_format, bit_depth, \
+                color_space, color_transfer, color_primaries, \
+                channels, channel_layout, sample_rate, bitrate_bps\
+            ) VALUES {}",
+            placeholders.join(", ")
+        );
+        let mut query = sqlx::query(&sql);
+        for s in chunk {
+            query = query
+                .bind(media_item_id)
+                .bind(s.stream_index as i64)
+                .bind(&s.stream_type)
+                .bind(&s.codec_name)
+                .bind(&s.codec_long_name)
+                .bind(&s.profile)
+                .bind(&s.language)
+                .bind(&s.title)
+                .bind(s.is_default as i32)
+                .bind(s.is_forced as i32)
+                .bind(s.width.map(|v| v as i64))
+                .bind(s.height.map(|v| v as i64))
+                .bind(&s.frame_rate)
+                .bind(&s.pixel_format)
+                .bind(s.bit_depth.map(|v| v as i64))
+                .bind(&s.color_space)
+                .bind(&s.color_transfer)
+                .bind(&s.color_primaries)
+                .bind(s.channels.map(|v| v as i64))
+                .bind(&s.channel_layout)
+                .bind(s.sample_rate.map(|v| v as i64))
+                .bind(s.bitrate_bps.map(|v| v as i64));
+        }
+        query.execute(&mut *executor).await?;
     }
 
     Ok(())

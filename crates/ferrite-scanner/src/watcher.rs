@@ -310,7 +310,7 @@ async fn enrich_library_after_scan(
     image_cache: Option<&Arc<ferrite_metadata::image_cache::ImageCache>>,
 ) {
     let (provider, cache) = match (tmdb_provider, image_cache) {
-        (Some(p), Some(c)) => (p, c),
+        (Some(p), Some(c)) => (p.clone(), c.clone()),
         _ => return, // No metadata provider configured
     };
 
@@ -334,8 +334,8 @@ async fn enrich_library_after_scan(
             match ferrite_metadata::enrichment::enrich_library_shows(
                 pool,
                 library_id,
-                provider.as_ref(),
-                cache.as_ref(),
+                provider,
+                cache,
             )
             .await
             {
@@ -352,8 +352,8 @@ async fn enrich_library_after_scan(
             match ferrite_metadata::enrichment::enrich_library_movies(
                 pool,
                 library_id,
-                provider.as_ref(),
-                cache.as_ref(),
+                provider,
+                cache,
             )
             .await
             {

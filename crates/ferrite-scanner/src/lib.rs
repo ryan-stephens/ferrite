@@ -95,6 +95,51 @@ pub async fn scan_library(
     // ffprobe and ffmpeg work still proceed concurrently.
     let write_sem = Arc::new(Semaphore::new(1));
 
+    // For movie libraries: pipeline Phase 1 → Phase 2 by enriching movies as
+    // they are committed, overlapping I/O-heavy TMDB fetches with ongoing probes.
+    // TV libraries still wait for all episodes to be committed before enrichment.
+    let movie_enrichment_tx: Option<tokio::sync::mpsc::Sender<(String, String, Option<i32>)>> =
+        if is_movie_library {
+            if let (Some(provider), Some(img_cache)) =
+                (tmdb_provider.as_ref(), image_cache.as_ref())
+            {
+                let (tx, mut rx) =
+                    tokio::sync::mpsc::channel::<(String, String, Option<i32>)>(64);
+                let pool = pool.clone();
+                let provider = provider.clone();
+                let img_cache = img_cache.clone();
+                let write_sem = write_sem.clone();
+                let scan_state = scan_state.clone();
+                tokio::spawn(async move {
+                    while let Some((media_item_id, title, year)) = rx.recv().await {
+                        scan_state
+                            .set_current(&format!("Enriching: {}", title))
+                            .await;
+                        match ferrite_metadata::enrichment::enrich_single_movie(
+                            &pool,
+                            &media_item_id,
+                            &title,
+                            year,
+                            provider.as_ref(),
+                            img_cache.as_ref(),
+                            &write_sem,
+                        )
+                        .await
+                        {
+                            Ok(true) => scan_state.inc_enriched(),
+                            Ok(false) => {}
+                            Err(e) => warn!("Movie enrichment failed for '{}': {}", title, e),
+                        }
+                    }
+                });
+                Some(tx)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
     let mut count = 0u32;
 
     let phase1_results = stream::iter(files)
@@ -108,6 +153,7 @@ pub async fn scan_library(
             let media_type = media_type.to_string();
             let scan_state = scan_state.clone();
             let existing = existing.clone(); // cheap Arc clone
+            let movie_enrichment_tx = movie_enrichment_tx.clone();
 
             async move {
                 let file_path_str = file.path.to_string_lossy().to_string();
@@ -137,7 +183,7 @@ pub async fn scan_library(
 
                 scan_state.set_current(&format!("Probing: {}", title)).await;
 
-                let (probe_data, streams, chapters, keyframe_index_ms) = {
+                let (probe_data, streams, chapters) = {
                     let _permit = probe_sem.acquire().await.expect("semaphore closed");
                     match probe::probe_file(&ffprobe, &file.path).await {
                         Ok(pr) => {
@@ -179,17 +225,12 @@ pub async fn scan_library(
                                 duration_ms: pr.duration_ms,
                                 bitrate_kbps: pr.bitrate_kbps,
                             };
-                            (
-                                Some(data),
-                                stream_inserts,
-                                chapter_inserts,
-                                pr.keyframe_index_ms,
-                            )
+                            (Some(data), stream_inserts, chapter_inserts)
                         }
                         Err(e) => {
                             warn!("ffprobe failed for {}: {}", file.path.display(), e);
                             scan_state.inc_errors();
-                            (None, Vec::new(), Vec::new(), None)
+                            (None, Vec::new(), Vec::new())
                         }
                     }
                 };
@@ -223,11 +264,7 @@ pub async fn scan_library(
                         warn!("Failed to store chapters for '{}': {}", title, e);
                     }
                 }
-                if let Some(keyframes_ms) = keyframe_index_ms.as_ref() {
-                    if let Err(e) = ferrite_db::keyframe_repo::replace_keyframes(&mut tx, &mid, keyframes_ms).await {
-                        warn!("Failed to store keyframe index for '{}': {}", title, e);
-                    }
-                }
+                // Keyframe indexing is deferred to on-demand (lazy) probing at seek time.
                 if is_movie_library {
                     if let Err(e) = movie_repo::upsert_movie_skeleton(&mut tx, &mid, &title, year.map(|y| y as i64)).await {
                         warn!("Failed to create movie skeleton for '{}': {}", title, e);
@@ -256,6 +293,13 @@ pub async fn scan_library(
                 tx.commit().await?;
                 drop(_write_permit);
                 scan_state.inc_inserted();
+
+                // Pipeline enrichment: send movie to background enrichment worker
+                if let Some(ref enrich_tx) = movie_enrichment_tx {
+                    let _ = enrich_tx
+                        .send((mid.clone(), title.clone(), year.map(|y| y as i32)))
+                        .await;
+                }
 
                 // Collect embedded subtitle stream descriptors for subtitle phase
                 let embedded_streams: Vec<extract::EmbeddedSubtitleStream> = streams
@@ -304,16 +348,21 @@ pub async fn scan_library(
         }
     }
 
+    // Drop the pipeline sender so the enrichment worker knows Phase 1 is done.
+    drop(movie_enrichment_tx);
+
     info!(
         "Phase 1 complete for '{}': {} new items indexed",
         library.name, count
     );
 
-    // ── Phase 2: metadata enrichment (runs AFTER all files are committed) ─────
-    // This is critical: enrichment must happen after all episodes are in the DB
-    // so that enrich_library_shows sees every season and episode for each show.
-    // Previously, enrichment was fire-and-forget during Phase 1, causing a race
-    // where shows were enriched before all their episodes were committed.
+    // ── Phase 2: metadata enrichment ─────────────────────────────────────────
+    // TV libraries: enrichment runs AFTER all files are committed so that
+    // enrich_library_shows sees every season and episode for each show.
+    // Movie libraries: enrichment was pipelined during Phase 1 via the
+    // movie_enrichment_tx channel — only run batch enrichment as a fallback
+    // for any movies missed by the pipeline (e.g. if TMDB was not configured
+    // at scan start but is now available).
     if let (Some(provider), Some(img_cache)) = (tmdb_provider.as_ref(), image_cache.as_ref()) {
         scan_state.set_status(ScanStatus::Enriching).await;
 
@@ -324,8 +373,8 @@ pub async fn scan_library(
             match ferrite_metadata::enrichment::enrich_library_shows(
                 pool,
                 library_id,
-                provider.as_ref(),
-                img_cache.as_ref(),
+                provider.clone(),
+                img_cache.clone(),
             )
             .await
             {
@@ -337,18 +386,20 @@ pub async fn scan_library(
                 Err(e) => warn!("TV enrichment failed for '{}': {}", library.name, e),
             }
         } else if is_movie_library {
+            // Catch any movies that weren't enriched during the pipeline pass
+            // (e.g. race conditions, or pipeline was not active).
             scan_state.set_current("Enriching movie metadata...").await;
             match ferrite_metadata::enrichment::enrich_library_movies(
                 pool,
                 library_id,
-                provider.as_ref(),
-                img_cache.as_ref(),
+                provider.clone(),
+                img_cache.clone(),
             )
             .await
             {
                 Ok(n) => {
                     if n > 0 {
-                        info!("Enriched {} movie(s) in '{}'", n, library.name);
+                        info!("Enriched {} additional movie(s) in '{}'", n, library.name);
                     }
                 }
                 Err(e) => warn!("Movie enrichment failed for '{}': {}", library.name, e),
@@ -592,7 +643,7 @@ pub async fn scan_library_incremental(
             ParsedFilename::Unknown(name) => (name.clone(), None),
         };
 
-        let (probe_data, streams, chapters, keyframe_index_ms) =
+        let (probe_data, streams, chapters) =
             match probe::probe_file(ffprobe_path, &path).await {
                 Ok(pr) => {
                     let stream_inserts: Vec<StreamInsert> = pr
@@ -642,16 +693,11 @@ pub async fn scan_library_incremental(
                         bitrate_kbps: pr.bitrate_kbps,
                     };
 
-                    (
-                        Some(data),
-                        stream_inserts,
-                        chapter_inserts,
-                        pr.keyframe_index_ms,
-                    )
+                    (Some(data), stream_inserts, chapter_inserts)
                 }
                 Err(e) => {
                     warn!("ffprobe failed for changed path {}: {}", path.display(), e);
-                    (None, Vec::new(), Vec::new(), None)
+                    (None, Vec::new(), Vec::new())
                 }
             };
 
@@ -682,13 +728,7 @@ pub async fn scan_library_incremental(
                 warn!("Failed to store chapters for '{}': {}", title, e);
             }
         }
-        if let Some(keyframes_ms) = keyframe_index_ms.as_ref() {
-            if let Err(e) =
-                ferrite_db::keyframe_repo::replace_keyframes(&mut tx, &mid, keyframes_ms).await
-            {
-                warn!("Failed to store keyframe index for '{}': {}", title, e);
-            }
-        }
+        // Keyframe indexing is deferred to on-demand (lazy) probing at seek time.
 
         if is_movie_library {
             if let Err(e) =

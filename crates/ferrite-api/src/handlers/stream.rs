@@ -5,17 +5,26 @@ use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
+use dashmap::DashMap;
 use ferrite_core::config::HlsSegmentMimeMode;
 use ferrite_db::{keyframe_repo, media_repo, stream_repo, subtitle_repo};
 use ferrite_stream::compat::{self, StreamStrategy};
 use ferrite_stream::{direct, transcode};
 use serde::Deserialize;
 use sqlx::SqlitePool;
+use std::sync::Arc;
 use std::time::Instant;
-use tokio::sync::OwnedSemaphorePermit;
+use tokio::sync::{Mutex, OwnedSemaphorePermit};
 use tokio_util::io::ReaderStream;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 use uuid::Uuid;
+
+/// Per-media lock to prevent duplicate concurrent keyframe probes.
+/// When the first seek for a media item triggers a lazy probe, this lock
+/// ensures that concurrent seeks for the same media wait rather than
+/// spawning redundant ffprobe processes.
+static KEYFRAME_PROBE_LOCKS: std::sync::LazyLock<DashMap<String, Arc<Mutex<()>>>> =
+    std::sync::LazyLock::new(DashMap::new);
 
 #[derive(Deserialize, Default)]
 pub struct StreamQuery {
@@ -173,7 +182,25 @@ async fn resolve_seek_start(
                     .await
                 {
                     Ok(Some(kf)) => (kf, "index"),
-                    Ok(None) => (requested_start, "requested"),
+                    Ok(None) => {
+                        // No keyframes cached yet — lazily probe and cache them.
+                        match lazy_probe_keyframes(state, media_id, file_path).await {
+                            true => {
+                                // Retry lookup after populating the index.
+                                match keyframe_repo::find_keyframe_before(
+                                    &state.db,
+                                    media_id,
+                                    requested_start,
+                                )
+                                .await
+                                {
+                                    Ok(Some(kf)) => (kf, "index-lazy"),
+                                    _ => (requested_start, "requested"),
+                                }
+                            }
+                            false => (requested_start, "requested"),
+                        }
+                    }
                     Err(e) => {
                         warn!(
                             "Keyframe index lookup failed for media {} at {:.3}s: {}",
@@ -192,6 +219,72 @@ async fn resolve_seek_start(
             (kf, "ffprobe", t0.elapsed().as_secs_f64() * 1000.0)
         }
     }
+}
+
+/// Lazily probe and cache keyframe positions for a media item.
+///
+/// Uses a per-media lock to prevent duplicate concurrent probes when multiple
+/// seeks arrive simultaneously for the same un-indexed media.
+/// Returns `true` if keyframes were successfully probed and cached.
+async fn lazy_probe_keyframes(
+    state: &AppState,
+    media_id: &str,
+    file_path: &std::path::Path,
+) -> bool {
+    let lock = KEYFRAME_PROBE_LOCKS
+        .entry(media_id.to_string())
+        .or_insert_with(|| Arc::new(Mutex::new(())))
+        .clone();
+
+    let _guard = lock.lock().await;
+
+    // Double-check: another task may have populated keyframes while we waited.
+    match keyframe_repo::has_keyframes(&state.db, media_id).await {
+        Ok(true) => return true,
+        Ok(false) => {}
+        Err(e) => {
+            warn!("Keyframe existence check failed for {}: {}", media_id, e);
+            return false;
+        }
+    }
+
+    let ffprobe_path = &state.config.transcode.ffprobe_path;
+    debug!(
+        "Lazy-probing keyframes for media {} ({})",
+        media_id,
+        file_path.display()
+    );
+
+    let keyframes_ms =
+        match ferrite_scanner::probe::probe_keyframe_index(ffprobe_path, file_path).await {
+            Some(kfs) if !kfs.is_empty() => kfs,
+            Some(_) => {
+                debug!("No keyframes found for media {}", media_id);
+                return false;
+            }
+            None => {
+                warn!("Keyframe probe failed for media {}", media_id);
+                return false;
+            }
+        };
+
+    debug!(
+        "Lazy-probed {} keyframes for media {}",
+        keyframes_ms.len(),
+        media_id
+    );
+
+    if let Err(e) =
+        keyframe_repo::replace_keyframes_pool(&state.db, media_id, &keyframes_ms).await
+    {
+        warn!(
+            "Failed to cache lazy-probed keyframes for {}: {}",
+            media_id, e
+        );
+        return false;
+    }
+
+    true
 }
 
 async fn acquire_transcode_permit(

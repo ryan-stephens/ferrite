@@ -233,6 +233,8 @@ pub async fn scan_status(
             errors: 0,
             current_item: String::new(),
             elapsed_seconds: 0,
+            phase_elapsed_seconds: 0,
+            estimated_remaining_seconds: None,
             percent: 100,
         })),
     }

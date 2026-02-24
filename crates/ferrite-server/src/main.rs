@@ -383,7 +383,7 @@ path = "ferrite.db"
 max_connections = 16
 
 [scanner]
-concurrent_probes = 4
+concurrent_probes = 8
 watch_debounce_seconds = 2
 
 [transcode]

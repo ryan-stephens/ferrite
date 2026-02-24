@@ -5,6 +5,8 @@ use anyhow::Result;
 use ferrite_db::{movie_repo, tv_repo};
 use futures::stream::{self, StreamExt};
 use sqlx::SqlitePool;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 const EPISODE_STILL_DOWNLOAD_CONCURRENCY: usize = 8;
@@ -130,8 +132,8 @@ async fn find_best_tv_match(
 pub async fn enrich_library_movies(
     pool: &SqlitePool,
     library_id: &str,
-    provider: &dyn MetadataProvider,
-    image_cache: &ImageCache,
+    provider: Arc<dyn MetadataProvider>,
+    image_cache: Arc<ImageCache>,
 ) -> Result<u32> {
     let pending = movie_repo::get_movies_needing_metadata(pool, library_id).await?;
 
@@ -140,107 +142,119 @@ pub async fn enrich_library_movies(
         return Ok(0);
     }
 
+    let pending_count = pending.len();
     info!(
         "Enriching metadata for {} movies in library {}",
-        pending.len(),
+        pending_count,
         library_id
     );
-    let mut enriched = 0u32;
+    let enriched = Arc::new(AtomicU32::new(0));
 
-    for item in &pending {
-        let year = item.year.map(|y| y as i32);
+    stream::iter(pending)
+        .map(|item| {
+            let provider = provider.clone();
+            let image_cache = image_cache.clone();
+            let enriched = enriched.clone();
+            let pool = pool.clone();
+            async move {
+                let year = item.year.map(|y| y as i32);
 
-        // Search TMDB
-        let results = match provider.search_movie(&item.title, year).await {
-            Ok(r) => r,
-            Err(e) => {
-                warn!("TMDB search failed for '{}': {}", item.title, e);
-                continue;
-            }
-        };
+                // Search TMDB
+                let results = match provider.search_movie(&item.title, year).await {
+                    Ok(r) => r,
+                    Err(e) => {
+                        warn!("TMDB search failed for '{}': {}", item.title, e);
+                        return;
+                    }
+                };
 
-        // Pick best match
-        let best = match tmdb::pick_best_match(&results, &item.title, year) {
-            Some(m) => m,
-            None => {
-                debug!("No TMDB match for '{}'", item.title);
-                continue;
-            }
-        };
+                // Pick best match
+                let best = match tmdb::pick_best_match(&results, &item.title, year) {
+                    Some(m) => m,
+                    None => {
+                        debug!("No TMDB match for '{}'", item.title);
+                        return;
+                    }
+                };
 
-        // Get full details
-        let details = match provider.get_movie_details(best.tmdb_id).await {
-            Ok(d) => d,
-            Err(e) => {
-                warn!(
-                    "TMDB details failed for '{}' (id={}): {}",
-                    item.title, best.tmdb_id, e
+                // Get full details
+                let details = match provider.get_movie_details(best.tmdb_id).await {
+                    Ok(d) => d,
+                    Err(e) => {
+                        warn!(
+                            "TMDB details failed for '{}' (id={}): {}",
+                            item.title, best.tmdb_id, e
+                        );
+                        return;
+                    }
+                };
+
+                // Download poster
+                let poster_local = if let Some(ref pp) = details.poster_path {
+                    match image_cache.ensure_poster(pp, details.tmdb_id).await {
+                        Ok(f) => Some(f),
+                        Err(e) => {
+                            warn!("Poster download failed for '{}': {}", item.title, e);
+                            None
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                // Download backdrop
+                let backdrop_local = if let Some(ref bp) = details.backdrop_path {
+                    match image_cache.ensure_backdrop(bp, details.tmdb_id).await {
+                        Ok(f) => Some(f),
+                        Err(e) => {
+                            warn!("Backdrop download failed: {}", e);
+                            None
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                // Save to DB
+                let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
+                if let Err(e) = movie_repo::update_movie_metadata(
+                    &pool,
+                    &item.media_item_id,
+                    Some(details.tmdb_id),
+                    details.imdb_id.as_deref(),
+                    &details.title,
+                    details.sort_title.as_deref(),
+                    details.year.map(|y| y as i64),
+                    details.overview.as_deref(),
+                    details.tagline.as_deref(),
+                    details.rating,
+                    details.content_rating.as_deref(),
+                    poster_local.as_deref(),
+                    backdrop_local.as_deref(),
+                    Some(genres_json.as_str()),
+                )
+                .await
+                {
+                    warn!("DB update failed for '{}': {}", item.title, e);
+                    return;
+                }
+
+                info!(
+                    "Enriched: '{}' -> TMDB {} ({})",
+                    item.title, details.tmdb_id, details.title
                 );
-                continue;
+                enriched.fetch_add(1, Ordering::Relaxed);
             }
-        };
+        })
+        .buffer_unordered(8)
+        .collect::<Vec<()>>()
+        .await;
 
-        // Download poster
-        let poster_local = if let Some(ref pp) = details.poster_path {
-            match image_cache.ensure_poster(pp, details.tmdb_id).await {
-                Ok(f) => Some(f),
-                Err(e) => {
-                    warn!("Poster download failed for '{}': {}", item.title, e);
-                    None
-                }
-            }
-        } else {
-            None
-        };
-
-        // Download backdrop
-        let backdrop_local = if let Some(ref bp) = details.backdrop_path {
-            match image_cache.ensure_backdrop(bp, details.tmdb_id).await {
-                Ok(f) => Some(f),
-                Err(e) => {
-                    warn!("Backdrop download failed: {}", e);
-                    None
-                }
-            }
-        } else {
-            None
-        };
-
-        // Save to DB
-        let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
-        if let Err(e) = movie_repo::update_movie_metadata(
-            pool,
-            &item.media_item_id,
-            Some(details.tmdb_id),
-            details.imdb_id.as_deref(),
-            &details.title,
-            details.sort_title.as_deref(),
-            details.year.map(|y| y as i64),
-            details.overview.as_deref(),
-            details.tagline.as_deref(),
-            details.rating,
-            details.content_rating.as_deref(),
-            poster_local.as_deref(),
-            backdrop_local.as_deref(),
-            Some(genres_json.as_str()),
-        )
-        .await
-        {
-            warn!("DB update failed for '{}': {}", item.title, e);
-            continue;
-        }
-
-        info!(
-            "Enriched: '{}' -> TMDB {} ({})",
-            item.title, details.tmdb_id, details.title
-        );
-        enriched += 1;
-    }
-
+    let enriched = enriched.load(Ordering::Relaxed);
     info!(
         "Metadata enrichment complete: {}/{} movies enriched",
         enriched,
-        pending.len()
+        pending_count
     );
     Ok(enriched)
 }
@@ -251,8 +265,8 @@ pub async fn enrich_library_movies(
 pub async fn enrich_library_shows(
     pool: &SqlitePool,
     library_id: &str,
-    provider: &dyn MetadataProvider,
-    image_cache: &ImageCache,
+    provider: Arc<dyn MetadataProvider>,
+    image_cache: Arc<ImageCache>,
 ) -> Result<u32> {
     let pending = tv_repo::get_shows_needing_metadata(pool, library_id).await?;
 
@@ -260,137 +274,62 @@ pub async fn enrich_library_shows(
         debug!("No TV shows needing metadata in library {}", library_id);
     }
 
+    let pending_count = pending.len();
     info!(
         "Enriching metadata for {} TV shows in library {}",
-        pending.len(),
+        pending_count,
         library_id
     );
-    let mut enriched = 0u32;
+    let enriched = Arc::new(AtomicU32::new(0));
 
-    for (show_id, title, year) in &pending {
-        // Strip trailing year from title if present (e.g. "Star Trek Lower Decks 2020" → "Star Trek Lower Decks")
-        let (search_title, parsed_year) = strip_trailing_year(title);
-        let year_i32 = year.map(|y| y as i32).or(parsed_year);
+    stream::iter(pending)
+        .map(|(show_id, title, year)| {
+            let provider = provider.clone();
+            let image_cache = image_cache.clone();
+            let enriched = enriched.clone();
+            let pool = pool.clone();
+            async move {
+                // Strip trailing year from title if present (e.g. "Star Trek Lower Decks 2020" → "Star Trek Lower Decks")
+                let (search_title, parsed_year) = strip_trailing_year(&title);
+                let year_i32 = year.map(|y| y as i32).or(parsed_year);
 
-        let (best, matched_query, result_count) =
-            match find_best_tv_match(provider, &search_title, year_i32).await {
-                Some(found) => found,
-                None => {
+                let (best, matched_query, result_count) =
+                    match find_best_tv_match(provider.as_ref(), &search_title, year_i32).await {
+                        Some(found) => found,
+                        None => {
+                            debug!(
+                                "No TMDB match for TV show '{}' (searched: '{}')",
+                                title, search_title
+                            );
+                            return;
+                        }
+                    };
+
+                if !matched_query.eq_ignore_ascii_case(&search_title) {
                     debug!(
-                        "No TMDB match for TV show '{}' (searched: '{}')",
-                        title, search_title
+                        "TMDB TV match fallback used for '{}': '{}' ({} results)",
+                        title, matched_query, result_count
                     );
-                    continue;
                 }
-            };
 
-        if !matched_query.eq_ignore_ascii_case(&search_title) {
-            debug!(
-                "TMDB TV match fallback used for '{}': '{}' ({} results)",
-                title, matched_query, result_count
-            );
-        }
+                // Get full details
+                let details = match provider.get_tv_details(best.tmdb_id).await {
+                    Ok(d) => d,
+                    Err(e) => {
+                        warn!(
+                            "TMDB TV details failed for '{}' (id={}): {}",
+                            title, best.tmdb_id, e
+                        );
+                        return;
+                    }
+                };
 
-        // Get full details
-        let details = match provider.get_tv_details(best.tmdb_id).await {
-            Ok(d) => d,
-            Err(e) => {
-                warn!(
-                    "TMDB TV details failed for '{}' (id={}): {}",
-                    title, best.tmdb_id, e
-                );
-                continue;
-            }
-        };
-
-        // Download poster
-        let poster_local = if let Some(ref pp) = details.poster_path {
-            match image_cache.ensure_poster(pp, details.tmdb_id).await {
-                Ok(f) => Some(f),
-                Err(e) => {
-                    warn!("Poster download failed for '{}': {}", title, e);
-                    None
-                }
-            }
-        } else {
-            None
-        };
-
-        // Download backdrop
-        let backdrop_local = if let Some(ref bp) = details.backdrop_path {
-            match image_cache.ensure_backdrop(bp, details.tmdb_id).await {
-                Ok(f) => Some(f),
-                Err(e) => {
-                    warn!("Backdrop download failed for '{}': {}", title, e);
-                    None
-                }
-            }
-        } else {
-            None
-        };
-
-        // Save to DB
-        let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
-        if let Err(e) = tv_repo::update_show_metadata(
-            pool,
-            show_id,
-            Some(details.tmdb_id),
-            details.year.map(|y| y as i64),
-            details.overview.as_deref(),
-            details.status.as_deref(),
-            poster_local.as_deref(),
-            backdrop_local.as_deref(),
-            Some(genres_json.as_str()),
-        )
-        .await
-        {
-            warn!("DB update failed for TV show '{}': {}", title, e);
-            continue;
-        }
-
-        info!(
-            "Enriched TV: '{}' -> TMDB {} ({})",
-            title, details.tmdb_id, details.title
-        );
-        enriched += 1;
-
-        // Fetch episode metadata for every season we have on disk
-        let seasons = match tv_repo::get_seasons_for_show(pool, show_id).await {
-            Ok(s) => s,
-            Err(e) => {
-                warn!("Failed to get seasons for show '{}': {}", title, e);
-                continue;
-            }
-        };
-
-        for (season_id, season_number) in &seasons {
-            let episodes = match provider
-                .get_season_episodes(details.tmdb_id, *season_number)
-                .await
-            {
-                Ok(eps) => eps,
-                Err(e) => {
-                    warn!(
-                        "TMDB season {} fetch failed for '{}': {}",
-                        season_number, title, e
-                    );
-                    continue;
-                }
-            };
-
-            for ep in &episodes {
-                // Cache still image if present
-                let still_local = if let Some(ref sp) = ep.still_path {
-                    match image_cache
-                        .ensure_still(sp, details.tmdb_id, *season_number, ep.episode_number)
-                        .await
-                    {
+                // Download poster
+                let poster_local = if let Some(ref pp) = details.poster_path {
+                    match image_cache.ensure_poster(pp, details.tmdb_id).await {
                         Ok(f) => Some(f),
                         Err(e) => {
-                            debug!(
-                                "Still image download failed for S{}E{}: {}",
-                                season_number, ep.episode_number, e
-                            );
+                            warn!("Poster download failed for '{}': {}", title, e);
                             None
                         }
                     }
@@ -398,37 +337,150 @@ pub async fn enrich_library_shows(
                     None
                 };
 
-                if let Err(e) = tv_repo::update_episode_metadata(
-                    pool,
-                    season_id,
-                    ep.episode_number as i64,
-                    ep.title.as_deref(),
-                    ep.overview.as_deref(),
-                    ep.air_date.as_deref(),
-                    still_local.as_deref(),
+                // Download backdrop
+                let backdrop_local = if let Some(ref bp) = details.backdrop_path {
+                    match image_cache.ensure_backdrop(bp, details.tmdb_id).await {
+                        Ok(f) => Some(f),
+                        Err(e) => {
+                            warn!("Backdrop download failed for '{}': {}", title, e);
+                            None
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                // Save to DB
+                let genres_json = serde_json::to_string(&details.genres).unwrap_or_default();
+                if let Err(e) = tv_repo::update_show_metadata(
+                    &pool,
+                    &show_id,
+                    Some(details.tmdb_id),
+                    details.year.map(|y| y as i64),
+                    details.overview.as_deref(),
+                    details.status.as_deref(),
+                    poster_local.as_deref(),
+                    backdrop_local.as_deref(),
+                    Some(genres_json.as_str()),
                 )
                 .await
                 {
-                    warn!(
-                        "Failed to update episode S{}E{} for '{}': {}",
-                        season_number, ep.episode_number, title, e
+                    warn!("DB update failed for TV show '{}': {}", title, e);
+                    return;
+                }
+
+                info!(
+                    "Enriched TV: '{}' -> TMDB {} ({})",
+                    title, details.tmdb_id, details.title
+                );
+                enriched.fetch_add(1, Ordering::Relaxed);
+
+                // Fetch episode metadata for every season we have on disk
+                let seasons = match tv_repo::get_seasons_for_show(&pool, &show_id).await {
+                    Ok(s) => s,
+                    Err(e) => {
+                        warn!("Failed to get seasons for show '{}': {}", title, e);
+                        return;
+                    }
+                };
+
+                for (season_id, season_number) in &seasons {
+                    let episodes = match provider
+                        .get_season_episodes(details.tmdb_id, *season_number)
+                        .await
+                    {
+                        Ok(eps) => eps,
+                        Err(e) => {
+                            warn!(
+                                "TMDB season {} fetch failed for '{}': {}",
+                                season_number, title, e
+                            );
+                            continue;
+                        }
+                    };
+
+                    // Download episode still images concurrently, then write metadata.
+                    struct EpStill {
+                        episode_number: i64,
+                        ep_title: Option<String>,
+                        overview: Option<String>,
+                        air_date: Option<String>,
+                        still_local: Option<String>,
+                    }
+                    let ic = image_cache.clone();
+                    let tmdb_id = details.tmdb_id;
+                    let sn = *season_number;
+                    let ep_data: Vec<EpStill> = stream::iter(episodes)
+                        .map(move |ep| {
+                            let ic = ic.clone();
+                            async move {
+                                let still_local = if let Some(ref sp) = ep.still_path {
+                                    match ic
+                                        .ensure_still(sp, tmdb_id, sn, ep.episode_number)
+                                        .await
+                                    {
+                                        Ok(f) => Some(f),
+                                        Err(e) => {
+                                            debug!(
+                                                "Still image download failed for S{}E{}: {}",
+                                                sn, ep.episode_number, e
+                                            );
+                                            None
+                                        }
+                                    }
+                                } else {
+                                    None
+                                };
+                                EpStill {
+                                    episode_number: ep.episode_number as i64,
+                                    ep_title: ep.title,
+                                    overview: ep.overview,
+                                    air_date: ep.air_date,
+                                    still_local,
+                                }
+                            }
+                        })
+                        .buffer_unordered(EPISODE_STILL_DOWNLOAD_CONCURRENCY)
+                        .collect()
+                        .await;
+
+                    for ep in &ep_data {
+                        if let Err(e) = tv_repo::update_episode_metadata(
+                            &pool,
+                            season_id,
+                            ep.episode_number,
+                            ep.ep_title.as_deref(),
+                            ep.overview.as_deref(),
+                            ep.air_date.as_deref(),
+                            ep.still_local.as_deref(),
+                        )
+                        .await
+                        {
+                            warn!(
+                                "Failed to update episode S{}E{} for '{}': {}",
+                                season_number, ep.episode_number, title, e
+                            );
+                        }
+                    }
+
+                    debug!(
+                        "Updated {} episode(s) for '{}' season {}",
+                        ep_data.len(),
+                        title,
+                        season_number
                     );
                 }
             }
+        })
+        .buffer_unordered(4)
+        .collect::<Vec<()>>()
+        .await;
 
-            debug!(
-                "Updated {} episode(s) for '{}' season {}",
-                episodes.len(),
-                title,
-                season_number
-            );
-        }
-    }
-
+    let enriched = enriched.load(Ordering::Relaxed);
     info!(
         "TV metadata enrichment complete: {}/{} shows enriched",
         enriched,
-        pending.len()
+        pending_count
     );
 
     // Backfill episode metadata for shows that already have show-level metadata
@@ -440,66 +492,104 @@ pub async fn enrich_library_shows(
             backfill.len(),
             library_id
         );
-        for (show_id, title, tmdb_id_opt) in &backfill {
-            let tmdb_id = match tmdb_id_opt {
-                Some(id) => *id,
-                None => continue,
-            };
-            let seasons = match tv_repo::get_seasons_for_show(pool, show_id).await {
-                Ok(s) => s,
-                Err(e) => {
-                    warn!("get_seasons_for_show failed for '{}': {}", title, e);
-                    continue;
-                }
-            };
-            for (season_id, season_number) in &seasons {
-                let episodes = match provider.get_season_episodes(tmdb_id, *season_number).await {
-                    Ok(eps) => eps,
-                    Err(e) => {
-                        warn!(
-                            "TMDB season {} fetch failed for '{}': {}",
-                            season_number, title, e
-                        );
-                        continue;
-                    }
-                };
-                for ep in &episodes {
-                    let still_local = if let Some(ref sp) = ep.still_path {
-                        match image_cache
-                            .ensure_still(sp, tmdb_id, *season_number, ep.episode_number)
-                            .await
-                        {
-                            Ok(f) => Some(f),
-                            Err(e) => {
-                                debug!(
-                                    "Still download failed S{}E{}: {}",
-                                    season_number, ep.episode_number, e
-                                );
-                                None
-                            }
-                        }
-                    } else {
-                        None
+        stream::iter(backfill)
+            .map(|(show_id, title, tmdb_id_opt)| {
+                let provider = provider.clone();
+                let image_cache = image_cache.clone();
+                let pool = pool.clone();
+                async move {
+                    let tmdb_id = match tmdb_id_opt {
+                        Some(id) => id,
+                        None => return,
                     };
-                    let _ = tv_repo::update_episode_metadata(
-                        pool,
-                        season_id,
-                        ep.episode_number as i64,
-                        ep.title.as_deref(),
-                        ep.overview.as_deref(),
-                        ep.air_date.as_deref(),
-                        still_local.as_deref(),
-                    )
-                    .await;
+                    let seasons = match tv_repo::get_seasons_for_show(&pool, &show_id).await {
+                        Ok(s) => s,
+                        Err(e) => {
+                            warn!("get_seasons_for_show failed for '{}': {}", title, e);
+                            return;
+                        }
+                    };
+                    for (season_id, season_number) in &seasons {
+                        let episodes =
+                            match provider.get_season_episodes(tmdb_id, *season_number).await {
+                                Ok(eps) => eps,
+                                Err(e) => {
+                                    warn!(
+                                        "TMDB season {} fetch failed for '{}': {}",
+                                        season_number, title, e
+                                    );
+                                    continue;
+                                }
+                            };
+
+                        // Download stills concurrently
+                        struct BackfillEp {
+                            episode_number: i64,
+                            ep_title: Option<String>,
+                            overview: Option<String>,
+                            air_date: Option<String>,
+                            still_local: Option<String>,
+                        }
+                        let ic = image_cache.clone();
+                        let sn = *season_number;
+                        let ep_data: Vec<BackfillEp> = stream::iter(episodes)
+                            .map(move |ep| {
+                                let ic = ic.clone();
+                                async move {
+                                    let still_local = if let Some(ref sp) = ep.still_path {
+                                        match ic
+                                            .ensure_still(sp, tmdb_id, sn, ep.episode_number)
+                                            .await
+                                        {
+                                            Ok(f) => Some(f),
+                                            Err(e) => {
+                                                debug!(
+                                                    "Still download failed S{}E{}: {}",
+                                                    sn, ep.episode_number, e
+                                                );
+                                                None
+                                            }
+                                        }
+                                    } else {
+                                        None
+                                    };
+                                    BackfillEp {
+                                        episode_number: ep.episode_number as i64,
+                                        ep_title: ep.title,
+                                        overview: ep.overview,
+                                        air_date: ep.air_date,
+                                        still_local,
+                                    }
+                                }
+                            })
+                            .buffer_unordered(EPISODE_STILL_DOWNLOAD_CONCURRENCY)
+                            .collect()
+                            .await;
+
+                        for ep in &ep_data {
+                            let _ = tv_repo::update_episode_metadata(
+                                &pool,
+                                season_id,
+                                ep.episode_number,
+                                ep.ep_title.as_deref(),
+                                ep.overview.as_deref(),
+                                ep.air_date.as_deref(),
+                                ep.still_local.as_deref(),
+                            )
+                            .await;
+                        }
+                        debug!(
+                            "Backfilled {} episode(s) for '{}' season {}",
+                            ep_data.len(),
+                            title,
+                            season_number
+                        );
+                    }
                 }
-                debug!(
-                    "Backfilled {} episode(s) for '{}' season {}",
-                    episodes.len(),
-                    title,
-                    season_number
-                );
-            }
-        }
+            })
+            .buffer_unordered(4)
+            .collect::<Vec<()>>()
+            .await;
     }
 
     Ok(enriched)

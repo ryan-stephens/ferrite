@@ -321,7 +321,7 @@ impl Default for AppConfig {
                 max_connections: default_max_connections(),
             },
             scanner: ScannerConfig {
-                concurrent_probes: 4,
+                concurrent_probes: 8,
                 watch_debounce_seconds: 2,
                 subtitle_cache_dir: default_subtitle_cache_dir(),
             },

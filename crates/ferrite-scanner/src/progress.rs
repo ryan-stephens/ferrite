@@ -28,6 +28,8 @@ pub struct ScanState {
     pub errors: AtomicU32,
     pub current_item: RwLock<String>,
     pub started_at_unix: AtomicU64,
+    /// Timestamp (unix secs) when the current phase started. Reset at each phase transition.
+    pub phase_started_at_unix: AtomicU64,
 }
 
 impl ScanState {
@@ -47,10 +49,16 @@ impl ScanState {
             errors: AtomicU32::new(0),
             current_item: RwLock::new(String::new()),
             started_at_unix: AtomicU64::new(started),
+            phase_started_at_unix: AtomicU64::new(started),
         })
     }
 
     pub async fn set_status(&self, status: ScanStatus) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        self.phase_started_at_unix.store(now, Ordering::Relaxed);
         *self.status.write().await = status;
     }
 
@@ -91,6 +99,8 @@ pub struct ScanProgress {
     pub errors: u32,
     pub current_item: String,
     pub elapsed_seconds: u64,
+    pub phase_elapsed_seconds: u64,
+    pub estimated_remaining_seconds: Option<u64>,
     pub percent: u8,
 }
 
@@ -113,6 +123,22 @@ impl ScanState {
             .unwrap_or_default()
             .as_secs();
         let elapsed = now.saturating_sub(self.started_at_unix.load(Ordering::Relaxed));
+        let phase_elapsed =
+            now.saturating_sub(self.phase_started_at_unix.load(Ordering::Relaxed));
+
+        // ETA: extrapolate from Phase 1 probe rate (most predictable phase).
+        // Only compute when actively scanning and we have meaningful progress.
+        let estimated_remaining_seconds = if matches!(status, ScanStatus::Scanning)
+            && probed > 0
+            && total > probed
+            && phase_elapsed > 0
+        {
+            let rate = probed as f64 / phase_elapsed as f64;
+            let remaining_files = (total - probed) as f64;
+            Some((remaining_files / rate).ceil() as u64)
+        } else {
+            None
+        };
 
         ScanProgress {
             scanning,
@@ -125,6 +151,8 @@ impl ScanState {
             errors: self.errors.load(Ordering::Relaxed),
             current_item: self.current_item.read().await.clone(),
             elapsed_seconds: elapsed,
+            phase_elapsed_seconds: phase_elapsed,
+            estimated_remaining_seconds,
             percent,
         }
     }

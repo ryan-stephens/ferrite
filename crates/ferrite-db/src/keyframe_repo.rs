@@ -15,14 +15,49 @@ pub async fn replace_keyframes(
         .execute(&mut *executor)
         .await?;
 
-    for pts_ms in normalize_keyframes_ms(keyframes_ms) {
-        sqlx::query("INSERT INTO media_keyframes (media_item_id, pts_ms) VALUES (?, ?)")
-            .bind(media_item_id)
-            .bind(pts_ms)
-            .execute(&mut *executor)
-            .await?;
+    let values = normalize_keyframes_ms(keyframes_ms);
+    if values.is_empty() {
+        return Ok(());
     }
 
+    // Batch insert: 2 bind params per row, chunks of 400 (800 < SQLite's 999 limit)
+    for chunk in values.chunks(400) {
+        let placeholders: Vec<&str> = chunk.iter().map(|_| "(?, ?)").collect();
+        let sql = format!(
+            "INSERT INTO media_keyframes (media_item_id, pts_ms) VALUES {}",
+            placeholders.join(", ")
+        );
+        let mut query = sqlx::query(&sql);
+        for pts_ms in chunk {
+            query = query.bind(media_item_id).bind(*pts_ms);
+        }
+        query.execute(&mut *executor).await?;
+    }
+
+    Ok(())
+}
+
+/// Check whether any keyframes exist for a media item.
+pub async fn has_keyframes(pool: &SqlitePool, media_item_id: &str) -> Result<bool> {
+    let row: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM media_keyframes WHERE media_item_id = ? LIMIT 1",
+    )
+    .bind(media_item_id)
+    .fetch_one(pool)
+    .await?;
+    Ok(row.0 > 0)
+}
+
+/// Replace all keyframes for a media item using a pool connection (not a transaction).
+/// Used by the lazy on-demand keyframe indexer at seek time.
+pub async fn replace_keyframes_pool(
+    pool: &SqlitePool,
+    media_item_id: &str,
+    keyframes_ms: &[u64],
+) -> Result<()> {
+    let mut tx = pool.begin().await?;
+    replace_keyframes(&mut tx, media_item_id, keyframes_ms).await?;
+    tx.commit().await?;
     Ok(())
 }
 

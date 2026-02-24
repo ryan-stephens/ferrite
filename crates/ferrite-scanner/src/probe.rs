@@ -178,7 +178,9 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
         })
         .collect();
 
-    let keyframe_index_ms = probe_keyframe_index(ffprobe_path, file_path).await;
+    // Keyframe indexing is deferred to on-demand (lazy) probing at seek time.
+    // This avoids the expensive full-file read during scanning.
+    let keyframe_index_ms = None;
 
     // Parse chapter markers
     let chapters: Vec<ChapterInfo> = json
@@ -234,7 +236,15 @@ pub async fn probe_file(ffprobe_path: &str, file_path: &Path) -> Result<ProbeRes
     })
 }
 
-async fn probe_keyframe_index(ffprobe_path: &str, file_path: &Path) -> Option<Vec<u64>> {
+/// Probe keyframe positions from a media file using ffprobe.
+///
+/// This runs `ffprobe -skip_frame nokey` which reads the entire video file
+/// to extract keyframe timestamps. The result is a coarse, deduplicated
+/// keyframe map with a minimum gap of 2s between entries.
+///
+/// Called lazily on first seek (not during scan) to avoid blocking the scan
+/// pipeline with expensive full-file reads.
+pub async fn probe_keyframe_index(ffprobe_path: &str, file_path: &Path) -> Option<Vec<u64>> {
     let output = Command::new(ffprobe_path)
         .args([
             "-v",
