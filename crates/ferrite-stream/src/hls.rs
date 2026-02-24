@@ -1541,6 +1541,18 @@ impl HlsSessionManager {
             // Kill FFmpeg (SIGTERM → 2s → SIGKILL on Unix, immediate kill on Windows)
             session.kill_ffmpeg().await;
 
+            // Wait a moment for FFmpeg to actually flush its buffers and exit
+            // before we yank the directory out from under it. Otherwise, FFmpeg
+            // will complain about "No such file or directory" in its final log lines.
+            // On Windows, the kill is immediate, but on Unix, the process may need
+            // a brief window to process the SIGTERM cleanly.
+            for _ in 0..10 {
+                if !session.is_ffmpeg_alive().await {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            }
+
             // Remove output directory
             if session.output_dir.exists() {
                 if let Err(e) = tokio::fs::remove_dir_all(&session.output_dir).await {
