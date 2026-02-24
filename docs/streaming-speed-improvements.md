@@ -55,18 +55,21 @@ pub async fn kill_ffmpeg(&self) {
             if let Some(pid) = child.id() {
                 // SAFETY: pid is a valid process ID from a child we own.
                 unsafe { libc::kill(pid as libc::pid_t, libc::SIGTERM) };
+                debug!("Sent SIGTERM to FFmpeg for session {}", self.session_id);
                 // Hand off SIGKILL escalation to a background task so the
                 // caller is not blocked waiting for the old process to die.
+                let session_id = self.session_id.clone();
                 tokio::spawn(async move {
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                     let _ = child.kill().await;
+                    debug!("Sent SIGKILL to FFmpeg for session {}", session_id);
                 });
                 return;
             }
         }
-        // Windows: no SIGTERM, kill immediately.
+        // Windows / no pid: kill immediately.
         let _ = child.kill().await;
-        debug!("Killed FFmpeg (immediate SIGKILL)");
+        debug!("Killed FFmpeg for session {} (immediate)", self.session_id);
     }
 }
 ```
@@ -85,8 +88,6 @@ before starting the next encode.
   needed — ownership moves into the task.
 - If the server shuts down during the 2-second window, the orphaned child task will be
   cancelled by the Tokio runtime. The OS will reap the FFmpeg process anyway.
-- The log line inside `kill_ffmpeg` ("Killed FFmpeg for session … SIGTERM+SIGKILL") will need
-  to move into the spawned task or be split into two log lines (SIGTERM sent / SIGKILL sent).
 
 ---
 
@@ -165,59 +166,103 @@ pub fn buffered_secs(&self) -> f64 {
 }
 ```
 
-`segment_count` is **only updated when a segment is served to the client** (inside
-`wait_for_segment` → `refresh_segment_count`). FFmpeg typically encodes 2–5 segments ahead of
-what the player has fetched. So `buffered_secs()` consistently underestimates the true encoded
-window by 4–10 seconds.
+This has **two bugs**:
+
+**Bug A: Underestimated upper bound.** `segment_count` is only updated when a segment is
+**served to the client** (inside `wait_for_segment` → `refresh_segment_count`). FFmpeg typically
+encodes 2–5 segments ahead of what the player has fetched. So `buffered_secs()` consistently
+underestimates the true encoded window by 4–10 seconds.
 
 Example: FFmpeg has encoded 0–60s, player has fetched 0–20s. User seeks to 28s.
 - `buffered_end` = 20s (cached count = 10 segments × 2s)
 - Reuse check fails → old FFmpeg killed → new FFmpeg spawned from 28s
 - Old FFmpeg already had 28s encoded and ready to serve
 
+**Bug B: Missing lower bound.** The FFmpeg args include `delete_segments` with
+`hls_list_size=30` (`hls.rs:1222-1231`). This creates a **sliding window** — after FFmpeg has
+written more than 30 segments, older segment files are deleted from disk and removed from the
+playlist. The current reuse check uses `session_start` as the lower bound, but after 60+
+seconds of encoding those early segments no longer exist.
+
+Example: Session started at t=100s. FFmpeg has encoded t=100s to t=220s (60 segments).
+Playlist shows segments 31–60 (t=160s–220s). Segments 1–30 deleted from disk.
+- Current check: `requested >= 100s` → true for a seek to 120s
+- But seg_010 (t=120s) was deleted — player gets a 404
+
 ### Fix
 
-Before evaluating reuse, read the playlist from disk to get the true encoded window. This
-replaces what would be a 2s SIGTERM wait with a single `read_to_string` call (~1ms).
+Add a `playlist_segment_range()` method on `HlsSession` that parses the playlist from disk to
+determine the **actual available window** (both lower and upper bounds). This replaces what
+would be a 2s SIGTERM wait + FFmpeg restart with a single `read_to_string` call (~1ms).
+
+#### New method on `HlsSession` in `hls.rs`:
 
 ```rust
-// crates/ferrite-api/src/handlers/stream.rs  —  hls_seek(), before the reuse check
+/// Parse the playlist from disk to determine the actual available segment range.
+/// Returns `(available_start_secs, available_end_secs)` relative to the media timeline.
+/// Uses segment filenames (seg_NNN.m4s) rather than EXTINF count because the playlist
+/// is a sliding window (hls_list_size + delete_segments) — the count is capped but
+/// segment numbers keep incrementing.
+pub async fn playlist_available_range(&self) -> Option<(f64, f64)> {
+    let playlist_path = self.output_dir.join("playlist.m3u8");
+    let content = tokio::fs::read_to_string(&playlist_path).await.ok()?;
 
-if let Some(existing) = state.hls_sessions.get_session_for_owner(&owner_key) {
-    // Read the playlist from disk to get the true encoded boundary, not just
-    // the number of segments already served to this client.
-    let true_buffered_end = {
-        let playlist_path = existing.output_dir.join("playlist.m3u8");
-        match tokio::fs::read_to_string(&playlist_path).await {
-            Ok(content) => {
-                let segment_count = content.lines()
-                    .filter(|l| l.starts_with("#EXTINF:"))
-                    .count() as f64;
-                existing.start_secs + segment_count * existing.segment_duration as f64
+    let mut min_seg: Option<u64> = None;
+    let mut max_seg: Option<u64> = None;
+
+    for line in content.lines() {
+        let line = line.trim();
+        if let Some(num_str) = line.strip_prefix("seg_").and_then(|s| s.strip_suffix(".m4s")) {
+            if let Ok(n) = num_str.parse::<u64>() {
+                min_seg = Some(min_seg.map_or(n, |m: u64| m.min(n)));
+                max_seg = Some(max_seg.map_or(n, |m: u64| m.max(n)));
             }
-            Err(_) => existing.start_secs + existing.buffered_secs(), // fallback to cached
         }
+    }
+
+    let seg_dur = self.segment_duration as f64;
+    Some((
+        self.start_secs + min_seg? as f64 * seg_dur,
+        self.start_secs + (max_seg? + 1) as f64 * seg_dur,
+    ))
+}
+```
+
+#### Updated reuse check in `stream.rs` (`hls_seek`):
+
+```rust
+if let Some(existing) = state.hls_sessions.get_session_for_owner(&owner_key) {
+    let ffmpeg_alive = existing.is_ffmpeg_alive().await;
+    // Read the playlist to get the true available window on disk, accounting
+    // for both the encode-ahead (upper bound) and segment deletion (lower bound).
+    let reuse = if let Some((available_start, available_end)) =
+        existing.playlist_available_range().await
+    {
+        can_reuse_seek_session(requested_start, available_start, available_end, ffmpeg_alive)
+    } else {
+        // Playlist unreadable — fall back to cached estimate
+        let buffered_end = existing.start_secs + existing.buffered_secs();
+        can_reuse_seek_session(requested_start, existing.start_secs, buffered_end, ffmpeg_alive)
     };
 
-    if can_reuse_seek_session(
-        requested_start,
-        existing.start_secs,
-        true_buffered_end,
-        existing.is_ffmpeg_alive().await,
-    ) {
-        // ... existing reuse path ...
+    if reuse {
+        existing.touch();
+        // ... existing reuse response ...
     }
 }
 ```
 
-Alternatively, expose a `true_buffered_secs()` method on `HlsSession` that reads from the
-playlist directly, keeping the business logic in `hls.rs` rather than the handler.
+#### Updated `can_reuse_seek_session`:
+
+No signature change needed — the first positional argument (`session_start`) now receives
+`available_start` (accounting for deleted segments) instead of the session's original
+`start_secs`.
 
 ### Files to change
 
-- `crates/ferrite-stream/src/hls.rs` — add `true_buffered_secs()` method on `HlsSession`
-- `crates/ferrite-api/src/handlers/stream.rs` — `hls_seek()`, use `true_buffered_secs()` in
-  reuse check (~line 882)
+- `crates/ferrite-stream/src/hls.rs` — add `playlist_available_range()` method on `HlsSession`
+- `crates/ferrite-api/src/handlers/stream.rs` — `hls_seek()`, use `playlist_available_range()`
+  in reuse check (~line 882)
 
 ---
 
@@ -246,29 +291,96 @@ produce their first segment before the player sees anything.
 
 The `hls_seek` endpoint already does this correctly — it calls
 `create_single_variant_session_owned` (1 FFmpeg process at the highest quality) and returns
-immediately. The ABR promotion logic in `hls_master_playlist` (`should_promote_ladder` at
-stream.rs:543) handles upgrading a single-variant session to the full ladder on the **second**
-master playlist request.
+immediately.
+
+### Why the existing promotion heuristic breaks
+
+The ABR promotion logic in `hls_master_playlist` at `stream.rs:543-545`:
+
+```rust
+let seek_created_single = existing_variants.len() == 1
+    && (existing_variants[0].start_secs - requested_start).abs() < 1.0;
+let should_promote_ladder = reused && existing_variants.len() == 1 && !seek_created_single;
+```
+
+This uses a **position heuristic** — it assumes that if the existing session's start position
+matches the requested start, the session was created by a seek (and should NOT be promoted).
+After this change, initial play also creates a single variant. On the next master playlist poll:
+- `existing_variants.len() == 1` → true
+- `existing_variants[0].start_secs ≈ 0`, `requested_start = 0` → diff < 1.0
+- `seek_created_single = true` → `should_promote_ladder = false`
+
+**Promotion never happens.** The player is stuck on a single quality forever.
 
 ### Fix
 
-On the first `/master.m3u8` request, use `create_single_variant_session_owned` (same as seek).
-Promotion to the full ABR ladder happens on the next master playlist poll (the player typically
-re-fetches the master playlist every few seconds via HLS.js).
+Replace the position heuristic with an explicit flag. Add `awaiting_promotion: AtomicBool` to
+`HlsSession` — set to `true` when created by the initial play path, `false` when created by
+the seek path. The promotion check reads this flag directly.
+
+#### Step A: Add field to `HlsSession` in `hls.rs`:
+
+```rust
+// crates/ferrite-stream/src/hls.rs  —  HlsSession struct
+pub struct HlsSession {
+    // ... existing fields ...
+    /// True when this session was created as a single-variant for fast initial TTFF
+    /// and should be promoted to the full ABR ladder on the next master playlist poll.
+    /// Set to false for seek-created sessions (which should stay single-variant).
+    pub awaiting_promotion: std::sync::atomic::AtomicBool,
+}
+```
+
+Initialize to `false` in both `create_session` and `create_session_no_wait`.
+
+#### Step B: Add parameter to `create_single_variant_session_owned` in `hls.rs`:
+
+Add an `awaiting_promotion: bool` parameter (or create a separate
+`create_initial_play_session_owned` wrapper that sets it to `true`). When constructing the
+`HlsSession`, pass this value:
+
+```rust
+awaiting_promotion: std::sync::atomic::AtomicBool::new(awaiting_promotion),
+```
+
+The seek path (`hls_seek` in `stream.rs`) calls with `awaiting_promotion: false`.
+The initial play path (`hls_master_playlist` in `stream.rs`) calls with `awaiting_promotion: true`.
+
+#### Step C: Replace the promotion check in `stream.rs`:
 
 ```rust
 // crates/ferrite-api/src/handlers/stream.rs  —  hls_master_playlist()
 
-// Replace the initial creation branch:
+// OLD:
+let seek_created_single = existing_variants.len() == 1
+    && (existing_variants[0].start_secs - requested_start).abs() < 1.0;
+let should_promote_ladder = reused && existing_variants.len() == 1 && !seek_created_single;
+
+// NEW:
+let should_promote_ladder = reused
+    && existing_variants.len() == 1
+    && existing_variants[0]
+        .awaiting_promotion
+        .load(std::sync::atomic::Ordering::Acquire);
+```
+
+When promotion fires (the session gets replaced by full ABR variants), the old session is
+destroyed. The new sessions have `awaiting_promotion: false`, so promotion only fires once.
+
+#### Step D: Change the initial creation branch in `hls_master_playlist`:
+
+```rust
+// crates/ferrite-api/src/handlers/stream.rs  —  hls_master_playlist(), else branch (~line 584)
+
 } else {
     let _permit = acquire_transcode_permit(&state, &id, "hls-master").await?;
 
-    // Start with a single variant (fastest TTFF). The player will re-request
-    // the master playlist after it starts buffering; the should_promote_ladder
-    // logic will then spawn the full ABR ladder on that second request.
+    // Start with a single variant at the highest quality for fastest TTFF.
+    // The player re-polls master.m3u8 within a few seconds; the
+    // should_promote_ladder check will then spawn the full ABR ladder.
     let create_result = state
         .hls_sessions
-        .create_single_variant_session_owned(   // ← was create_variant_sessions_owned
+        .create_single_variant_session_owned(
             &owner_key,
             &id,
             file_path,
@@ -286,45 +398,30 @@ re-fetches the master playlist every few seconds via HLS.js).
             item.video_codec.as_deref(),
             color_transfer.as_deref(),
             color_primaries.as_deref(),
+            true,  // awaiting_promotion = true for initial play
         )
         .await;
 
-    create_result.map_err(|e| { ... })?
+    create_result.map_err(|e| {
+        warn!("Failed to create HLS session for {}: {}", id, e);
+        ApiError::internal(e.to_string())
+    })?
 };
 ```
 
-The `should_promote_ladder` check at stream.rs:543-545 already handles promoting a
-single-variant session to the full ABR ladder on the next master playlist request:
-
-```rust
-let should_promote_ladder = reused && existing_variants.len() == 1 && !seek_created_single;
-```
-
-The `seek_created_single` flag prevents promotion immediately after a seek — that guard also
-covers the initial single-variant session created by this change.
-
-### Additional consideration: promotion timing
-
-Currently the promote path is triggered when `existing_variants.len() == 1 && !seek_created_single`.
-After this change, an initial play will also be `len() == 1`. The `seek_created_single` check
-(stream.rs:543-544) uses `(existing_variants[0].start_secs - requested_start).abs() < 1.0` to
-distinguish a seek from a re-poll. A re-poll of the master playlist during initial playback will
-have `requested_start == 0` and `session.start_secs == 0`, so `seek_created_single` will be
-`true` and promotion will be blocked.
-
-The simplest fix: track whether a session was created as an "initial play" vs a "seek" (a single
-boolean field on `HlsSession`, or a separate `DashMap` key in `HlsSessionManager`), and use that
-to gate promotion instead of the position heuristic. This makes the intent explicit rather than
-relying on position coincidence.
-
 ### Files to change
 
-- `crates/ferrite-api/src/handlers/stream.rs` — `hls_master_playlist()`, initial creation branch
-  (~line 584)
-- `crates/ferrite-stream/src/hls.rs` — optionally add `is_seek_session: bool` to `HlsSession`
-  and update `should_promote_ladder` logic
-- `crates/ferrite-api/src/handlers/stream.rs` — update `seek_created_single` check to use the
-  new flag (~line 543)
+- `crates/ferrite-stream/src/hls.rs`:
+  - Add `awaiting_promotion: AtomicBool` field to `HlsSession` (~line 16)
+  - Initialize to `false` in `create_session` and `create_session_no_wait`
+  - Add `awaiting_promotion: bool` parameter to `create_single_variant_session_owned` (and
+    its `_owned` variant), pass through to session construction
+  - Update `make_test_session` in tests to include the new field
+- `crates/ferrite-api/src/handlers/stream.rs`:
+  - Initial creation branch: call `create_single_variant_session_owned` with
+    `awaiting_promotion: true` (~line 584)
+  - `hls_seek`: call with `awaiting_promotion: false` (~line 939)
+  - Replace `seek_created_single` heuristic with `awaiting_promotion.load()` check (~line 543)
 
 ---
 
@@ -334,14 +431,16 @@ Do these in order — each builds on the previous and can be shipped independent
 
 | Step | Change | Seek impact | TTFF impact | Risk |
 |------|--------|-------------|-------------|------|
-| 1 | SIGTERM fire-and-forget | −2s per cold seek | low | Low |
+| 1 | SIGTERM fire-and-forget | −2s per cold seek | none | Low |
 | 2 | Adaptive segment polling | −0–250ms per segment | −0–250ms | Low |
-| 3 | Accurate buffer check | fewer FFmpeg restarts | none | Low |
+| 3 | Accurate buffer check | fewer FFmpeg restarts | none | Low–Medium |
 | 4 | Single-variant initial play | none | −N×encode overhead | Medium |
 
-Steps 1–3 are localized changes with no behavior change under normal conditions — they only
-remove artificial wait time. Step 4 changes the ABR ladder startup flow and requires verifying
-that the promotion heuristic works correctly after the change.
+Steps 1–2 are localized changes with no behavior change under normal conditions — they only
+remove artificial wait time. Step 3 adds a playlist read on the seek hot path (trivial I/O cost)
+and must correctly handle the sliding-window semantics of `delete_segments`. Step 4 changes the
+ABR ladder startup flow and adds a new field to `HlsSession`; verify that promotion fires
+exactly once on the second master playlist poll and never fires after seeks.
 
 ---
 
