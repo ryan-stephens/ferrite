@@ -244,7 +244,45 @@ async fn main() -> Result<()> {
         scan_registry: ferrite_scanner::ScanRegistry::new(),
         watcher_handle,
         playback_metrics: Arc::new(ferrite_api::metrics::PlaybackMetrics::default()),
+        update_state: Arc::new(ferrite_api::state::UpdateState::new()),
     };
+
+    // Spawn background update check (every 6 hours, log-only, never auto-applies)
+    if !config.update.disabled {
+        let bg_update_config = config.update.clone();
+        let bg_update_state = state.update_state.clone();
+        tokio::spawn(supervised_task("update check", async move {
+            // Initial delay: wait 60s after startup before first check
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+            loop {
+                match ferrite_api::handlers::system::fetch_latest_release(&bg_update_config).await {
+                    Ok(result) => {
+                        // Cache the result
+                        {
+                            let mut cache = bg_update_state.cached.lock().await;
+                            *cache = Some((std::time::Instant::now(), result.clone()));
+                        }
+                        if result.update_available {
+                            info!(
+                                "Update available: v{} → v{} ({})",
+                                result.current_version, result.latest_version, result.release_url
+                            );
+                        } else {
+                            tracing::debug!(
+                                "Update check: running latest (v{})",
+                                result.current_version
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        tracing::debug!("Background update check failed: {e}");
+                    }
+                }
+                // Sleep 6 hours before next check
+                tokio::time::sleep(std::time::Duration::from_secs(6 * 60 * 60)).await;
+            }
+        }));
+    }
 
     let mut router = build_router(state);
     let addr = SocketAddr::new(config.server.host.parse()?, config.server.port);

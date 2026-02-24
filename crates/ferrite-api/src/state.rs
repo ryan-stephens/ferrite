@@ -7,10 +7,13 @@ use ferrite_transcode::hwaccel::EncoderProfile;
 use governor::clock::DefaultClock;
 use governor::state::{InMemoryState, NotKeyed};
 use governor::{Quota, RateLimiter};
+use serde::Serialize;
 use sqlx::SqlitePool;
 use std::num::NonZeroU32;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tokio::sync::Semaphore;
+use std::time::Instant;
+use tokio::sync::{Mutex, Semaphore};
 
 /// Global (not per-IP) login rate limiter type.
 pub type LoginRateLimiter = RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
@@ -37,6 +40,94 @@ pub struct AppState {
     pub watcher_handle: Option<WatcherHandle>,
     /// In-memory playback and hot-path metrics (WS0 observability).
     pub playback_metrics: Arc<PlaybackMetrics>,
+    /// Cached state for the self-update version check.
+    pub update_state: Arc<UpdateState>,
+}
+
+/// Cached result of a GitHub release version check.
+#[derive(Clone, Serialize)]
+pub struct UpdateCheckResult {
+    pub current_version: String,
+    pub latest_version: String,
+    pub update_available: bool,
+    pub release_url: String,
+    pub release_notes: String,
+    pub published_at: String,
+    pub download_url: Option<String>,
+    pub download_size_bytes: Option<u64>,
+}
+
+/// Current phase of an in-progress update.
+#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum UpdatePhase {
+    Idle,
+    Downloading,
+    Verifying,
+    Extracting,
+    Swapping,
+    Restarting,
+    Failed,
+}
+
+/// Snapshot of update progress, returned by GET /api/system/update/status.
+#[derive(Clone, Serialize)]
+pub struct UpdateProgress {
+    pub state: UpdatePhase,
+    pub progress_pct: u8,
+    pub downloaded_bytes: u64,
+    pub total_bytes: u64,
+    pub error: Option<String>,
+}
+
+impl Default for UpdateProgress {
+    fn default() -> Self {
+        Self {
+            state: UpdatePhase::Idle,
+            progress_pct: 0,
+            downloaded_bytes: 0,
+            total_bytes: 0,
+            error: None,
+        }
+    }
+}
+
+/// In-memory state for the self-update system.
+pub struct UpdateState {
+    /// Cached version check result (15-minute TTL).
+    pub cached: Mutex<Option<(Instant, UpdateCheckResult)>>,
+    /// Guard to prevent concurrent update operations.
+    pub in_progress: AtomicBool,
+    /// Current progress of an in-flight update.
+    pub progress: Mutex<UpdateProgress>,
+}
+
+impl Default for UpdateState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl UpdateState {
+    pub fn new() -> Self {
+        Self {
+            cached: Mutex::new(None),
+            in_progress: AtomicBool::new(false),
+            progress: Mutex::new(UpdateProgress::default()),
+        }
+    }
+
+    /// Try to acquire the update lock. Returns false if an update is already running.
+    pub fn try_start(&self) -> bool {
+        self.in_progress
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_ok()
+    }
+
+    /// Release the update lock.
+    pub fn finish(&self) {
+        self.in_progress.store(false, Ordering::SeqCst);
+    }
 }
 
 impl AppState {

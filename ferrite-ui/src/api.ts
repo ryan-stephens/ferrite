@@ -245,6 +245,33 @@ export interface AuthStatus {
   has_users: boolean;
 }
 
+export interface UpdateCheckResult {
+  current_version: string;
+  latest_version: string;
+  update_available: boolean;
+  release_url: string;
+  release_notes: string;
+  published_at: string;
+  download_url: string | null;
+  download_size_bytes: number | null;
+}
+
+export interface UpdateProgress {
+  state: 'idle' | 'downloading' | 'verifying' | 'extracting' | 'swapping' | 'restarting' | 'failed';
+  progress_pct: number;
+  downloaded_bytes: number;
+  total_bytes: number;
+  error: string | null;
+}
+
+export interface UpdateHistoryEntry {
+  from_version: string;
+  to_version: string;
+  applied_at: string;
+  success: boolean;
+  error: string | null;
+}
+
 export interface PlaybackMetricTrackRequest {
   metric: 'playback_ttff_ms' | 'seek_latency_ms' | 'rebuffer_count' | 'rebuffer_ms';
   value_ms?: number;
@@ -375,4 +402,11 @@ export const api = {
   listEpisodes: (seasonId: string) => apiFetch<Episode[]>('GET', `/api/seasons/${seasonId}/episodes`),
 
   setupStatus: () => apiFetch<{ has_users: boolean }>('GET', '/api/users/setup'),
+
+  // System Update
+  checkForUpdate: () => apiFetch<UpdateCheckResult>('GET', '/api/system/update/check'),
+  applyUpdate: () => apiFetch<{ status: string; message: string }>('POST', '/api/system/update/apply'),
+  updateStatus: () => apiFetch<UpdateProgress>('GET', '/api/system/update/status'),
+  rollbackUpdate: () => apiFetch<{ status: string; message: string }>('POST', '/api/system/update/rollback'),
+  updateHistory: () => apiFetch<UpdateHistoryEntry[]>('GET', '/api/system/update/history'),
 };

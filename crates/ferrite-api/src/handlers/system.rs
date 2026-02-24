@@ -140,6 +140,638 @@ async fn ensure_admin_if_present(
     Ok(())
 }
 
+/// GET /api/system/update/check — check GitHub for a newer release (admin-only).
+/// Results are cached in-memory for 15 minutes to avoid hitting the GitHub API rate limit.
+pub async fn check_for_update(
+    State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
+) -> Result<impl IntoResponse, ApiError> {
+    ensure_admin_if_present(&state, auth_user.as_ref()).await?;
+
+    if state.config.update.disabled {
+        return Err(ApiError::bad_request("Self-update is disabled in config"));
+    }
+
+    // Return cached result if still fresh (15 minutes)
+    {
+        let cache = state.update_state.cached.lock().await;
+        if let Some((ts, ref result)) = *cache {
+            if ts.elapsed() < std::time::Duration::from_secs(15 * 60) {
+                return Ok(Json(serde_json::to_value(result).unwrap()));
+            }
+        }
+    }
+
+    let result = fetch_latest_release(&state.config.update).await?;
+
+    // Cache the result
+    {
+        let mut cache = state.update_state.cached.lock().await;
+        *cache = Some((std::time::Instant::now(), result.clone()));
+    }
+
+    Ok(Json(serde_json::to_value(&result).unwrap()))
+}
+
+/// Fetch the latest release from the GitHub API and compare against the current version.
+pub async fn fetch_latest_release(
+    update_config: &ferrite_core::config::UpdateConfig,
+) -> Result<crate::state::UpdateCheckResult, ApiError> {
+    let current_version = env!("CARGO_PKG_VERSION").to_string();
+    let repo = &update_config.repo;
+    let url = format!("https://api.github.com/repos/{repo}/releases/latest");
+
+    let mut req = reqwest::Client::new()
+        .get(&url)
+        .header("Accept", "application/vnd.github+json")
+        .header(
+            "User-Agent",
+            format!("Ferrite/{}", env!("CARGO_PKG_VERSION")),
+        );
+
+    // Resolve GitHub token: env var takes precedence over config
+    let token = std::env::var("GITHUB_TOKEN")
+        .ok()
+        .or_else(|| update_config.github_token.clone());
+    if let Some(ref t) = token {
+        req = req.header("Authorization", format!("Bearer {t}"));
+    }
+
+    let resp = req.send().await.map_err(|e| {
+        tracing::warn!("Failed to query GitHub releases API: {e}");
+        ApiError::service_unavailable("Failed to reach GitHub API")
+    })?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        tracing::warn!("GitHub API returned {status}: {body}");
+        return Err(ApiError::service_unavailable(format!(
+            "GitHub API returned {status}"
+        )));
+    }
+
+    let release: serde_json::Value = resp.json().await.map_err(|e| {
+        tracing::warn!("Failed to parse GitHub release JSON: {e}");
+        ApiError::internal("Failed to parse GitHub release response")
+    })?;
+
+    let tag = release["tag_name"]
+        .as_str()
+        .unwrap_or("")
+        .trim_start_matches('v');
+    let latest_version = tag.to_string();
+
+    let update_available = version_is_newer(&current_version, &latest_version);
+
+    // Find the tarball asset
+    let (download_url, download_size) = release["assets"]
+        .as_array()
+        .and_then(|assets| {
+            assets.iter().find(|a| {
+                a["name"].as_str().is_some_and(|n| {
+                    n.contains("x86_64-linux-musl")
+                        && n.ends_with(".tar.gz")
+                        && !n.ends_with(".sha256")
+                })
+            })
+        })
+        .map(|a| {
+            (
+                a["browser_download_url"].as_str().map(String::from),
+                a["size"].as_u64(),
+            )
+        })
+        .unwrap_or((None, None));
+
+    Ok(crate::state::UpdateCheckResult {
+        current_version,
+        latest_version,
+        update_available,
+        release_url: release["html_url"].as_str().unwrap_or("").to_string(),
+        release_notes: release["body"].as_str().unwrap_or("").to_string(),
+        published_at: release["published_at"].as_str().unwrap_or("").to_string(),
+        download_url,
+        download_size_bytes: download_size,
+    })
+}
+
+/// Compare two semver-ish version strings. Returns true if `latest` is newer than `current`.
+fn version_is_newer(current: &str, latest: &str) -> bool {
+    let parse = |s: &str| -> (u64, u64, u64) {
+        let parts: Vec<u64> = s.split('.').filter_map(|p| p.parse().ok()).collect();
+        (
+            parts.first().copied().unwrap_or(0),
+            parts.get(1).copied().unwrap_or(0),
+            parts.get(2).copied().unwrap_or(0),
+        )
+    };
+    parse(latest) > parse(current)
+}
+
+/// POST /api/system/update/apply — download, verify, swap binary, and restart (admin-only).
+pub async fn apply_update(
+    State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
+) -> Result<impl IntoResponse, ApiError> {
+    ensure_admin_if_present(&state, auth_user.as_ref()).await?;
+
+    if state.config.update.disabled {
+        return Err(ApiError::bad_request("Self-update is disabled in config"));
+    }
+
+    if !state.update_state.try_start() {
+        return Err(ApiError::bad_request("An update is already in progress"));
+    }
+
+    // Re-check latest release to get download URL
+    let release = match fetch_latest_release(&state.config.update).await {
+        Ok(r) => r,
+        Err(e) => {
+            state.update_state.finish();
+            return Err(e);
+        }
+    };
+
+    if !release.update_available {
+        state.update_state.finish();
+        return Err(ApiError::bad_request("Already running the latest version"));
+    }
+
+    let download_url = match release.download_url {
+        Some(ref url) => url.clone(),
+        None => {
+            state.update_state.finish();
+            return Err(ApiError::internal("No download URL found in release"));
+        }
+    };
+
+    // Derive the checksum URL from the download URL
+    let checksum_url = format!("{download_url}.sha256");
+
+    // Resolve data directory for staging area
+    let data_dir = resolve_update_data_dir();
+    let update_dir = data_dir.join(".update");
+    let staging_dir = update_dir.join("staging");
+
+    // Spawn the actual update work in a background task so we can return immediately
+    let update_state = state.update_state.clone();
+    let params = UpdateParams {
+        download_url,
+        checksum_url,
+        update_dir,
+        staging_dir,
+        total_bytes: release.download_size_bytes.unwrap_or(0),
+        update_config: state.config.update.clone(),
+        from_version: release.current_version.clone(),
+        to_version: release.latest_version.clone(),
+    };
+    tokio::spawn(async move {
+        let result = perform_update(&update_state, &params).await;
+
+        if let Err(e) = result {
+            tracing::error!("Update failed: {e}");
+            let mut progress = update_state.progress.lock().await;
+            *progress = crate::state::UpdateProgress {
+                state: crate::state::UpdatePhase::Failed,
+                error: Some(e),
+                ..progress.clone()
+            };
+            update_state.finish();
+        }
+    });
+
+    Ok(Json(json!({
+        "status": "ok",
+        "message": "Update started. Poll GET /api/system/update/status for progress."
+    })))
+}
+
+/// Resolve the data directory (mirrors AppConfig::resolve_data_dir logic).
+fn resolve_update_data_dir() -> std::path::PathBuf {
+    if let Ok(dir) = std::env::var("FERRITE_DATA_DIR") {
+        return std::path::PathBuf::from(dir);
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            if !exe_dir.to_string_lossy().contains("target") {
+                return exe_dir.join("data");
+            }
+        }
+    }
+    std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."))
+}
+
+/// Parameters for the update pipeline, bundled to keep the arg count low.
+struct UpdateParams {
+    download_url: String,
+    checksum_url: String,
+    update_dir: std::path::PathBuf,
+    staging_dir: std::path::PathBuf,
+    total_bytes: u64,
+    update_config: ferrite_core::config::UpdateConfig,
+    from_version: String,
+    to_version: String,
+}
+
+/// The actual update pipeline: download → verify → extract → swap → restart.
+async fn perform_update(
+    update_state: &crate::state::UpdateState,
+    params: &UpdateParams,
+) -> Result<(), String> {
+    let UpdateParams {
+        download_url,
+        checksum_url,
+        update_dir,
+        staging_dir,
+        total_bytes,
+        update_config,
+        from_version,
+        to_version,
+    } = params;
+    let total_bytes = *total_bytes;
+    use crate::state::{UpdatePhase, UpdateProgress};
+    use futures::StreamExt;
+    use sha2::{Digest, Sha256};
+
+    // Ensure directories exist
+    tokio::fs::create_dir_all(update_dir)
+        .await
+        .map_err(|e| format!("Failed to create update dir: {e}"))?;
+    if staging_dir.exists() {
+        tokio::fs::remove_dir_all(staging_dir)
+            .await
+            .map_err(|e| format!("Failed to clean staging dir: {e}"))?;
+    }
+    tokio::fs::create_dir_all(staging_dir)
+        .await
+        .map_err(|e| format!("Failed to create staging dir: {e}"))?;
+
+    let tarball_path = update_dir.join("ferrite-update.tar.gz");
+
+    // --- Phase 1: Download ---
+    {
+        let mut progress = update_state.progress.lock().await;
+        *progress = UpdateProgress {
+            state: UpdatePhase::Downloading,
+            progress_pct: 0,
+            downloaded_bytes: 0,
+            total_bytes,
+            error: None,
+        };
+    }
+
+    let mut req = reqwest::Client::new().get(download_url).header(
+        "User-Agent",
+        format!("Ferrite/{}", env!("CARGO_PKG_VERSION")),
+    );
+    let token = std::env::var("GITHUB_TOKEN")
+        .ok()
+        .or_else(|| update_config.github_token.clone());
+    if let Some(ref t) = token {
+        req = req.header("Authorization", format!("Bearer {t}"));
+    }
+
+    let resp = req
+        .send()
+        .await
+        .map_err(|e| format!("Download failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("Download returned HTTP {}", resp.status()));
+    }
+
+    let content_length = resp.content_length().unwrap_or(total_bytes);
+    {
+        let mut progress = update_state.progress.lock().await;
+        progress.total_bytes = content_length;
+    }
+
+    let mut stream = resp.bytes_stream();
+    let mut file = tokio::fs::File::create(&tarball_path)
+        .await
+        .map_err(|e| format!("Failed to create tarball file: {e}"))?;
+    let mut downloaded: u64 = 0;
+
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| format!("Download stream error: {e}"))?;
+        tokio::io::AsyncWriteExt::write_all(&mut file, &chunk)
+            .await
+            .map_err(|e| format!("Failed to write tarball: {e}"))?;
+        downloaded += chunk.len() as u64;
+        let pct = if content_length > 0 {
+            ((downloaded * 100) / content_length).min(100) as u8
+        } else {
+            0
+        };
+        let mut progress = update_state.progress.lock().await;
+        progress.downloaded_bytes = downloaded;
+        progress.progress_pct = pct;
+    }
+    drop(file);
+
+    // --- Phase 2: Verify checksum ---
+    {
+        let mut progress = update_state.progress.lock().await;
+        progress.state = UpdatePhase::Verifying;
+        progress.progress_pct = 100;
+    }
+
+    // Download the .sha256 file
+    let checksum_resp = reqwest::Client::new()
+        .get(checksum_url)
+        .header(
+            "User-Agent",
+            format!("Ferrite/{}", env!("CARGO_PKG_VERSION")),
+        )
+        .send()
+        .await
+        .map_err(|e| format!("Failed to download checksum: {e}"))?;
+
+    if !checksum_resp.status().is_success() {
+        tracing::warn!(
+            "Checksum file not available (HTTP {}), skipping verification",
+            checksum_resp.status()
+        );
+    } else {
+        let checksum_text = checksum_resp
+            .text()
+            .await
+            .map_err(|e| format!("Failed to read checksum: {e}"))?;
+        // Format: "<hash>  <filename>\n" or just "<hash>"
+        let expected_hash = checksum_text
+            .split_whitespace()
+            .next()
+            .unwrap_or("")
+            .to_lowercase();
+
+        if expected_hash.len() == 64 {
+            // Compute SHA-256 of downloaded tarball
+            let tarball_bytes = tokio::fs::read(&tarball_path)
+                .await
+                .map_err(|e| format!("Failed to read tarball for checksum: {e}"))?;
+            let mut hasher = Sha256::new();
+            hasher.update(&tarball_bytes);
+            let actual_hash = format!("{:x}", hasher.finalize());
+
+            if actual_hash != expected_hash {
+                return Err(format!(
+                    "Checksum mismatch: expected {expected_hash}, got {actual_hash}"
+                ));
+            }
+            tracing::info!("SHA-256 checksum verified: {actual_hash}");
+        } else {
+            tracing::warn!("Checksum file format unrecognized, skipping verification");
+        }
+    }
+
+    // --- Phase 3: Extract ---
+    {
+        let mut progress = update_state.progress.lock().await;
+        progress.state = UpdatePhase::Extracting;
+    }
+
+    // Extract tarball (blocking I/O — run in spawn_blocking)
+    let tarball_path_clone = tarball_path.clone();
+    let staging_dir_clone = staging_dir.to_path_buf();
+    tokio::task::spawn_blocking(move || {
+        let file =
+            std::fs::File::open(&tarball_path_clone).map_err(|e| format!("Open tarball: {e}"))?;
+        let gz = flate2::read::GzDecoder::new(file);
+        let mut archive = tar::Archive::new(gz);
+        archive
+            .unpack(&staging_dir_clone)
+            .map_err(|e| format!("Extract tarball: {e}"))?;
+        Ok::<(), String>(())
+    })
+    .await
+    .map_err(|e| format!("Extract task panicked: {e}"))??;
+
+    // Verify the extracted binary exists
+    let staged_binary = staging_dir.join("ferrite");
+    if !staged_binary.exists() {
+        return Err("Extracted tarball does not contain 'ferrite' binary".to_string());
+    }
+
+    // Make it executable (Unix)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let perms = std::fs::Permissions::from_mode(0o755);
+        std::fs::set_permissions(&staged_binary, perms)
+            .map_err(|e| format!("Failed to set binary permissions: {e}"))?;
+    }
+
+    // --- Phase 4: Atomic swap ---
+    {
+        let mut progress = update_state.progress.lock().await;
+        progress.state = UpdatePhase::Swapping;
+    }
+
+    let current_exe = std::env::current_exe()
+        .map_err(|e| format!("Failed to determine current exe path: {e}"))?;
+    let exe_dir = current_exe
+        .parent()
+        .ok_or_else(|| "Cannot determine exe directory".to_string())?;
+    let backup_exe = exe_dir.join("ferrite.bak");
+
+    // Swap binary: current → .bak, staged → current
+    if backup_exe.exists() {
+        std::fs::remove_file(&backup_exe)
+            .map_err(|e| format!("Failed to remove old backup: {e}"))?;
+    }
+    std::fs::rename(&current_exe, &backup_exe)
+        .map_err(|e| format!("Failed to backup current binary: {e}"))?;
+
+    if let Err(e) = std::fs::rename(&staged_binary, &current_exe) {
+        // Rollback: restore from backup
+        tracing::error!("Failed to install new binary: {e}, rolling back");
+        let _ = std::fs::rename(&backup_exe, &current_exe);
+        return Err(format!("Failed to install new binary: {e}"));
+    }
+
+    // Swap static/ directory if present in staging
+    let staged_static = staging_dir.join("static");
+    if staged_static.is_dir() {
+        let current_static = exe_dir.join("static");
+        let backup_static = exe_dir.join("static.bak");
+        if backup_static.exists() {
+            let _ = std::fs::remove_dir_all(&backup_static);
+        }
+        if current_static.exists() {
+            if let Err(e) = std::fs::rename(&current_static, &backup_static) {
+                tracing::warn!("Failed to backup static dir: {e}");
+            }
+        }
+        if let Err(e) = std::fs::rename(&staged_static, &current_static) {
+            tracing::warn!("Failed to install new static dir: {e}");
+            // Restore backup
+            if backup_static.exists() {
+                let _ = std::fs::rename(&backup_static, &current_static);
+            }
+        }
+    }
+
+    // Clean up tarball
+    let _ = tokio::fs::remove_file(&tarball_path).await;
+
+    tracing::info!("Update applied successfully, scheduling restart");
+
+    // Write update history entry
+    append_update_history(update_dir, from_version, to_version, true, None).await;
+
+    // --- Phase 5: Restart ---
+    {
+        let mut progress = update_state.progress.lock().await;
+        progress.state = UpdatePhase::Restarting;
+    }
+
+    // Write pending-validation marker for the wrapper script
+    let marker = update_dir.join("pending-validation");
+    let _ = tokio::fs::write(&marker, "").await;
+
+    // Give the status endpoint time to be polled
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    // Exit with code 42 — wrapper script restarts the new binary
+    std::process::exit(42);
+}
+
+/// GET /api/system/update/status — return current update progress.
+pub async fn update_status(
+    State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
+) -> Result<impl IntoResponse, ApiError> {
+    ensure_admin_if_present(&state, auth_user.as_ref()).await?;
+    let progress = state.update_state.progress.lock().await;
+    Ok(Json(serde_json::to_value(&*progress).unwrap()))
+}
+
+/// POST /api/system/update/rollback — swap ferrite.bak back to ferrite and restart (admin-only).
+pub async fn rollback_update(
+    State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
+) -> Result<impl IntoResponse, ApiError> {
+    ensure_admin_if_present(&state, auth_user.as_ref()).await?;
+
+    let current_exe = std::env::current_exe()
+        .map_err(|_| ApiError::internal("Failed to determine current exe path"))?;
+    let exe_dir = current_exe
+        .parent()
+        .ok_or_else(|| ApiError::internal("Cannot determine exe directory"))?;
+    let backup_exe = exe_dir.join("ferrite.bak");
+
+    if !backup_exe.exists() {
+        return Err(ApiError::bad_request(
+            "No backup binary found — nothing to roll back to",
+        ));
+    }
+
+    // Swap: current → .failed, .bak → current
+    let failed_exe = exe_dir.join("ferrite.failed");
+    if failed_exe.exists() {
+        let _ = std::fs::remove_file(&failed_exe);
+    }
+    std::fs::rename(&current_exe, &failed_exe)
+        .map_err(|e| ApiError::internal(format!("Failed to move current binary: {e}")))?;
+    std::fs::rename(&backup_exe, &current_exe).map_err(|e| {
+        // Try to restore
+        let _ = std::fs::rename(&failed_exe, &current_exe);
+        ApiError::internal(format!("Failed to restore backup: {e}"))
+    })?;
+
+    // Also rollback static/ if backup exists
+    let backup_static = exe_dir.join("static.bak");
+    if backup_static.exists() {
+        let current_static = exe_dir.join("static");
+        if current_static.exists() {
+            let _ = std::fs::remove_dir_all(&current_static);
+        }
+        let _ = std::fs::rename(&backup_static, &current_static);
+    }
+
+    tracing::info!("Rollback applied, scheduling restart");
+
+    // Spawn restart after response is sent
+    tokio::spawn(async {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        std::process::exit(42);
+    });
+
+    Ok(Json(json!({
+        "status": "ok",
+        "message": "Rollback applied. Server is restarting."
+    })))
+}
+
+/// A single entry in the update history log.
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+struct UpdateHistoryEntry {
+    from_version: String,
+    to_version: String,
+    applied_at: String,
+    success: bool,
+    error: Option<String>,
+}
+
+/// Append an entry to `data/.update/history.json`.
+async fn append_update_history(
+    update_dir: &std::path::Path,
+    from_version: &str,
+    to_version: &str,
+    success: bool,
+    error: Option<String>,
+) {
+    let history_path = update_dir.join("history.json");
+    let mut entries: Vec<UpdateHistoryEntry> = if history_path.exists() {
+        match tokio::fs::read_to_string(&history_path).await {
+            Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+            Err(_) => Vec::new(),
+        }
+    } else {
+        Vec::new()
+    };
+
+    entries.push(UpdateHistoryEntry {
+        from_version: from_version.to_string(),
+        to_version: to_version.to_string(),
+        applied_at: chrono::Utc::now().to_rfc3339(),
+        success,
+        error,
+    });
+
+    // Keep only the last 50 entries
+    if entries.len() > 50 {
+        entries = entries.split_off(entries.len() - 50);
+    }
+
+    if let Ok(json) = serde_json::to_string_pretty(&entries) {
+        let _ = tokio::fs::write(&history_path, json).await;
+    }
+}
+
+/// GET /api/system/update/history — return the update history log (admin-only).
+pub async fn update_history(
+    State(state): State<AppState>,
+    auth_user: Option<Extension<AuthUser>>,
+) -> Result<impl IntoResponse, ApiError> {
+    ensure_admin_if_present(&state, auth_user.as_ref()).await?;
+
+    let data_dir = resolve_update_data_dir();
+    let history_path = data_dir.join(".update").join("history.json");
+
+    if !history_path.exists() {
+        return Ok(Json(serde_json::json!([])));
+    }
+
+    let content = tokio::fs::read_to_string(&history_path)
+        .await
+        .map_err(|e| ApiError::internal(format!("Failed to read update history: {e}")))?;
+
+    let entries: Vec<UpdateHistoryEntry> = serde_json::from_str(&content).unwrap_or_default();
+
+    Ok(Json(serde_json::to_value(&entries).unwrap()))
+}
+
 /// Serve the embedded web UI. For M1 this is a simple inline HTML page.
 /// Later this will serve the SolidJS build via rust-embed.
 pub async fn serve_frontend() -> impl IntoResponse {

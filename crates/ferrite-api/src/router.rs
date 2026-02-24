@@ -26,6 +26,11 @@ pub fn build_router(state: AppState) -> Router {
     let protected_routes = Router::new()
         .route("/api/system/info", get(system::info))
         .route("/api/system/encoder", get(system::encoder_info))
+        .route("/api/system/update/check", get(system::check_for_update))
+        .route("/api/system/update/apply", post(system::apply_update))
+        .route("/api/system/update/status", get(system::update_status))
+        .route("/api/system/update/rollback", post(system::rollback_update))
+        .route("/api/system/update/history", get(system::update_history))
         .route(
             "/api/system/metrics",
             get(system::playback_metrics).delete(system::reset_playback_metrics),

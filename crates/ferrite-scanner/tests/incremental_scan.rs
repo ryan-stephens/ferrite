@@ -94,7 +94,7 @@ async fn incremental_scan_removes_media_for_deleted_directory_prefix() {
         "missing-ffmpeg",
         2,
         &library_root.join("subtitle-cache"),
-        &[removed_dir.clone()],
+        std::slice::from_ref(&removed_dir),
     )
     .await
     .expect("incremental scan failed");
@@ -134,7 +134,7 @@ async fn incremental_scan_indexes_media_for_changed_subdirectory_events() {
         "missing-ffmpeg",
         2,
         &library_root.join("subtitle-cache"),
-        &[incoming_dir.clone()],
+        std::slice::from_ref(&incoming_dir),
     )
     .await
     .expect("incremental scan failed");

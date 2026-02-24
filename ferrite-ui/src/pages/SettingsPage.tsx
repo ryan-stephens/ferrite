@@ -1,6 +1,6 @@
 import { createSignal, For, Show, onMount, onCleanup, createEffect } from 'solid-js';
-import type { ScanProgress } from '../api';
-import { Settings, FolderPlus, Trash2, RefreshCw, Server, HardDrive, Users, UserPlus, KeyRound, ShieldCheck, Shield, Sliders } from 'lucide-solid';
+import type { ScanProgress, UpdateCheckResult, UpdateProgress, UpdateHistoryEntry } from '../api';
+import { Settings, FolderPlus, Trash2, RefreshCw, Server, HardDrive, Users, UserPlus, KeyRound, ShieldCheck, Shield, Sliders, Download, ExternalLink, RotateCcw, AlertTriangle, History } from 'lucide-solid';
 import { libraries, loadLibraries, addLibrary, deleteLibrary, refreshAll, scanning, statusMessage } from '../stores/media';
 import { api } from '../api';
 import type { User, UserPreferences } from '../api';
@@ -17,7 +17,14 @@ export default function SettingsPage() {
   const [prefsSaved, setPrefsSaved] = createSignal(false);
   const [scanProgress, setScanProgress] = createSignal<Record<string, ScanProgress>>({});
   const [scanningLibs, setScanningLibs] = createSignal<Set<string>>(new Set());
+  const [updateInfo, setUpdateInfo] = createSignal<UpdateCheckResult | null>(null);
+  const [updateChecking, setUpdateChecking] = createSignal(false);
+  const [updateProgress, setUpdateProgress] = createSignal<UpdateProgress | null>(null);
+  const [updateApplying, setUpdateApplying] = createSignal(false);
+  const [reconnecting, setReconnecting] = createSignal(false);
+  const [updateHistoryList, setUpdateHistoryList] = createSignal<UpdateHistoryEntry[]>([]);
   let pollInterval: ReturnType<typeof setInterval> | null = null;
+  let updatePollInterval: ReturnType<typeof setInterval> | null = null;
 
   async function pollScanStatus() {
     const libs = libraries();
@@ -70,12 +77,19 @@ export default function SettingsPage() {
           const userList = await api.listUsers();
           setUsers(userList);
         }
+      } else {
+        // No auth configured — everyone has full access, treat as admin
+        setCurrentUser({ id: '', username: 'admin', is_admin: 1 } as any);
       }
     } catch { /* ignore */ }
     try {
       const p = await api.getPreferences();
       setPrefs(p);
     } catch { /* ignore */ }
+    // Check for updates and load history (admin only, non-blocking)
+    if (currentUser()?.is_admin === 1) {
+      await handleCheckForUpdate();
+    }
     // Check if any scans are already running
     await pollScanStatus();
     const anyActive = Object.values(scanProgress()).some(p => p.scanning);
@@ -84,7 +98,116 @@ export default function SettingsPage() {
 
   onCleanup(() => {
     if (pollInterval) clearInterval(pollInterval);
+    if (updatePollInterval) clearInterval(updatePollInterval);
   });
+
+  async function handleCheckForUpdate() {
+    if (updateChecking()) return;
+    setUpdateChecking(true);
+    try {
+      const info = await api.checkForUpdate();
+      setUpdateInfo(info);
+    } catch { /* ignore — update check is best-effort */ }
+    setUpdateChecking(false);
+    try {
+      const history = await api.updateHistory();
+      setUpdateHistoryList(history);
+    } catch { /* ignore */ }
+  }
+
+  async function handleApplyUpdate() {
+    if (updateApplying()) return;
+    if (!confirm('Apply update now? The server will restart automatically.')) return;
+    setUpdateApplying(true);
+    try {
+      await api.applyUpdate();
+      startUpdatePolling();
+    } catch (err: any) {
+      alert(err.message || 'Failed to start update');
+      setUpdateApplying(false);
+    }
+  }
+
+  function startUpdatePolling() {
+    if (updatePollInterval) return;
+    updatePollInterval = setInterval(async () => {
+      try {
+        const status = await api.updateStatus();
+        setUpdateProgress(status);
+        if (status.state === 'restarting') {
+          if (updatePollInterval) clearInterval(updatePollInterval);
+          updatePollInterval = null;
+          setReconnecting(true);
+          // Wait 5s then start polling health
+          setTimeout(pollUntilReconnected, 5000);
+        } else if (status.state === 'failed') {
+          if (updatePollInterval) clearInterval(updatePollInterval);
+          updatePollInterval = null;
+          setUpdateApplying(false);
+        }
+      } catch {
+        // Server may be shutting down — switch to reconnect mode
+        if (updatePollInterval) clearInterval(updatePollInterval);
+        updatePollInterval = null;
+        setReconnecting(true);
+        setTimeout(pollUntilReconnected, 5000);
+      }
+    }, 1000);
+  }
+
+  async function pollUntilReconnected() {
+    let attempts = 0;
+    const maxAttempts = 60;
+    const poll = setInterval(async () => {
+      attempts++;
+      try {
+        await api.info();
+        clearInterval(poll);
+        setReconnecting(false);
+        setUpdateApplying(false);
+        setUpdateProgress(null);
+        // Refresh version info
+        const info = await api.info();
+        setServerInfo(info);
+        setUpdateInfo(null);
+        // Re-check for updates
+        try {
+          const check = await api.checkForUpdate();
+          setUpdateInfo(check);
+        } catch { /* ignore */ }
+      } catch {
+        if (attempts >= maxAttempts) {
+          clearInterval(poll);
+          setReconnecting(false);
+          setUpdateApplying(false);
+          alert('Server did not come back after update. Check server logs.');
+        }
+      }
+    }, 2000);
+  }
+
+  async function handleRollback() {
+    if (!confirm('Roll back to the previous version? The server will restart.')) return;
+    try {
+      await api.rollbackUpdate();
+      setReconnecting(true);
+      setTimeout(pollUntilReconnected, 5000);
+    } catch (err: any) {
+      alert(err.message || 'Rollback failed');
+    }
+  }
+
+  function updatePhaseLabel(state: string): string {
+    switch (state) {
+      case 'downloading': return 'Downloading update…';
+      case 'verifying': return 'Verifying checksum…';
+      case 'extracting': return 'Extracting files…';
+      case 'swapping': return 'Installing update…';
+      case 'restarting': return 'Restarting server…';
+      case 'failed': return 'Update failed';
+      default: return 'Idle';
+    }
+  }
 
   async function savePrefs(updates: Partial<UserPreferences>) {
     const next = { ...prefs(), ...updates };
@@ -134,6 +257,191 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        </section>
+      </Show>
+
+      {/* System Update — admin only */}
+      <Show when={currentUser()?.is_admin === 1}>
+        <section class="mb-8">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-surface-800 uppercase tracking-wider">System Update</h2>
+            <button
+              class="btn-ghost text-xs flex items-center gap-1.5"
+              onClick={handleCheckForUpdate}
+              disabled={updateChecking() || updateApplying()}
+            >
+              <RefreshCw class={`w-3.5 h-3.5 ${updateChecking() ? 'animate-spin' : ''}`} />
+              {updateChecking() ? 'Checking…' : 'Check for Updates'}
+            </button>
+          </div>
+          <div class="card p-4">
+            {/* Reconnecting overlay */}
+            <Show when={reconnecting()}>
+              <div class="flex items-center gap-3 text-sm text-surface-700">
+                <div class="w-4 h-4 border-2 border-surface-400 border-t-ferrite-500 rounded-full animate-spin" />
+                Waiting for server to restart…
+              </div>
+            </Show>
+
+            {/* Update in progress */}
+            <Show when={updateApplying() && !reconnecting()}>
+              {(() => {
+                const prog = updateProgress();
+                const phase = prog?.state ?? 'downloading';
+                const pct = prog?.progress_pct ?? 0;
+                const downloaded = prog?.downloaded_bytes ?? 0;
+                const total = prog?.total_bytes ?? 0;
+                const failed = phase === 'failed';
+                return (
+                  <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                      <div class={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        failed ? 'bg-red-500/10' : 'bg-blue-500/10'
+                      }`}>
+                        {failed
+                          ? <AlertTriangle class="w-5 h-5 text-red-400" />
+                          : <div class="w-5 h-5 border-2 border-blue-300 border-t-blue-500 rounded-full animate-spin" />
+                        }
+                      </div>
+                      <div class="flex-1">
+                        <div class="text-sm font-medium text-white">{updatePhaseLabel(phase)}</div>
+                        <Show when={phase === 'downloading' && total > 0}>
+                          <div class="text-xs text-surface-700">
+                            {(downloaded / 1048576).toFixed(1)} / {(total / 1048576).toFixed(1)} MB
+                          </div>
+                        </Show>
+                        <Show when={failed && prog?.error}>
+                          <div class="text-xs text-red-400 mt-1">{prog!.error}</div>
+                        </Show>
+                      </div>
+                    </div>
+                    <Show when={!failed}>
+                      <div class="w-full h-1.5 bg-surface-300 rounded-full overflow-hidden">
+                        <div
+                          class="h-full bg-blue-500 rounded-full transition-all duration-500"
+                          style={{ width: `${phase === 'downloading' ? pct : 100}%` }}
+                        />
+                      </div>
+                    </Show>
+                    <Show when={failed}>
+                      <button class="btn-secondary text-xs mt-2" onClick={() => { setUpdateApplying(false); setUpdateProgress(null); }}>
+                        Dismiss
+                      </button>
+                    </Show>
+                  </div>
+                );
+              })()}
+            </Show>
+
+            {/* Checking spinner */}
+            <Show when={updateChecking() && !updateInfo() && !updateApplying() && !reconnecting()}>
+              <div class="flex items-center gap-3 text-sm text-surface-700">
+                <div class="w-4 h-4 border-2 border-surface-400 border-t-ferrite-500 rounded-full animate-spin" />
+                Checking for updates…
+              </div>
+            </Show>
+
+            {/* Idle — no check done yet */}
+            <Show when={!updateChecking() && !updateInfo() && !updateApplying() && !reconnecting()}>
+              <div class="flex items-center gap-3 text-sm text-surface-700">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-surface-200">
+                  <Download class="w-5 h-5 text-surface-700" />
+                </div>
+                <div class="text-surface-600">Click "Check for Updates" to see if a newer version is available.</div>
+              </div>
+            </Show>
+
+            {/* Check result */}
+            <Show when={updateInfo() && !updateApplying() && !reconnecting()}>
+              {(() => {
+                const info = updateInfo()!;
+                return (
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3">
+                        <div class={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          info.update_available ? 'bg-green-500/10' : 'bg-surface-200'
+                        }`}>
+                          <Download class={`w-5 h-5 ${
+                            info.update_available ? 'text-green-400' : 'text-surface-700'
+                          }`} />
+                        </div>
+                        <div>
+                          <div class="text-sm font-medium text-white">
+                            {info.update_available
+                              ? `Update available: v${info.latest_version}`
+                              : 'Up to date'}
+                          </div>
+                          <div class="text-xs text-surface-700">
+                            Current: v{info.current_version}
+                            {info.update_available && info.published_at && (
+                              <> · Released {new Date(info.published_at).toLocaleDateString()}</>
+                            )}
+                            {info.update_available && info.download_size_bytes && (
+                              <> · {(info.download_size_bytes / 1048576).toFixed(1)} MB</>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <Show when={info.update_available && info.release_url}>
+                          <a
+                            href={info.release_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="btn-ghost text-xs flex items-center gap-1.5"
+                          >
+                            <ExternalLink class="w-3.5 h-3.5" /> Release Notes
+                          </a>
+                        </Show>
+                        <Show when={info.update_available}>
+                          <button
+                            class="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                            onClick={handleApplyUpdate}
+                          >
+                            <Download class="w-3.5 h-3.5" /> Update Now
+                          </button>
+                        </Show>
+                      </div>
+                    </div>
+                    <Show when={info.update_available && info.release_notes}>
+                      <details class="text-xs text-surface-700">
+                        <summary class="cursor-pointer hover:text-surface-800 transition-colors">What's new in v{info.latest_version}</summary>
+                        <pre class="mt-2 whitespace-pre-wrap text-surface-600 bg-surface-100 rounded-lg p-3 max-h-48 overflow-y-auto">{info.release_notes}</pre>
+                      </details>
+                    </Show>
+                  </div>
+                );
+              })()}
+            </Show>
+          </div>
+
+          {/* Update History */}
+          <Show when={updateHistoryList().length > 0}>
+            <details class="mt-3 text-xs text-surface-700">
+              <summary class="cursor-pointer hover:text-surface-800 transition-colors flex items-center gap-1.5">
+                <History class="w-3.5 h-3.5" /> Update History ({updateHistoryList().length})
+              </summary>
+              <div class="mt-2 space-y-1.5">
+                <For each={[...updateHistoryList()].reverse()}>
+                  {(entry) => (
+                    <div class="flex items-center justify-between bg-surface-100 rounded-lg px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <span class={`w-1.5 h-1.5 rounded-full ${entry.success ? 'bg-green-400' : 'bg-red-400'}`} />
+                        <span class="text-surface-600">
+                          v{entry.from_version} → v{entry.to_version}
+                        </span>
+                      </div>
+                      <span class="text-surface-500">
+                        {new Date(entry.applied_at).toLocaleDateString()}{' '}
+                        {new Date(entry.applied_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  )}
+                </For>
+              </div>
+            </details>
+          </Show>
         </section>
       </Show>
 

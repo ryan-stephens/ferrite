@@ -34,7 +34,7 @@ async fn seed_movie(pool: &SqlitePool, library_id: &str, title: &str, overview: 
          VALUES (?, ?, 'movie', ?, 1234, ?)",
     )
     .bind(&media_id)
-    .bind(&library_id)
+    .bind(library_id)
     .bind(format!("/tmp/{}.mkv", media_id))
     .bind(title)
     .execute(pool)

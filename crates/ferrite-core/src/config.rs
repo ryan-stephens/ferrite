@@ -14,6 +14,9 @@ pub struct AppConfig {
     /// DLNA/UPnP server config
     #[serde(default)]
     pub dlna: DlnaConfig,
+    /// Self-update config. If absent from ferrite.toml, defaults are used.
+    #[serde(default)]
+    pub update: UpdateConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -190,6 +193,34 @@ fn default_dlna_friendly_name() -> String {
     "Ferrite Media Server".to_string()
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateConfig {
+    /// Disable self-update entirely (e.g. if managed by a package manager)
+    #[serde(default)]
+    pub disabled: bool,
+    /// GitHub repo to check for releases (default: "ryan-stephens/ferrite")
+    #[serde(default = "default_update_repo")]
+    pub repo: String,
+    /// Optional GitHub token for higher API rate limits (60/hr unauthenticated → 5000/hr).
+    /// Can also be set via `GITHUB_TOKEN` env var.
+    #[serde(default)]
+    pub github_token: Option<String>,
+}
+
+impl Default for UpdateConfig {
+    fn default() -> Self {
+        Self {
+            disabled: false,
+            repo: default_update_repo(),
+            github_token: None,
+        }
+    }
+}
+
+fn default_update_repo() -> String {
+    "ryan-stephens/ferrite".to_string()
+}
+
 impl Default for MetadataConfig {
     fn default() -> Self {
         Self {
@@ -310,6 +341,7 @@ impl Default for AppConfig {
             metadata: MetadataConfig::default(),
             auth: None,
             dlna: DlnaConfig::default(),
+            update: UpdateConfig::default(),
         }
     }
 }
