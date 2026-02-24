@@ -58,12 +58,12 @@ jobs:
       - name: Package
         run: |
           mkdir -p staging/static
-          cp target/x86_64-unknown-linux-musl/release/ferrite staging/ferrite
+          cp target/x86_64-unknown-linux-musl/release/ferrite staging/
           cp scripts/ferrite-run.sh staging/
           chmod +x staging/ferrite-run.sh
           cp -r ferrite-ui/dist/* staging/static/
           cd staging
-          tar czf ../ferrite-x86_64-linux-musl.tar.gz .
+          tar czf ../ferrite-x86_64-linux-musl.tar.gz *
 
       - name: Compute checksum
         run: sha256sum ferrite-x86_64-linux-musl.tar.gz > ferrite-x86_64-linux-musl.tar.gz.sha256

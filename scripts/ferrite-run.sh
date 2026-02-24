@@ -13,7 +13,7 @@
 #   3. Exits normally for any other exit code.
 
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")"
 
 MARKER="data/.update/pending-validation"
 
