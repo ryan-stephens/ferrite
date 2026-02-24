@@ -317,7 +317,9 @@ pub async fn scan_library(
         scan_state.set_status(ScanStatus::Enriching).await;
 
         if is_tv_library {
-            scan_state.set_current("Enriching TV show metadata...").await;
+            scan_state
+                .set_current("Enriching TV show metadata...")
+                .await;
             match ferrite_metadata::enrichment::enrich_library_shows(
                 pool,
                 library_id,

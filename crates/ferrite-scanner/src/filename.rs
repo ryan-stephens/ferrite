@@ -37,8 +37,9 @@ static RE_EPISODE_NX_NN: LazyLock<Regex> =
 /// Matches absolute episode numbering common in anime:
 /// `Show Name - 05`, `show.name.-.05`, `[Group] Show Name - 05`
 /// Only matches when the number is 2-4 digits (to avoid matching years).
-static RE_EPISODE_ABSOLUTE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)^(?:\[.+?\]\s*)?(.+?)\s+-\s+(\d{2,4})(?:[\s._v]|$)").unwrap());
+static RE_EPISODE_ABSOLUTE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)^(?:\[.+?\]\s*)?(.+?)\s+-\s+(\d{2,4})(?:[\s._v]|$)").unwrap()
+});
 
 // -- Movie patterns --
 
@@ -61,7 +62,10 @@ pub fn clean_title(raw: &str) -> String {
     let replaced = raw.replace(['.', '_'], " ");
     let collapsed: String = replaced.split_whitespace().collect::<Vec<_>>().join(" ");
     // Strip trailing " -" or " –" left after regex capture stops before " - S01E05"
-    let trimmed = collapsed.trim().trim_end_matches(|c: char| c == '-' || c == '–' || c == '—').trim();
+    let trimmed = collapsed
+        .trim()
+        .trim_end_matches(|c: char| c == '-' || c == '–' || c == '—')
+        .trim();
     trimmed.to_string()
 }
 
@@ -299,7 +303,8 @@ mod tests {
 
     #[test]
     fn sonarr_with_quality_tags() {
-        let result = parse_filename("The Mandalorian - S02E08 - Chapter 16 [WEBDL-1080p][EAC3 5.1][h265]");
+        let result =
+            parse_filename("The Mandalorian - S02E08 - Chapter 16 [WEBDL-1080p][EAC3 5.1][h265]");
         match result {
             ParsedFilename::Episode(e) => {
                 assert_eq!(e.show_name, "The Mandalorian");

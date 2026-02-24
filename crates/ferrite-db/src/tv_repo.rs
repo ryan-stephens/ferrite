@@ -475,7 +475,10 @@ pub async fn get_seasons_for_show(pool: &SqlitePool, show_id: &str) -> Result<Ve
 /// Return episode numbers currently present on disk for a season.
 /// Used by enrichment to avoid fetching/downloading metadata for episodes
 /// we do not actually have.
-pub async fn get_episode_numbers_for_season(pool: &SqlitePool, season_id: &str) -> Result<Vec<i64>> {
+pub async fn get_episode_numbers_for_season(
+    pool: &SqlitePool,
+    season_id: &str,
+) -> Result<Vec<i64>> {
     let rows: Vec<(i64,)> = sqlx::query_as(
         "SELECT episode_number FROM episodes WHERE season_id = ? ORDER BY episode_number ASC",
     )
@@ -483,7 +486,10 @@ pub async fn get_episode_numbers_for_season(pool: &SqlitePool, season_id: &str) 
     .fetch_all(pool)
     .await?;
 
-    Ok(rows.into_iter().map(|(episode_number,)| episode_number).collect())
+    Ok(rows
+        .into_iter()
+        .map(|(episode_number,)| episode_number)
+        .collect())
 }
 
 /// Get TV shows that have no metadata yet (fetched_at IS NULL) for a given library.

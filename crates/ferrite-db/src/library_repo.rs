@@ -10,11 +10,10 @@ pub async fn create_library(
     library_type: LibraryType,
 ) -> Result<Library> {
     // Reject duplicate paths to prevent scan conflicts.
-    let existing: Option<(String,)> =
-        sqlx::query_as("SELECT id FROM libraries WHERE path = ?")
-            .bind(path)
-            .fetch_optional(pool)
-            .await?;
+    let existing: Option<(String,)> = sqlx::query_as("SELECT id FROM libraries WHERE path = ?")
+        .bind(path)
+        .fetch_optional(pool)
+        .await?;
     if existing.is_some() {
         anyhow::bail!("A library with this path already exists");
     }

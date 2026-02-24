@@ -63,7 +63,11 @@ fn build_tv_search_candidates(search_title: &str) -> Vec<String> {
     // Country suffix aliases often appear in scene-style names.
     // e.g. "Survivor AU" / "Survivor Australia" -> "Australian Survivor"
     if parts.len() >= 2 {
-        let suffix = parts.last().copied().unwrap_or_default().to_ascii_lowercase();
+        let suffix = parts
+            .last()
+            .copied()
+            .unwrap_or_default()
+            .to_ascii_lowercase();
         let stem = parts[..parts.len() - 1].join(" ");
         if !stem.is_empty() && matches!(suffix.as_str(), "au" | "australia") {
             candidates.push(format!("{} Australia", stem));
@@ -268,22 +272,17 @@ pub async fn enrich_library_shows(
         let (search_title, parsed_year) = strip_trailing_year(title);
         let year_i32 = year.map(|y| y as i32).or(parsed_year);
 
-        let (best, matched_query, result_count) = match find_best_tv_match(
-            provider,
-            &search_title,
-            year_i32,
-        )
-        .await
-        {
-            Some(found) => found,
-            None => {
-                debug!(
-                    "No TMDB match for TV show '{}' (searched: '{}')",
-                    title, search_title
-                );
-                continue;
-            }
-        };
+        let (best, matched_query, result_count) =
+            match find_best_tv_match(provider, &search_title, year_i32).await {
+                Some(found) => found,
+                None => {
+                    debug!(
+                        "No TMDB match for TV show '{}' (searched: '{}')",
+                        title, search_title
+                    );
+                    continue;
+                }
+            };
 
         if !matched_query.eq_ignore_ascii_case(&search_title) {
             debug!(
@@ -521,23 +520,17 @@ pub async fn enrich_single_show(
 ) -> Result<bool> {
     let (search_title, parsed_year) = strip_trailing_year(title);
 
-    let (best, matched_query, result_count) = match find_best_tv_match(
-        provider,
-        &search_title,
-        parsed_year,
-    )
-    .await
-    {
-        Some(found) => found,
-        None => {
-            warn!(
-                "No TMDB match for TV show '{}' (searched: '{}')",
-                title,
-                search_title,
-            );
-            return Ok(false);
-        }
-    };
+    let (best, matched_query, result_count) =
+        match find_best_tv_match(provider, &search_title, parsed_year).await {
+            Some(found) => found,
+            None => {
+                warn!(
+                    "No TMDB match for TV show '{}' (searched: '{}')",
+                    title, search_title,
+                );
+                return Ok(false);
+            }
+        };
 
     if !matched_query.eq_ignore_ascii_case(&search_title) {
         info!(
@@ -607,7 +600,8 @@ pub async fn enrich_single_show(
 
     let mut season_data: Vec<SeasonData> = Vec::with_capacity(seasons_snapshot.len());
     for (season_id, season_number) in &seasons_snapshot {
-        let on_disk_episodes = match tv_repo::get_episode_numbers_for_season(pool, season_id).await {
+        let on_disk_episodes = match tv_repo::get_episode_numbers_for_season(pool, season_id).await
+        {
             Ok(numbers) => numbers,
             Err(e) => {
                 warn!(
@@ -652,7 +646,10 @@ pub async fn enrich_single_show(
                     {
                         Ok(f) => Some(f),
                         Err(e) => {
-                            debug!("Still download failed S{}E{}: {}", season, ep.episode_number, e);
+                            debug!(
+                                "Still download failed S{}E{}: {}",
+                                season, ep.episode_number, e
+                            );
                             None
                         }
                     }

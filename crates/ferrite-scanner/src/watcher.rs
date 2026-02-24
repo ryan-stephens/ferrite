@@ -15,14 +15,9 @@ const MAX_INCREMENTAL_BATCH_PATHS: usize = 256;
 /// Commands sent to the running watcher task for dynamic library management.
 pub enum WatcherCmd {
     /// Start watching a new library directory.
-    Watch {
-        library_id: String,
-        path: PathBuf,
-    },
+    Watch { library_id: String, path: PathBuf },
     /// Stop watching a library directory (e.g. on library deletion).
-    Unwatch {
-        library_id: String,
-    },
+    Unwatch { library_id: String },
 }
 
 /// Handle returned by `LibraryWatcher::start()` that allows callers to
@@ -48,11 +43,7 @@ impl WatcherHandle {
     /// Unregister a library directory so it is no longer watched.
     /// Also drains any pending filesystem events for this library.
     pub async fn unwatch_library(&self, library_id: String) {
-        if let Err(e) = self
-            .cmd_tx
-            .send(WatcherCmd::Unwatch { library_id })
-            .await
-        {
+        if let Err(e) = self.cmd_tx.send(WatcherCmd::Unwatch { library_id }).await {
             warn!("Failed to send unwatch command to watcher task: {}", e);
         }
     }
@@ -325,14 +316,20 @@ async fn enrich_library_after_scan(
     let library = match library_repo::get_library(pool, library_id).await {
         Ok(lib) => lib,
         Err(e) => {
-            warn!("Failed to load library '{}' for enrichment: {}", library_id, e);
+            warn!(
+                "Failed to load library '{}' for enrichment: {}",
+                library_id, e
+            );
             return;
         }
     };
 
     match library.library_type {
         LibraryType::Tv => {
-            info!("Enriching TV metadata after incremental scan for '{}'", library.name);
+            info!(
+                "Enriching TV metadata after incremental scan for '{}'",
+                library.name
+            );
             match ferrite_metadata::enrichment::enrich_library_shows(
                 pool,
                 library_id,
@@ -347,7 +344,10 @@ async fn enrich_library_after_scan(
             }
         }
         LibraryType::Movie => {
-            info!("Enriching movie metadata after incremental scan for '{}'", library.name);
+            info!(
+                "Enriching movie metadata after incremental scan for '{}'",
+                library.name
+            );
             match ferrite_metadata::enrichment::enrich_library_movies(
                 pool,
                 library_id,
