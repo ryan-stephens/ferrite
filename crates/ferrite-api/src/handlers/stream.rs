@@ -186,23 +186,20 @@ async fn resolve_seek_start(
             {
                 Ok(Some(kf)) => (kf, "index"),
                 Ok(None) => {
-                    // No keyframes cached yet — lazily probe and cache them.
-                    match lazy_probe_keyframes(state, media_id, file_path).await {
-                        true => {
-                            // Retry lookup after populating the index.
-                            match keyframe_repo::find_keyframe_before(
-                                &state.db.read,
-                                media_id,
-                                requested_start,
-                            )
-                            .await
-                            {
-                                Ok(Some(kf)) => (kf, "index-lazy"),
-                                _ => (requested_start, "requested"),
-                            }
-                        }
-                        false => (requested_start, "requested"),
-                    }
+                    // No keyframes cached yet — spawn background probe so future seeks are fast,
+                    // and use precise ffprobe fallback for this immediate request to avoid blocking.
+                    let state_clone = state.clone();
+                    let media_id_clone = media_id.to_string();
+                    let file_path_clone = file_path.to_path_buf();
+                    tokio::spawn(async move {
+                        lazy_probe_keyframes(&state_clone, &media_id_clone, &file_path_clone).await;
+                    });
+
+                    let ffprobe_path = &state.config.transcode.ffprobe_path;
+                    let kf = transcode::find_keyframe_before(ffprobe_path, file_path, requested_start)
+                        .await
+                        .unwrap_or(requested_start);
+                    (kf, "ffprobe-fallback")
                 }
                 Err(e) => {
                     warn!(
