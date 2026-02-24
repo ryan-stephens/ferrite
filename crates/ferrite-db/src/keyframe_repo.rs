@@ -39,12 +39,11 @@ pub async fn replace_keyframes(
 
 /// Check whether any keyframes exist for a media item.
 pub async fn has_keyframes(pool: &SqlitePool, media_item_id: &str) -> Result<bool> {
-    let row: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM media_keyframes WHERE media_item_id = ? LIMIT 1",
-    )
-    .bind(media_item_id)
-    .fetch_one(pool)
-    .await?;
+    let row: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM media_keyframes WHERE media_item_id = ? LIMIT 1")
+            .bind(media_item_id)
+            .fetch_one(pool)
+            .await?;
     Ok(row.0 > 0)
 }
 

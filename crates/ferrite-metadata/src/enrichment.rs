@@ -145,8 +145,7 @@ pub async fn enrich_library_movies(
     let pending_count = pending.len();
     info!(
         "Enriching metadata for {} movies in library {}",
-        pending_count,
-        library_id
+        pending_count, library_id
     );
     let enriched = Arc::new(AtomicU32::new(0));
 
@@ -253,8 +252,7 @@ pub async fn enrich_library_movies(
     let enriched = enriched.load(Ordering::Relaxed);
     info!(
         "Metadata enrichment complete: {}/{} movies enriched",
-        enriched,
-        pending_count
+        enriched, pending_count
     );
     Ok(enriched)
 }
@@ -277,8 +275,7 @@ pub async fn enrich_library_shows(
     let pending_count = pending.len();
     info!(
         "Enriching metadata for {} TV shows in library {}",
-        pending_count,
-        library_id
+        pending_count, library_id
     );
     let enriched = Arc::new(AtomicU32::new(0));
 
@@ -415,9 +412,7 @@ pub async fn enrich_library_shows(
                             let ic = ic.clone();
                             async move {
                                 let still_local = if let Some(ref sp) = ep.still_path {
-                                    match ic
-                                        .ensure_still(sp, tmdb_id, sn, ep.episode_number)
-                                        .await
+                                    match ic.ensure_still(sp, tmdb_id, sn, ep.episode_number).await
                                     {
                                         Ok(f) => Some(f),
                                         Err(e) => {
@@ -479,8 +474,7 @@ pub async fn enrich_library_shows(
     let enriched = enriched.load(Ordering::Relaxed);
     info!(
         "TV metadata enrichment complete: {}/{} shows enriched",
-        enriched,
-        pending_count
+        enriched, pending_count
     );
 
     // Backfill episode metadata for shows that already have show-level metadata

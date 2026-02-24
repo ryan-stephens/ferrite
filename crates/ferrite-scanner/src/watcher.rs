@@ -332,10 +332,7 @@ async fn enrich_library_after_scan(
                 library.name
             );
             match ferrite_metadata::enrichment::enrich_library_shows(
-                pool,
-                library_id,
-                provider,
-                cache,
+                pool, library_id, provider, cache,
             )
             .await
             {
@@ -350,10 +347,7 @@ async fn enrich_library_after_scan(
                 library.name
             );
             match ferrite_metadata::enrichment::enrich_library_movies(
-                pool,
-                library_id,
-                provider,
-                cache,
+                pool, library_id, provider, cache,
             )
             .await
             {

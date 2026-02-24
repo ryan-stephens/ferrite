@@ -274,8 +274,7 @@ async fn lazy_probe_keyframes(
         media_id
     );
 
-    if let Err(e) =
-        keyframe_repo::replace_keyframes_pool(&state.db, media_id, &keyframes_ms).await
+    if let Err(e) = keyframe_repo::replace_keyframes_pool(&state.db, media_id, &keyframes_ms).await
     {
         warn!(
             "Failed to cache lazy-probed keyframes for {}: {}",

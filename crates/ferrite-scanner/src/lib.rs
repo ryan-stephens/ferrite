@@ -103,8 +103,7 @@ pub async fn scan_library(
             if let (Some(provider), Some(img_cache)) =
                 (tmdb_provider.as_ref(), image_cache.as_ref())
             {
-                let (tx, mut rx) =
-                    tokio::sync::mpsc::channel::<(String, String, Option<i32>)>(64);
+                let (tx, mut rx) = tokio::sync::mpsc::channel::<(String, String, Option<i32>)>(64);
                 let pool = pool.clone();
                 let provider = provider.clone();
                 let img_cache = img_cache.clone();
@@ -297,7 +296,7 @@ pub async fn scan_library(
                 // Pipeline enrichment: send movie to background enrichment worker
                 if let Some(ref enrich_tx) = movie_enrichment_tx {
                     let _ = enrich_tx
-                        .send((mid.clone(), title.clone(), year.map(|y| y as i32)))
+                        .send((mid.clone(), title.clone(), year))
                         .await;
                 }
 
@@ -643,63 +642,62 @@ pub async fn scan_library_incremental(
             ParsedFilename::Unknown(name) => (name.clone(), None),
         };
 
-        let (probe_data, streams, chapters) =
-            match probe::probe_file(ffprobe_path, &path).await {
-                Ok(pr) => {
-                    let stream_inserts: Vec<StreamInsert> = pr
-                        .streams
-                        .iter()
-                        .map(|s| StreamInsert {
-                            stream_index: s.index,
-                            stream_type: s.stream_type.clone(),
-                            codec_name: s.codec_name.clone(),
-                            codec_long_name: s.codec_long_name.clone(),
-                            profile: s.profile.clone(),
-                            language: s.language.clone(),
-                            title: s.title.clone(),
-                            is_default: s.is_default,
-                            is_forced: s.is_forced,
-                            width: s.width,
-                            height: s.height,
-                            frame_rate: s.frame_rate.clone(),
-                            pixel_format: s.pixel_format.clone(),
-                            bit_depth: s.bit_depth,
-                            color_space: s.color_space.clone(),
-                            color_transfer: s.color_transfer.clone(),
-                            color_primaries: s.color_primaries.clone(),
-                            channels: s.channels,
-                            channel_layout: s.channel_layout.clone(),
-                            sample_rate: s.sample_rate,
-                            bitrate_bps: s.bitrate_bps,
-                        })
-                        .collect();
-                    let chapter_inserts: Vec<ChapterInsert> = pr
-                        .chapters
-                        .iter()
-                        .map(|c| ChapterInsert {
-                            chapter_index: c.chapter_index,
-                            title: c.title.clone(),
-                            start_time_ms: c.start_time_ms,
-                            end_time_ms: c.end_time_ms,
-                        })
-                        .collect();
-                    let data = MediaProbeData {
-                        container_format: pr.container_format,
-                        video_codec: pr.video_codec,
-                        audio_codec: pr.audio_codec,
-                        width: pr.width,
-                        height: pr.height,
-                        duration_ms: pr.duration_ms,
-                        bitrate_kbps: pr.bitrate_kbps,
-                    };
+        let (probe_data, streams, chapters) = match probe::probe_file(ffprobe_path, &path).await {
+            Ok(pr) => {
+                let stream_inserts: Vec<StreamInsert> = pr
+                    .streams
+                    .iter()
+                    .map(|s| StreamInsert {
+                        stream_index: s.index,
+                        stream_type: s.stream_type.clone(),
+                        codec_name: s.codec_name.clone(),
+                        codec_long_name: s.codec_long_name.clone(),
+                        profile: s.profile.clone(),
+                        language: s.language.clone(),
+                        title: s.title.clone(),
+                        is_default: s.is_default,
+                        is_forced: s.is_forced,
+                        width: s.width,
+                        height: s.height,
+                        frame_rate: s.frame_rate.clone(),
+                        pixel_format: s.pixel_format.clone(),
+                        bit_depth: s.bit_depth,
+                        color_space: s.color_space.clone(),
+                        color_transfer: s.color_transfer.clone(),
+                        color_primaries: s.color_primaries.clone(),
+                        channels: s.channels,
+                        channel_layout: s.channel_layout.clone(),
+                        sample_rate: s.sample_rate,
+                        bitrate_bps: s.bitrate_bps,
+                    })
+                    .collect();
+                let chapter_inserts: Vec<ChapterInsert> = pr
+                    .chapters
+                    .iter()
+                    .map(|c| ChapterInsert {
+                        chapter_index: c.chapter_index,
+                        title: c.title.clone(),
+                        start_time_ms: c.start_time_ms,
+                        end_time_ms: c.end_time_ms,
+                    })
+                    .collect();
+                let data = MediaProbeData {
+                    container_format: pr.container_format,
+                    video_codec: pr.video_codec,
+                    audio_codec: pr.audio_codec,
+                    width: pr.width,
+                    height: pr.height,
+                    duration_ms: pr.duration_ms,
+                    bitrate_kbps: pr.bitrate_kbps,
+                };
 
-                    (Some(data), stream_inserts, chapter_inserts)
-                }
-                Err(e) => {
-                    warn!("ffprobe failed for changed path {}: {}", path.display(), e);
-                    (None, Vec::new(), Vec::new())
-                }
-            };
+                (Some(data), stream_inserts, chapter_inserts)
+            }
+            Err(e) => {
+                warn!("ffprobe failed for changed path {}: {}", path.display(), e);
+                (None, Vec::new(), Vec::new())
+            }
+        };
 
         let mut tx = pool.begin().await?;
 

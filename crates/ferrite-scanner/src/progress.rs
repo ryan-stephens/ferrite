@@ -123,8 +123,7 @@ impl ScanState {
             .unwrap_or_default()
             .as_secs();
         let elapsed = now.saturating_sub(self.started_at_unix.load(Ordering::Relaxed));
-        let phase_elapsed =
-            now.saturating_sub(self.phase_started_at_unix.load(Ordering::Relaxed));
+        let phase_elapsed = now.saturating_sub(self.phase_started_at_unix.load(Ordering::Relaxed));
 
         // ETA: extrapolate from Phase 1 probe rate (most predictable phase).
         // Only compute when actively scanning and we have meaningful progress.
