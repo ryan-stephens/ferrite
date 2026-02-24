@@ -58,7 +58,7 @@ jobs:
       - name: Package
         run: |
           mkdir -p staging/static
-          cp target/x86_64-unknown-linux-musl/release/ferrite staging/
+          cp target/x86_64-unknown-linux-musl/release/ferrite staging/ferrite
           cp scripts/ferrite-run.sh staging/
           chmod +x staging/ferrite-run.sh
           cp -r ferrite-ui/dist/* staging/static/
