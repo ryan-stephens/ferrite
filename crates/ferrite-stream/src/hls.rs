@@ -195,8 +195,8 @@ impl HlsSession {
     pub async fn kill_ffmpeg(&self) {
         if let Some(mut child) = self.ffmpeg_handle.lock().await.take() {
             // On Unix: send SIGTERM so FFmpeg can flush write buffers and close
-            // the playlist cleanly, then hand off the 2-second SIGKILL escalation
-            // to a background task so the caller returns immediately.
+            // the playlist cleanly, then wait up to 2 seconds for it to exit,
+            // then send SIGKILL if it's still alive.
             // On Windows: kill immediately (no SIGTERM concept).
             #[cfg(unix)]
             {
@@ -204,17 +204,24 @@ impl HlsSession {
                     // SAFETY: pid is a valid process ID from a child we own.
                     unsafe { libc::kill(pid as libc::pid_t, libc::SIGTERM) };
                     debug!("Sent SIGTERM to FFmpeg for session {}", self.session_id);
-                    let session_id = self.session_id.clone();
-                    tokio::spawn(async move {
-                        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                        let _ = child.kill().await;
-                        debug!("Sent SIGKILL to FFmpeg for session {}", session_id);
-                    });
+                    
+                    // Wait up to 2 seconds for graceful exit
+                    let wait_fut = child.wait();
+                    if let Ok(Ok(_)) = tokio::time::timeout(std::time::Duration::from_secs(2), wait_fut).await {
+                        debug!("FFmpeg exited gracefully for session {}", self.session_id);
+                        return;
+                    }
+                    
+                    // Force kill if it didn't exit
+                    let _ = child.kill().await;
+                    debug!("Sent SIGKILL to FFmpeg for session {}", self.session_id);
+                    let _ = child.wait().await;
                     return;
                 }
             }
             // Windows / no pid: kill immediately.
             let _ = child.kill().await;
+            let _ = child.wait().await;
             debug!("Killed FFmpeg for session {} (immediate)", self.session_id);
         }
     }
