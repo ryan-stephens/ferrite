@@ -383,18 +383,18 @@ mod tests {
     #[test]
     fn picks_most_specific_library_path_for_nested_roots() {
         let libs = vec![
-            (PathBuf::from(r"C:\media"), "root".to_string()),
-            (PathBuf::from(r"C:\media\tv"), "tv".to_string()),
+            (PathBuf::from("/media"), "root".to_string()),
+            (PathBuf::from("/media/tv"), "tv".to_string()),
         ];
 
-        let matched = find_library_for_path(Path::new(r"C:\media\tv\show\ep1.mkv"), &libs);
+        let matched = find_library_for_path(Path::new("/media/tv/show/ep1.mkv"), &libs);
         assert_eq!(matched.as_deref(), Some("tv"));
     }
 
     #[test]
     fn returns_none_when_path_is_outside_all_libraries() {
-        let libs = vec![(PathBuf::from(r"C:\media"), "root".to_string())];
-        let matched = find_library_for_path(Path::new(r"C:\other\movie.mkv"), &libs);
+        let libs = vec![(PathBuf::from("/media"), "root".to_string())];
+        let matched = find_library_for_path(Path::new("/other/movie.mkv"), &libs);
         assert!(matched.is_none());
     }
 }
