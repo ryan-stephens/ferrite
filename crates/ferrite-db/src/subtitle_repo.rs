@@ -47,7 +47,8 @@ pub async fn replace_subtitles(
     }
 
     // Filter: keep all external subs, and only keep extracted subs that don't
-    // duplicate an external sub's language+flags combination.
+    // duplicate an external sub's language+flags combination OR another already-kept extracted sub.
+    let mut kept_keys = external_keys;
     let deduped: Vec<&SubtitleInsert> = subtitles
         .iter()
         .filter(|s| {
@@ -59,7 +60,12 @@ pub async fn replace_subtitles(
                 s.is_forced,
                 s.is_sdh,
             );
-            !external_keys.contains(&key)
+            if kept_keys.contains(&key) {
+                false
+            } else {
+                kept_keys.insert(key);
+                true
+            }
         })
         .collect();
 

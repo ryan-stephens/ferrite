@@ -996,11 +996,10 @@ impl HlsSessionManager {
         // Collect single-variant session ID
         if let Some(sid) = self.media_sessions.get(owner_key) {
             session_ids.push(sid.clone());
-            drop(sid);
         }
         // Collect all variant session IDs
-        if let Some((_, sids)) = self.media_variant_sessions.remove(owner_key) {
-            session_ids.extend(sids);
+        if let Some(sids) = self.media_variant_sessions.get(owner_key) {
+            session_ids.extend(sids.iter().cloned());
         }
 
         if session_ids.is_empty() {
@@ -1159,7 +1158,12 @@ impl HlsSessionManager {
         // ---------------------------------------------------------------
         // Build FFmpeg args
         // ---------------------------------------------------------------
-        let mut args: Vec<String> = vec!["-hide_banner".into(), "-nostdin".into()];
+        let mut args: Vec<String> = vec![
+            "-hide_banner".into(),
+            "-loglevel".into(),
+            "error".into(),
+            "-nostdin".into(),
+        ];
 
         // HW-accelerated decoding args (before -i).
         if needs_scaling && !needs_software {
