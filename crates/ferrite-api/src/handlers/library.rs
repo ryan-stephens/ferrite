@@ -16,7 +16,7 @@ pub struct CreateLibraryRequest {
 }
 
 pub async fn list_libraries(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
-    let libs = library_repo::list_libraries(&state.db).await?;
+    let libs = library_repo::list_libraries(&state.db.read).await?;
     Ok(Json(libs))
 }
 
@@ -30,7 +30,7 @@ pub async fn create_library(
         _ => ferrite_core::media::LibraryType::Movie,
     };
 
-    let lib = library_repo::create_library(&state.db, &req.name, &req.path, lib_type).await?;
+    let lib = library_repo::create_library(&state.db.write, &req.name, &req.path, lib_type).await?;
 
     // Register the new library path with the filesystem watcher so future
     // file changes are detected automatically.
@@ -68,7 +68,7 @@ pub async fn create_library(
                 };
 
             match ferrite_scanner::scan_library(
-                &db,
+                &db.write, // scanner needs write access
                 &lib_id,
                 &ffprobe_path,
                 &ffmpeg_path,
@@ -110,15 +110,15 @@ pub async fn delete_library(
     state.scan_registry.remove(&id);
 
     // 3. Collect media item IDs *before* deleting rows — needed for cache cleanup.
-    let media_ids = media_repo::list_media_item_ids_for_library(&state.db, &id)
+    let media_ids = media_repo::list_media_item_ids_for_library(&state.db.read, &id)
         .await
         .unwrap_or_default();
 
     // 4. Delete DB rows. CASCADE handles: media_streams, external_subtitles,
     //    playback_progress, movies, episodes, seasons, tv_shows, media_keyframes,
     //    chapters, and FTS triggers clean media_fts.
-    media_repo::delete_media_items_for_library(&state.db, &id).await?;
-    library_repo::delete_library(&state.db, &id).await?;
+    media_repo::delete_media_items_for_library(&state.db.write, &id).await?;
+    library_repo::delete_library(&state.db.write, &id).await?;
 
     // 5. Clean up extracted subtitle cache directories in the background.
     if !media_ids.is_empty() {
@@ -155,7 +155,7 @@ pub async fn scan_library(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let _library = ferrite_db::library_repo::get_library(&state.db, &id).await?;
+    let _library = ferrite_db::library_repo::get_library(&state.db.read, &id).await?;
 
     // Prevent duplicate concurrent scans for the same library
     let scan_state = state
@@ -189,7 +189,7 @@ pub async fn scan_library(
         };
 
         match ferrite_scanner::scan_library(
-            &db,
+            &db.write, // scanner needs write access
             &lib_id,
             &ffprobe_path,
             &ffmpeg_path,

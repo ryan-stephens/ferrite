@@ -42,8 +42,8 @@ pub async fn list_media(
         per_page: per_page as i64,
     };
 
-    let items = movie_repo::list_movies_with_media(&state.db, &mq, user_id).await?;
-    let total = movie_repo::count_movies_with_media(&state.db, &mq).await?;
+    let items = movie_repo::list_movies_with_media(&state.db.read, &mq, user_id).await?;
+    let total = movie_repo::count_movies_with_media(&state.db.read, &mq).await?;
 
     Ok(Json(serde_json::json!({
         "items": items,
@@ -61,7 +61,7 @@ pub async fn get_media(
     let user = auth_user.map(|e| e.0);
     let user_id = extract_user_id(&user);
     // Use enriched query with movie metadata
-    let item = movie_repo::get_movie_with_media(&state.db, &id, user_id)
+    let item = movie_repo::get_movie_with_media(&state.db.read, &id, user_id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Media item '{id}' not found")))?;
     Ok(Json(item))
@@ -72,7 +72,7 @@ pub async fn get_media_streams(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let streams = stream_repo::get_streams(&state.db, &id).await?;
+    let streams = stream_repo::get_streams(&state.db.read, &id).await?;
     Ok(Json(streams))
 }
 
@@ -81,6 +81,6 @@ pub async fn get_media_chapters(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let chapters = chapter_repo::get_chapters(&state.db, &id).await?;
+    let chapters = chapter_repo::get_chapters(&state.db.read, &id).await?;
     Ok(Json(chapters))
 }

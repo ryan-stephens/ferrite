@@ -68,11 +68,7 @@ fn is_stream_hot_path(path: &str) -> bool {
 }
 
 async fn token_user_exists(state: &AppState, user_id: &str) -> bool {
-    user_repo::get_user_by_id(&state.db, user_id)
-        .await
-        .ok()
-        .flatten()
-        .is_some()
+    state.user_cache.contains(user_id)
 }
 
 // ---------------------------------------------------------------------------
@@ -240,7 +236,7 @@ pub async fn login(
     };
 
     // Look up user in the database
-    let user = match user_repo::get_user_by_username(&state.db, &req.username).await {
+    let user = match user_repo::get_user_by_username(&state.db.read, &req.username).await {
         Ok(Some(u)) => u,
         Ok(None) => {
             return (
@@ -269,7 +265,7 @@ pub async fn login(
     }
 
     // Update last login timestamp (fire-and-forget)
-    let _ = user_repo::update_last_login(&state.db, &user.id).await;
+    let _ = user_repo::update_last_login(&state.db.write, &user.id).await;
 
     match create_token(
         &user.id,
@@ -291,7 +287,7 @@ pub async fn login(
 }
 
 pub async fn auth_status(State(state): State<AppState>) -> impl IntoResponse {
-    let user_count = ferrite_db::user_repo::count_users(&state.db)
+    let user_count = ferrite_db::user_repo::count_users(&state.db.read)
         .await
         .unwrap_or(0);
     Json(serde_json::json!({

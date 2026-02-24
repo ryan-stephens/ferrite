@@ -20,7 +20,7 @@ pub async fn list_shows(
         .as_deref()
         .ok_or_else(|| ApiError::bad_request("library_id query parameter is required"))?;
 
-    let shows = tv_repo::list_shows(&state.db, library_id).await?;
+    let shows = tv_repo::list_shows(&state.db.read, library_id).await?;
     Ok(Json(shows))
 }
 
@@ -34,7 +34,7 @@ pub async fn get_show(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let show = tv_repo::get_show(&state.db, &id)
+    let show = tv_repo::get_show(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("TV show '{id}' not found")))?;
     Ok(Json(show))
@@ -45,7 +45,7 @@ pub async fn list_seasons(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let seasons = tv_repo::list_seasons(&state.db, &id).await?;
+    let seasons = tv_repo::list_seasons(&state.db.read, &id).await?;
     Ok(Json(seasons))
 }
 
@@ -57,7 +57,7 @@ pub async fn list_episodes(
 ) -> Result<impl IntoResponse, ApiError> {
     let user = auth_user.map(|e| e.0);
     let user_id = extract_user_id(&user);
-    let episodes = tv_repo::list_episodes(&state.db, &id, user_id).await?;
+    let episodes = tv_repo::list_episodes(&state.db.read, &id, user_id).await?;
     Ok(Json(episodes))
 }
 
@@ -66,7 +66,7 @@ pub async fn next_episode(
     State(state): State<AppState>,
     Path(media_item_id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let next = tv_repo::get_next_episode(&state.db, &media_item_id).await?;
+    let next = tv_repo::get_next_episode(&state.db.read, &media_item_id).await?;
     match next {
         Some(ep) => Ok(Json(serde_json::json!({ "next": ep }))),
         None => Ok(Json(serde_json::json!({ "next": null }))),

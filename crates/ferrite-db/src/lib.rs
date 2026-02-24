@@ -19,10 +19,18 @@ use std::path::Path;
 use std::str::FromStr;
 use tracing::info;
 
-/// Create and initialize the SQLite connection pool.
-/// `max_connections` controls the pool size (default 16 in config).
-pub async fn create_pool(db_path: &Path, max_connections: u32) -> Result<SqlitePool> {
+#[derive(Clone, Debug)]
+pub struct Database {
+    pub read: SqlitePool,
+    pub write: SqlitePool,
+}
+
+/// Create and initialize the SQLite connection pools.
+/// `max_connections` controls the reader pool size (default 16 in config).
+/// The writer pool is always size 1 to serialize writes and prevent `database is locked`.
+pub async fn create_pools(db_path: &Path, max_connections: u32) -> Result<Database> {
     let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
+
     let options = SqliteConnectOptions::from_str(&db_url)?
         .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
         .create_if_missing(true)
@@ -38,18 +46,28 @@ pub async fn create_pool(db_path: &Path, max_connections: u32) -> Result<SqliteP
         .pragma("temp_store", "MEMORY")
         // Enable foreign key enforcement
         .pragma("foreign_keys", "ON")
-        // 256MB memory-mapped I/O — avoids read() syscalls for repeated page reads,
-        // giving 10-30% faster read throughput on large databases
-        .pragma("mmap_size", "268435456");
+        // 30GB memory-mapped I/O (per optimization plan)
+        .pragma("mmap_size", "30000000000");
 
-    let pool = SqlitePoolOptions::new()
+    let read_pool = SqlitePoolOptions::new()
         .max_connections(max_connections)
+        .connect_with(options.clone())
+        .await?;
+
+    let write_pool = SqlitePoolOptions::new()
+        .max_connections(1) // STRICTLY 1 connection for writing
         .connect_with(options)
         .await?;
 
     info!("Database connected at {}", db_path.display());
-    run_migrations(&pool).await?;
-    Ok(pool)
+
+    // Run migrations using the write pool
+    run_migrations(&write_pool).await?;
+
+    Ok(Database {
+        read: read_pool,
+        write: write_pool,
+    })
 }
 
 /// Run SQL migrations from the migrations/ directory.

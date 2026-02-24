@@ -159,8 +159,8 @@ async fn main() -> Result<()> {
     let encoder_profile = Arc::new(hw_caps.selected_profile.clone());
 
     // Initialize database (before background tasks that may need it)
-    let pool =
-        ferrite_db::create_pool(&config.database.path, config.database.max_connections).await?;
+    let db =
+        ferrite_db::create_pools(&config.database.path, config.database.max_connections).await?;
 
     // Initialize HLS session manager
     let hls_cache_dir = config.transcode.cache_dir.join("hls");
@@ -188,7 +188,9 @@ async fn main() -> Result<()> {
     ));
 
     // Initialize webhook dispatcher
-    let webhook_dispatcher = Arc::new(ferrite_api::webhooks::WebhookDispatcher::new(pool.clone()));
+    let webhook_dispatcher = Arc::new(ferrite_api::webhooks::WebhookDispatcher::new(
+        db.read.clone(),
+    ));
 
     // Keep a reference for graceful shutdown cleanup (before state is moved into the router)
     let shutdown_hls_manager = hls_manager.clone();
@@ -213,7 +215,7 @@ async fn main() -> Result<()> {
     // Start filesystem watcher for auto-rescan (before AppState so the handle
     // can be stored for dynamic library registration from API handlers).
     let watcher = ferrite_scanner::watcher::LibraryWatcher::new(
-        pool.clone(),
+        db.write.clone(), // watcher needs write access to update DB when files change
         config.transcode.ffprobe_path.clone(),
         config.transcode.ffmpeg_path.clone(),
         config.scanner.watch_debounce_seconds,
@@ -233,8 +235,16 @@ async fn main() -> Result<()> {
         }
     };
 
+    // Load users into cache for zero-I/O authentication hot path
+    let user_cache = Arc::new(dashmap::DashSet::new());
+    if let Ok(users) = ferrite_db::user_repo::list_users(&db.read).await {
+        for user in users {
+            user_cache.insert(user.id);
+        }
+    }
+
     let state = AppState {
-        db: pool.clone(),
+        db: db.clone(),
         config: Arc::new(config.clone()),
         hls_sessions: hls_manager,
         transcode_semaphore,
@@ -245,6 +255,7 @@ async fn main() -> Result<()> {
         watcher_handle,
         playback_metrics: Arc::new(ferrite_api::metrics::PlaybackMetrics::default()),
         update_state: Arc::new(ferrite_api::state::UpdateState::new()),
+        user_cache,
     };
 
     // Spawn background update check (every 6 hours, log-only, never auto-applies)
@@ -294,7 +305,7 @@ async fn main() -> Result<()> {
 
         // Merge DLNA HTTP routes into the main router
         let dlna_state = ferrite_dlna::routes::DlnaState {
-            db: pool.clone(),
+            db: db.read.clone(),
             server_uuid: server_uuid.clone(),
             friendly_name: config.dlna.friendly_name.clone(),
             http_base_url: http_base_url.clone(),

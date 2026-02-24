@@ -177,38 +177,41 @@ async fn resolve_seek_start(
     let t0 = Instant::now();
     match seek_mode {
         SeekMode::Fast => {
-            let resolved =
-                match keyframe_repo::find_keyframe_before(&state.db, media_id, requested_start)
-                    .await
-                {
-                    Ok(Some(kf)) => (kf, "index"),
-                    Ok(None) => {
-                        // No keyframes cached yet — lazily probe and cache them.
-                        match lazy_probe_keyframes(state, media_id, file_path).await {
-                            true => {
-                                // Retry lookup after populating the index.
-                                match keyframe_repo::find_keyframe_before(
-                                    &state.db,
-                                    media_id,
-                                    requested_start,
-                                )
-                                .await
-                                {
-                                    Ok(Some(kf)) => (kf, "index-lazy"),
-                                    _ => (requested_start, "requested"),
-                                }
+            let resolved = match keyframe_repo::find_keyframe_before(
+                &state.db.read,
+                media_id,
+                requested_start,
+            )
+            .await
+            {
+                Ok(Some(kf)) => (kf, "index"),
+                Ok(None) => {
+                    // No keyframes cached yet — lazily probe and cache them.
+                    match lazy_probe_keyframes(state, media_id, file_path).await {
+                        true => {
+                            // Retry lookup after populating the index.
+                            match keyframe_repo::find_keyframe_before(
+                                &state.db.read,
+                                media_id,
+                                requested_start,
+                            )
+                            .await
+                            {
+                                Ok(Some(kf)) => (kf, "index-lazy"),
+                                _ => (requested_start, "requested"),
                             }
-                            false => (requested_start, "requested"),
                         }
+                        false => (requested_start, "requested"),
                     }
-                    Err(e) => {
-                        warn!(
-                            "Keyframe index lookup failed for media {} at {:.3}s: {}",
-                            media_id, requested_start, e
-                        );
-                        (requested_start, "requested")
-                    }
-                };
+                }
+                Err(e) => {
+                    warn!(
+                        "Keyframe index lookup failed for media {} at {:.3}s: {}",
+                        media_id, requested_start, e
+                    );
+                    (requested_start, "requested")
+                }
+            };
             (resolved.0, resolved.1, t0.elapsed().as_secs_f64() * 1000.0)
         }
         SeekMode::Precise => {
@@ -239,7 +242,7 @@ async fn lazy_probe_keyframes(
     let _guard = lock.lock().await;
 
     // Double-check: another task may have populated keyframes while we waited.
-    match keyframe_repo::has_keyframes(&state.db, media_id).await {
+    match keyframe_repo::has_keyframes(&state.db.read, media_id).await {
         Ok(true) => return true,
         Ok(false) => {}
         Err(e) => {
@@ -274,7 +277,8 @@ async fn lazy_probe_keyframes(
         media_id
     );
 
-    if let Err(e) = keyframe_repo::replace_keyframes_pool(&state.db, media_id, &keyframes_ms).await
+    if let Err(e) =
+        keyframe_repo::replace_keyframes_pool(&state.db.write, media_id, &keyframes_ms).await
     {
         warn!(
             "Failed to cache lazy-probed keyframes for {}: {}",
@@ -327,7 +331,7 @@ pub async fn stream_media(
     Query(query): Query<StreamQuery>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let item = match media_repo::get_media_item(&state.db, &id).await {
+    let item = match media_repo::get_media_item(&state.db.read, &id).await {
         Ok(Some(item)) => item,
         Ok(None) => return StatusCode::NOT_FOUND.into_response(),
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
@@ -384,7 +388,7 @@ pub async fn stream_media(
             };
             let ffmpeg_path = &state.config.transcode.ffmpeg_path;
             let ffprobe_path = &state.config.transcode.ffprobe_path;
-            let sub_path = resolve_subtitle_path(&state.db, query.subtitle_id).await;
+            let sub_path = resolve_subtitle_path(&state.db.read, query.subtitle_id).await;
             match transcode::serve_remux(
                 ffmpeg_path,
                 ffprobe_path,
@@ -410,7 +414,7 @@ pub async fn stream_media(
             };
             let ffmpeg_path = &state.config.transcode.ffmpeg_path;
             let ffprobe_path = &state.config.transcode.ffprobe_path;
-            let sub_path = resolve_subtitle_path(&state.db, query.subtitle_id).await;
+            let sub_path = resolve_subtitle_path(&state.db.read, query.subtitle_id).await;
             match transcode::serve_audio_transcode(
                 ffmpeg_path,
                 ffprobe_path,
@@ -435,11 +439,11 @@ pub async fn stream_media(
             };
             let ffmpeg_path = &state.config.transcode.ffmpeg_path;
             let ffprobe_path = &state.config.transcode.ffprobe_path;
-            let sub_path = resolve_subtitle_path(&state.db, query.subtitle_id).await;
-            let pixel_format = stream_repo::get_video_pixel_format(&state.db, &id)
+            let sub_path = resolve_subtitle_path(&state.db.read, query.subtitle_id).await;
+            let pixel_format = stream_repo::get_video_pixel_format(&state.db.read, &id)
                 .await
                 .unwrap_or(None);
-            let color_meta = stream_repo::get_video_color_metadata(&state.db, &id)
+            let color_meta = stream_repo::get_video_color_metadata(&state.db.read, &id)
                 .await
                 .unwrap_or(None);
             let color_transfer = color_meta.as_ref().and_then(|m| m.color_transfer.clone());
@@ -489,7 +493,7 @@ pub async fn find_keyframe(
 ) -> Result<impl IntoResponse, ApiError> {
     let t0 = Instant::now();
 
-    let item = media_repo::get_media_item(&state.db, &id)
+    let item = media_repo::get_media_item(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Media item '{id}' not found")))?;
     let db_ms = t0.elapsed().as_secs_f64() * 1000.0;
@@ -593,7 +597,7 @@ pub async fn hls_master_playlist(
 ) -> Result<impl IntoResponse, ApiError> {
     let t0 = Instant::now();
 
-    let item = media_repo::get_media_item(&state.db, &id)
+    let item = media_repo::get_media_item(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Media item '{id}' not found")))?;
     let db_ms = t0.elapsed().as_secs_f64() * 1000.0;
@@ -613,10 +617,10 @@ pub async fn hls_master_playlist(
     let (start_secs, seek_source, seek_lookup_ms) =
         resolve_seek_start(&state, &id, file_path, requested_start, query.seek_mode).await;
 
-    let sub_path = resolve_subtitle_path(&state.db, query.subtitle_id).await;
+    let sub_path = resolve_subtitle_path(&state.db.read, query.subtitle_id).await;
 
     // Fetch all video stream metadata in a single DB round-trip
-    let video_meta = stream_repo::get_video_meta(&state.db, &id)
+    let video_meta = stream_repo::get_video_meta(&state.db.read, &id)
         .await
         .unwrap_or(None);
     let pixel_format = video_meta.as_ref().and_then(|m| m.pixel_format.clone());
@@ -775,7 +779,7 @@ pub async fn hls_session_start(
     Query(query): Query<HlsQuery>,
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, ApiError> {
-    media_repo::get_media_item(&state.db, &id)
+    media_repo::get_media_item(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Media item '{id}' not found")))?;
 
@@ -1023,7 +1027,7 @@ pub async fn hls_seek(
         }
     }
 
-    let item = media_repo::get_media_item(&state.db, &id)
+    let item = media_repo::get_media_item(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Media item '{id}' not found")))?;
     let db_ms = t0.elapsed().as_secs_f64() * 1000.0;
@@ -1034,10 +1038,10 @@ pub async fn hls_seek(
     let (start_secs, seek_source, seek_lookup_ms) =
         resolve_seek_start(&state, &id, file_path, requested_start, query.seek_mode).await;
 
-    let sub_path = resolve_subtitle_path(&state.db, query.subtitle_id).await;
+    let sub_path = resolve_subtitle_path(&state.db.read, query.subtitle_id).await;
 
     // Fetch all video stream metadata in a single DB round-trip
-    let video_meta = stream_repo::get_video_meta(&state.db, &id)
+    let video_meta = stream_repo::get_video_meta(&state.db.read, &id)
         .await
         .unwrap_or(None);
     let pixel_format = video_meta.as_ref().and_then(|m| m.pixel_format.clone());

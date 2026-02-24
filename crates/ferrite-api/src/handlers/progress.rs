@@ -27,7 +27,7 @@ pub async fn update_progress(
 ) -> Result<impl IntoResponse, ApiError> {
     let user = auth_user.map(|e| e.0);
     let user_id = extract_user_id(&user);
-    progress_repo::upsert_progress(&state.db, &media_id, user_id, req.position_ms).await?;
+    progress_repo::upsert_progress(&state.db.write, &media_id, user_id, req.position_ms).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -39,7 +39,7 @@ pub async fn get_progress(
 ) -> Result<impl IntoResponse, ApiError> {
     let user = auth_user.map(|e| e.0);
     let user_id = extract_user_id(&user);
-    let progress = progress_repo::get_progress(&state.db, &media_id, user_id).await?;
+    let progress = progress_repo::get_progress(&state.db.read, &media_id, user_id).await?;
     match progress {
         Some(row) => Ok(Json(serde_json::json!(row)).into_response()),
         None => Ok(Json(serde_json::json!({
@@ -59,7 +59,7 @@ pub async fn reset_progress(
 ) -> Result<impl IntoResponse, ApiError> {
     let user = auth_user.map(|e| e.0);
     let user_id = extract_user_id(&user);
-    progress_repo::reset_progress(&state.db, &media_id, user_id).await?;
+    progress_repo::reset_progress(&state.db.write, &media_id, user_id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -71,6 +71,6 @@ pub async fn mark_completed(
 ) -> Result<impl IntoResponse, ApiError> {
     let user = auth_user.map(|e| e.0);
     let user_id = extract_user_id(&user);
-    progress_repo::mark_completed(&state.db, &media_id, user_id).await?;
+    progress_repo::mark_completed(&state.db.write, &media_id, user_id).await?;
     Ok(StatusCode::NO_CONTENT)
 }

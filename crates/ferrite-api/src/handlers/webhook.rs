@@ -59,7 +59,7 @@ pub async fn create_webhook(
     let user_id = extract_user_id(&state).await;
 
     let webhook = webhook_repo::create_webhook(
-        &state.db,
+        &state.db.write,
         &user_id,
         body.name.trim(),
         body.url.trim(),
@@ -76,7 +76,7 @@ pub async fn create_webhook(
 pub async fn list_webhooks(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
     let user_id = extract_user_id(&state).await;
 
-    let webhooks = webhook_repo::list_webhooks(&state.db, &user_id)
+    let webhooks = webhook_repo::list_webhooks(&state.db.read, &user_id)
         .await
         .map_err(|e| ApiError::internal(format!("Failed to list webhooks: {}", e)))?;
 
@@ -88,7 +88,7 @@ pub async fn get_webhook(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let webhook = webhook_repo::get_webhook(&state.db, &id)
+    let webhook = webhook_repo::get_webhook(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Webhook '{id}' not found")))?;
 
@@ -112,7 +112,7 @@ pub async fn update_webhook(
     }
 
     let updated = webhook_repo::update_webhook(
-        &state.db,
+        &state.db.write,
         &id,
         body.name.trim(),
         body.url.trim(),
@@ -132,7 +132,7 @@ pub async fn delete_webhook(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let deleted = webhook_repo::delete_webhook(&state.db, &id)
+    let deleted = webhook_repo::delete_webhook(&state.db.write, &id)
         .await
         .map_err(|e| ApiError::internal(format!("Failed to delete webhook: {}", e)))?;
 
@@ -172,7 +172,7 @@ pub async fn list_event_types() -> impl IntoResponse {
 /// Extract user ID (simplified — in production, from auth middleware).
 async fn extract_user_id(state: &AppState) -> String {
     let result: Option<(String,)> = sqlx::query_as("SELECT id FROM users LIMIT 1")
-        .fetch_optional(&state.db)
+        .fetch_optional(&state.db.write)
         .await
         .ok()
         .flatten();

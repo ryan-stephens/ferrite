@@ -18,6 +18,8 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 futures = { workspace = true }
 percent-encoding = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

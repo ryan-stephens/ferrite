@@ -89,7 +89,7 @@ pub async fn scan_library(
     );
 
     let probe_sem = Arc::new(Semaphore::new(concurrent_probes));
-    let sub_sem = Arc::new(Semaphore::new(concurrent_probes));
+    let sub_sem = Arc::new(Semaphore::new(std::cmp::min(2, concurrent_probes)));
     // SQLite effectively allows one writer at a time; serializing write
     // transactions avoids lock-wait thrash during full-library scans.
     // ffprobe and ffmpeg work still proceed concurrently.
@@ -141,18 +141,23 @@ pub async fn scan_library(
 
     let mut count = 0u32;
 
-    let phase1_results = stream::iter(files)
+    struct ProbedItem {
+        file_path_str: String,
+        file_size: u64,
+        title: String,
+        year: Option<i32>,
+        parsed: ParsedFilename,
+        probe_data: Option<MediaProbeData>,
+        streams: Vec<StreamInsert>,
+        chapters: Vec<ChapterInsert>,
+    }
+
+    let probe_stream = stream::iter(files)
         .map(|file| {
-            let pool = pool.clone();
             let probe_sem = probe_sem.clone();
-            let write_sem = write_sem.clone();
             let ffprobe = ffprobe_path.to_string();
-            let library_id = library_id.to_string();
-            let library_uuid = library.id;
-            let media_type = media_type.to_string();
             let scan_state = scan_state.clone();
-            let existing = existing.clone(); // cheap Arc clone
-            let movie_enrichment_tx = movie_enrichment_tx.clone();
+            let existing = existing.clone();
 
             async move {
                 let file_path_str = file.path.to_string_lossy().to_string();
@@ -165,19 +170,22 @@ pub async fn scan_library(
                 let parsed = filename::parse_filename(&file_stem);
                 let (title, year) = match &parsed {
                     ParsedFilename::Movie(ParsedMovie { title, year }) => (title.clone(), *year),
-                    ParsedFilename::Episode(ParsedEpisode { show_name, .. }) => (show_name.clone(), None),
+                    ParsedFilename::Episode(ParsedEpisode { show_name, .. }) => {
+                        (show_name.clone(), None)
+                    }
                     ParsedFilename::Unknown(name) => (name.clone(), None),
                 };
 
                 // Delta scan: skip unchanged files
-                let already_indexed = existing.get(&file_path_str)
+                let already_indexed = existing
+                    .get(&file_path_str)
                     .map(|&sz| sz == file.size)
                     .unwrap_or(false);
 
                 if already_indexed {
                     debug!("Skipping unchanged file: {}", file_path_str);
                     scan_state.inc_probed();
-                    return Ok(None);
+                    return Ok::<Option<ProbedItem>, anyhow::Error>(None);
                 }
 
                 scan_state.set_current(&format!("Probing: {}", title)).await;
@@ -186,35 +194,43 @@ pub async fn scan_library(
                     let _permit = probe_sem.acquire().await.expect("semaphore closed");
                     match probe::probe_file(&ffprobe, &file.path).await {
                         Ok(pr) => {
-                            let stream_inserts = pr.streams.iter().map(|s| StreamInsert {
-                                stream_index: s.index,
-                                stream_type: s.stream_type.clone(),
-                                codec_name: s.codec_name.clone(),
-                                codec_long_name: s.codec_long_name.clone(),
-                                profile: s.profile.clone(),
-                                language: s.language.clone(),
-                                title: s.title.clone(),
-                                is_default: s.is_default,
-                                is_forced: s.is_forced,
-                                width: s.width,
-                                height: s.height,
-                                frame_rate: s.frame_rate.clone(),
-                                pixel_format: s.pixel_format.clone(),
-                                bit_depth: s.bit_depth,
-                                color_space: s.color_space.clone(),
-                                color_transfer: s.color_transfer.clone(),
-                                color_primaries: s.color_primaries.clone(),
-                                channels: s.channels,
-                                channel_layout: s.channel_layout.clone(),
-                                sample_rate: s.sample_rate,
-                                bitrate_bps: s.bitrate_bps,
-                            }).collect();
-                            let chapter_inserts = pr.chapters.iter().map(|c| ChapterInsert {
-                                chapter_index: c.chapter_index,
-                                title: c.title.clone(),
-                                start_time_ms: c.start_time_ms,
-                                end_time_ms: c.end_time_ms,
-                            }).collect();
+                            let stream_inserts = pr
+                                .streams
+                                .iter()
+                                .map(|s| StreamInsert {
+                                    stream_index: s.index,
+                                    stream_type: s.stream_type.clone(),
+                                    codec_name: s.codec_name.clone(),
+                                    codec_long_name: s.codec_long_name.clone(),
+                                    profile: s.profile.clone(),
+                                    language: s.language.clone(),
+                                    title: s.title.clone(),
+                                    is_default: s.is_default,
+                                    is_forced: s.is_forced,
+                                    width: s.width,
+                                    height: s.height,
+                                    frame_rate: s.frame_rate.clone(),
+                                    pixel_format: s.pixel_format.clone(),
+                                    bit_depth: s.bit_depth,
+                                    color_space: s.color_space.clone(),
+                                    color_transfer: s.color_transfer.clone(),
+                                    color_primaries: s.color_primaries.clone(),
+                                    channels: s.channels,
+                                    channel_layout: s.channel_layout.clone(),
+                                    sample_rate: s.sample_rate,
+                                    bitrate_bps: s.bitrate_bps,
+                                })
+                                .collect();
+                            let chapter_inserts = pr
+                                .chapters
+                                .iter()
+                                .map(|c| ChapterInsert {
+                                    chapter_index: c.chapter_index,
+                                    title: c.title.clone(),
+                                    start_time_ms: c.start_time_ms,
+                                    end_time_ms: c.end_time_ms,
+                                })
+                                .collect();
                             let data = MediaProbeData {
                                 container_format: pr.container_format,
                                 video_codec: pr.video_codec,
@@ -235,103 +251,185 @@ pub async fn scan_library(
                 };
 
                 scan_state.inc_probed();
-                scan_state.set_current(&format!("Indexing: {}", title)).await;
 
-                // ── Phase 1: insert media item, streams, TV hierarchy ─────────
-                // Gated behind write_sem to limit concurrent SQLite write transactions.
-                let _write_permit = write_sem.acquire().await.expect("semaphore closed");
-                let mut tx = pool.begin().await?;
-
-                let mid = media_repo::insert_media_item(
-                    &mut tx,
-                    &library_uuid,
-                    &media_type,
-                    &file_path_str,
-                    file.size,
-                    Some(&title),
+                Ok(Some(ProbedItem {
+                    file_path_str,
+                    file_size: file.size,
+                    title,
                     year,
-                    probe_data.as_ref(),
-                ).await?;
-
-                if !streams.is_empty() {
-                    if let Err(e) = ferrite_db::stream_repo::replace_streams(&mut tx, &mid, &streams).await {
-                        warn!("Failed to store streams for '{}': {}", title, e);
-                    }
-                }
-                if !chapters.is_empty() {
-                    if let Err(e) = ferrite_db::chapter_repo::replace_chapters(&mut tx, &mid, &chapters).await {
-                        warn!("Failed to store chapters for '{}': {}", title, e);
-                    }
-                }
-                // Keyframe indexing is deferred to on-demand (lazy) probing at seek time.
-                if is_movie_library {
-                    if let Err(e) = movie_repo::upsert_movie_skeleton(&mut tx, &mid, &title, year.map(|y| y as i64)).await {
-                        warn!("Failed to create movie skeleton for '{}': {}", title, e);
-                    }
-                }
-
-                let _show_id: Option<String> = if is_tv_library {
-                    if let ParsedFilename::Episode(ParsedEpisode { show_name, season, episode }) = &parsed {
-                        match tv_repo::upsert_tv_show(&mut tx, &library_id, show_name).await {
-                            Ok(show_id) => {
-                                match tv_repo::upsert_season(&mut tx, &show_id, *season).await {
-                                    Ok(season_id) => {
-                                        if let Err(e) = tv_repo::upsert_episode(&mut tx, &mid, &season_id, *episode).await {
-                                            warn!("Failed to create episode for '{}' S{:02}E{:02}: {}", show_name, season, episode, e);
-                                        }
-                                    }
-                                    Err(e) => warn!("Failed to create season for '{}' S{:02}: {}", show_name, season, e),
-                                }
-                                Some(show_id)
-                            }
-                            Err(e) => { warn!("Failed to create TV show '{}': {}", show_name, e); None }
-                        }
-                    } else { None }
-                } else { None };
-
-                tx.commit().await?;
-                drop(_write_permit);
-                scan_state.inc_inserted();
-
-                // Pipeline enrichment: send movie to background enrichment worker
-                if let Some(ref enrich_tx) = movie_enrichment_tx {
-                    let _ = enrich_tx
-                        .send((mid.clone(), title.clone(), year))
-                        .await;
-                }
-
-                // Collect embedded subtitle stream descriptors for subtitle phase
-                let embedded_streams: Vec<extract::EmbeddedSubtitleStream> = streams
-                    .iter()
-                    .filter(|s| s.stream_type == "subtitle")
-                    .filter(|s| s.codec_name.as_deref().map(extract::is_extractable_subtitle).unwrap_or(false))
-                    .map(|s| extract::EmbeddedSubtitleStream {
-                        stream_index: s.stream_index,
-                        codec_name: s.codec_name.clone().unwrap_or_default(),
-                        language: s.language.clone(),
-                        title: s.title.clone(),
-                        is_default: s.is_default,
-                        is_forced: s.is_forced,
-                    })
-                    .collect();
-
-                // Return item info needed for Phase 2 subtitle work
-                Ok(Some((mid, file_path_str, title, embedded_streams)))
+                    parsed,
+                    probe_data,
+                    streams,
+                    chapters,
+                }))
             }
         })
-        .buffer_unordered(concurrent_probes * 2)
-        .collect::<Vec<Result<Option<(String, String, String, Vec<extract::EmbeddedSubtitleStream>)>>>>()
-        .await;
+        .buffer_unordered(concurrent_probes * 2);
 
-    for r in &phase1_results {
-        match r {
-            Ok(Some(_)) => count += 1,
-            Ok(None) => {}
-            Err(e) => {
-                warn!("Item processing error: {}", e);
-                scan_state.inc_errors();
+    type Phase1Result = Result<
+        Option<(String, String, String, Vec<extract::EmbeddedSubtitleStream>)>,
+        anyhow::Error,
+    >;
+    let mut phase1_results: Vec<Phase1Result> = Vec::new();
+    let mut chunk_stream = probe_stream.chunks(500);
+
+    while let Some(chunk) = chunk_stream.next().await {
+        let _write_permit = write_sem.acquire().await.expect("semaphore closed");
+        let mut tx = pool.begin().await?;
+
+        let mut inserted_in_chunk = 0u32;
+        let mut enrichment_items = Vec::new();
+
+        for r in chunk {
+            match r {
+                Ok(Some(item)) => {
+                    scan_state
+                        .set_current(&format!("Indexing: {}", item.title))
+                        .await;
+
+                    let mid = media_repo::insert_media_item(
+                        &mut tx,
+                        &library.id,
+                        media_type,
+                        &item.file_path_str,
+                        item.file_size,
+                        Some(&item.title),
+                        item.year,
+                        item.probe_data.as_ref(),
+                    )
+                    .await?;
+
+                    if !item.streams.is_empty() {
+                        if let Err(e) =
+                            ferrite_db::stream_repo::replace_streams(&mut tx, &mid, &item.streams)
+                                .await
+                        {
+                            warn!("Failed to store streams for '{}': {}", item.title, e);
+                        }
+                    }
+                    if !item.chapters.is_empty() {
+                        if let Err(e) = ferrite_db::chapter_repo::replace_chapters(
+                            &mut tx,
+                            &mid,
+                            &item.chapters,
+                        )
+                        .await
+                        {
+                            warn!("Failed to store chapters for '{}': {}", item.title, e);
+                        }
+                    }
+                    // Keyframe indexing is deferred to on-demand (lazy) probing at seek time.
+                    if is_movie_library {
+                        if let Err(e) = movie_repo::upsert_movie_skeleton(
+                            &mut tx,
+                            &mid,
+                            &item.title,
+                            item.year.map(|y| y as i64),
+                        )
+                        .await
+                        {
+                            warn!(
+                                "Failed to create movie skeleton for '{}': {}",
+                                item.title, e
+                            );
+                        }
+                    }
+
+                    let _show_id: Option<String> = if is_tv_library {
+                        if let ParsedFilename::Episode(ParsedEpisode {
+                            show_name,
+                            season,
+                            episode,
+                        }) = &item.parsed
+                        {
+                            match tv_repo::upsert_tv_show(&mut tx, library_id, show_name).await {
+                                Ok(show_id) => {
+                                    match tv_repo::upsert_season(&mut tx, &show_id, *season).await {
+                                        Ok(season_id) => {
+                                            if let Err(e) = tv_repo::upsert_episode(
+                                                &mut tx, &mid, &season_id, *episode,
+                                            )
+                                            .await
+                                            {
+                                                warn!("Failed to create episode for '{}' S{:02}E{:02}: {}", show_name, season, episode, e);
+                                            }
+                                        }
+                                        Err(e) => warn!(
+                                            "Failed to create season for '{}' S{:02}: {}",
+                                            show_name, season, e
+                                        ),
+                                    }
+                                    Some(show_id)
+                                }
+                                Err(e) => {
+                                    warn!("Failed to create TV show '{}': {}", show_name, e);
+                                    None
+                                }
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+
+                    inserted_in_chunk += 1;
+
+                    // Collect embedded subtitle stream descriptors for subtitle phase
+                    let embedded_streams: Vec<extract::EmbeddedSubtitleStream> = item
+                        .streams
+                        .iter()
+                        .filter(|s| s.stream_type == "subtitle")
+                        .filter(|s| {
+                            s.codec_name
+                                .as_deref()
+                                .map(extract::is_extractable_subtitle)
+                                .unwrap_or(false)
+                        })
+                        .map(|s| extract::EmbeddedSubtitleStream {
+                            stream_index: s.stream_index,
+                            codec_name: s.codec_name.clone().unwrap_or_default(),
+                            language: s.language.clone(),
+                            title: s.title.clone(),
+                            is_default: s.is_default,
+                            is_forced: s.is_forced,
+                        })
+                        .collect();
+
+                    phase1_results.push(Ok(Some((
+                        mid.clone(),
+                        item.file_path_str,
+                        item.title.clone(),
+                        embedded_streams,
+                    ))));
+                    enrichment_items.push((mid, item.title, item.year));
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    warn!("Item processing error: {}", e);
+                    scan_state.inc_errors();
+                }
             }
         }
+
+        tx.commit().await?;
+        drop(_write_permit);
+
+        if inserted_in_chunk > 0 {
+            scan_state
+                .files_inserted
+                .fetch_add(inserted_in_chunk, std::sync::atomic::Ordering::Relaxed);
+            count += inserted_in_chunk;
+        }
+
+        // Pipeline enrichment: send movies to background enrichment worker
+        if let Some(ref enrich_tx) = movie_enrichment_tx {
+            for enrichment_item in enrichment_items {
+                let _ = enrich_tx.send(enrichment_item).await;
+            }
+        }
+
+        tokio::task::yield_now().await;
     }
 
     library_repo::update_last_scanned(pool, library_id).await?;
@@ -474,7 +572,7 @@ pub async fn scan_library(
                     }
                 }
             })
-            .buffer_unordered(concurrent_probes * 2)
+            .buffer_unordered(std::cmp::min(2, concurrent_probes))
             .collect()
             .await;
 

@@ -14,7 +14,7 @@ pub async fn generate_thumbnails(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let item = media_repo::get_media_item(&state.db, &id)
+    let item = media_repo::get_media_item(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Media item '{id}' not found")))?;
 

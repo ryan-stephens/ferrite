@@ -64,7 +64,7 @@ pub async fn create_collection(
     let user_id = extract_user_id(&state).await;
 
     let collection = collection_repo::create_collection(
-        &state.db,
+        &state.db.write,
         &user_id,
         body.name.trim(),
         body.description.trim(),
@@ -83,14 +83,15 @@ pub async fn list_collections(
 ) -> Result<impl IntoResponse, ApiError> {
     let user_id = extract_user_id(&state).await;
 
-    let collections = collection_repo::list_collections(&state.db, &user_id, query.kind.as_deref())
-        .await
-        .map_err(|e| ApiError::internal(format!("Failed to list collections: {}", e)))?;
+    let collections =
+        collection_repo::list_collections(&state.db.read, &user_id, query.kind.as_deref())
+            .await
+            .map_err(|e| ApiError::internal(format!("Failed to list collections: {}", e)))?;
 
     // Enrich with item counts
     let mut result = Vec::with_capacity(collections.len());
     for c in collections {
-        let count = collection_repo::count_items(&state.db, &c.id)
+        let count = collection_repo::count_items(&state.db.read, &c.id)
             .await
             .unwrap_or(0);
         result.push(serde_json::json!({
@@ -113,11 +114,11 @@ pub async fn get_collection(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let collection = collection_repo::get_collection(&state.db, &id)
+    let collection = collection_repo::get_collection(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Collection '{id}' not found")))?;
 
-    let items = collection_repo::list_items(&state.db, &id)
+    let items = collection_repo::list_items(&state.db.read, &id)
         .await
         .map_err(|e| ApiError::internal(format!("Failed to list items: {}", e)))?;
 
@@ -145,7 +146,7 @@ pub async fn update_collection(
     }
 
     let updated = collection_repo::update_collection(
-        &state.db,
+        &state.db.write,
         &id,
         body.name.trim(),
         body.description.trim(),
@@ -162,7 +163,7 @@ pub async fn delete_collection(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let deleted = collection_repo::delete_collection(&state.db, &id)
+    let deleted = collection_repo::delete_collection(&state.db.write, &id)
         .await
         .map_err(|e| ApiError::internal(format!("Failed to delete collection: {}", e)))?;
 
@@ -180,11 +181,11 @@ pub async fn add_item(
     Json(body): Json<AddItemRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     // Verify collection exists
-    collection_repo::get_collection(&state.db, &id)
+    collection_repo::get_collection(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Collection '{id}' not found")))?;
 
-    let item = collection_repo::add_item(&state.db, &id, &body.media_id)
+    let item = collection_repo::add_item(&state.db.write, &id, &body.media_id)
         .await
         .map_err(|e| {
             if e.to_string().contains("UNIQUE constraint") {
@@ -202,7 +203,7 @@ pub async fn remove_item(
     State(state): State<AppState>,
     Path((collection_id, media_id)): Path<(String, String)>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let removed = collection_repo::remove_item(&state.db, &collection_id, &media_id)
+    let removed = collection_repo::remove_item(&state.db.write, &collection_id, &media_id)
         .await
         .map_err(|e| ApiError::internal(format!("Failed to remove item: {}", e)))?;
 
@@ -219,7 +220,7 @@ pub async fn reorder_item(
     Path(id): Path<String>,
     Json(body): Json<ReorderRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let collection = collection_repo::get_collection(&state.db, &id)
+    let collection = collection_repo::get_collection(&state.db.read, &id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Collection '{id}' not found")))?;
 
@@ -229,16 +230,17 @@ pub async fn reorder_item(
         ));
     }
 
-    let reordered = collection_repo::reorder_item(&state.db, &id, &body.media_id, body.position)
-        .await
-        .map_err(|e| ApiError::internal(format!("Failed to reorder item: {}", e)))?;
+    let reordered =
+        collection_repo::reorder_item(&state.db.write, &id, &body.media_id, body.position)
+            .await
+            .map_err(|e| ApiError::internal(format!("Failed to reorder item: {}", e)))?;
 
     if !reordered {
         return Err(ApiError::not_found("Item not found in playlist"));
     }
 
     // Return updated item list
-    let items = collection_repo::list_items(&state.db, &id)
+    let items = collection_repo::list_items(&state.db.read, &id)
         .await
         .map_err(|e| ApiError::internal(format!("Failed to list items: {}", e)))?;
 
@@ -250,7 +252,7 @@ pub async fn reorder_item(
 async fn extract_user_id(state: &AppState) -> String {
     // Try to get the first user; fall back to a default ID
     let result: Option<(String,)> = sqlx::query_as("SELECT id FROM users LIMIT 1")
-        .fetch_optional(&state.db)
+        .fetch_optional(&state.db.read)
         .await
         .ok()
         .flatten();

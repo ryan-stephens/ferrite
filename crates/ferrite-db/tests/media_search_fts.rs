@@ -1,13 +1,13 @@
-use ferrite_db::create_pool;
+use ferrite_db::create_pools;
 use ferrite_db::movie_repo::{self, MediaQuery};
 use sqlx::SqlitePool;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-async fn new_test_pool() -> SqlitePool {
+async fn new_test_pool() -> ferrite_db::Database {
     let db_path =
         std::env::temp_dir().join(format!("ferrite-db-fts-test-{}.sqlite", Uuid::new_v4()));
-    create_pool(&db_path, 4)
+    create_pools(&db_path, 4)
         .await
         .expect("failed to create test db pool")
 }
@@ -68,10 +68,10 @@ fn query_for<'a>(library_id: &'a str, search: &'a str) -> MediaQuery<'a> {
 
 #[tokio::test]
 async fn list_media_uses_fts_for_search_queries() {
-    let pool = new_test_pool().await;
-    let library_id = seed_library(&pool).await;
+    let pools = new_test_pool().await;
+    let library_id = seed_library(&pools.write).await;
     let media_id = seed_movie(
-        &pool,
+        &pools.write,
         &library_id,
         "Ocean Depth",
         "A story about abyssal life and bioluminescence",
@@ -79,10 +79,10 @@ async fn list_media_uses_fts_for_search_queries() {
     .await;
 
     let query = query_for(&library_id, "bioluminescence");
-    let rows = movie_repo::list_movies_with_media(&pool, &query, None)
+    let rows = movie_repo::list_movies_with_media(&pools.write, &query, None)
         .await
         .expect("list query failed");
-    let total = movie_repo::count_movies_with_media(&pool, &query)
+    let total = movie_repo::count_movies_with_media(&pools.write, &query)
         .await
         .expect("count query failed");
 
@@ -93,17 +93,17 @@ async fn list_media_uses_fts_for_search_queries() {
 
 #[tokio::test]
 async fn list_media_default_sort_matches_bm25_relevance() {
-    let pool = new_test_pool().await;
-    let library_id = seed_library(&pool).await;
+    let pools = new_test_pool().await;
+    let library_id = seed_library(&pools.write).await;
     let top = seed_movie(
-        &pool,
+        &pools.write,
         &library_id,
         "Ocean Abyss",
         "A focused documentary on abyss ecosystems",
     )
     .await;
     let _other = seed_movie(
-        &pool,
+        &pools.write,
         &library_id,
         "Ocean Expedition",
         "An ocean journey that eventually descends into an abyss",
@@ -121,12 +121,12 @@ async fn list_media_default_sort_matches_bm25_relevance() {
         "#,
     )
     .bind(fts_query)
-    .fetch_one(&pool)
+    .fetch_one(&pools.write)
     .await
     .expect("failed to compute expected bm25 ordering");
 
     let query = query_for(&library_id, "ocean abyss");
-    let rows = movie_repo::list_movies_with_media(&pool, &query, None)
+    let rows = movie_repo::list_movies_with_media(&pools.write, &query, None)
         .await
         .expect("list query failed");
 
@@ -137,8 +137,8 @@ async fn list_media_default_sort_matches_bm25_relevance() {
 
 #[tokio::test]
 async fn list_media_search_completes_within_reasonable_time_budget() {
-    let pool = new_test_pool().await;
-    let library_id = seed_library(&pool).await;
+    let pools = new_test_pool().await;
+    let library_id = seed_library(&pools.write).await;
 
     for i in 0..400 {
         let title = format!("Latency Seed Movie {}", i);
@@ -147,16 +147,16 @@ async fn list_media_search_completes_within_reasonable_time_budget() {
         } else {
             "Background overview text".to_string()
         };
-        let _ = seed_movie(&pool, &library_id, &title, &overview).await;
+        let _ = seed_movie(&pools.write, &library_id, &title, &overview).await;
     }
 
     let query = query_for(&library_id, "benchmarking token");
     let started = Instant::now();
 
-    let rows = movie_repo::list_movies_with_media(&pool, &query, None)
+    let rows = movie_repo::list_movies_with_media(&pools.write, &query, None)
         .await
         .expect("list query failed");
-    let total = movie_repo::count_movies_with_media(&pool, &query)
+    let total = movie_repo::count_movies_with_media(&pools.write, &query)
         .await
         .expect("count query failed");
 
@@ -173,10 +173,10 @@ async fn list_media_search_completes_within_reasonable_time_budget() {
 
 #[tokio::test]
 async fn list_media_falls_back_to_like_when_fts_is_missing() {
-    let pool = new_test_pool().await;
-    let library_id = seed_library(&pool).await;
+    let pools = new_test_pool().await;
+    let library_id = seed_library(&pools.write).await;
     let media_id = seed_movie(
-        &pool,
+        &pools.write,
         &library_id,
         "Fallback Search",
         "FTS table intentionally removed",
@@ -184,15 +184,15 @@ async fn list_media_falls_back_to_like_when_fts_is_missing() {
     .await;
 
     sqlx::query("DROP TABLE media_fts")
-        .execute(&pool)
+        .execute(&pools.write)
         .await
         .expect("failed to drop media_fts for fallback test");
 
     let query = query_for(&library_id, "Fallback");
-    let rows = movie_repo::list_movies_with_media(&pool, &query, None)
+    let rows = movie_repo::list_movies_with_media(&pools.write, &query, None)
         .await
         .expect("fallback list query failed");
-    let total = movie_repo::count_movies_with_media(&pool, &query)
+    let total = movie_repo::count_movies_with_media(&pools.write, &query)
         .await
         .expect("fallback count query failed");
 

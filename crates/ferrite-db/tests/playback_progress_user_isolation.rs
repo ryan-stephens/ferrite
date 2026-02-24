@@ -1,11 +1,11 @@
 use ferrite_db::movie_repo::{self, MediaQuery};
-use ferrite_db::{create_pool, progress_repo, tv_repo};
+use ferrite_db::{create_pools, progress_repo, tv_repo};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-async fn new_test_pool() -> SqlitePool {
+async fn new_test_pool() -> ferrite_db::Database {
     let db_path = std::env::temp_dir().join(format!("ferrite-db-test-{}.sqlite", Uuid::new_v4()));
-    create_pool(&db_path, 4)
+    create_pools(&db_path, 4)
         .await
         .expect("failed to create test db pool")
 }
@@ -111,22 +111,22 @@ async fn seed_episode_media(pool: &SqlitePool, library_id: &str) -> (String, Str
 
 #[tokio::test]
 async fn progress_upsert_allows_distinct_rows_per_user_for_same_media() {
-    let pool = new_test_pool().await;
-    let (library_id, user_a, user_b) = seed_library_and_users(&pool).await;
-    let media_id = seed_movie_media(&pool, &library_id).await;
+    let pools = new_test_pool().await;
+    let (library_id, user_a, user_b) = seed_library_and_users(&pools.write).await;
+    let media_id = seed_movie_media(&pools.write, &library_id).await;
 
-    progress_repo::upsert_progress(&pool, &media_id, Some(&user_a), 11_000)
+    progress_repo::upsert_progress(&pools.write, &media_id, Some(&user_a), 11_000)
         .await
         .expect("failed to upsert progress for user A");
-    progress_repo::upsert_progress(&pool, &media_id, Some(&user_b), 22_000)
+    progress_repo::upsert_progress(&pools.write, &media_id, Some(&user_b), 22_000)
         .await
         .expect("failed to upsert progress for user B");
 
-    let a = progress_repo::get_progress(&pool, &media_id, Some(&user_a))
+    let a = progress_repo::get_progress(&pools.write, &media_id, Some(&user_a))
         .await
         .expect("failed to fetch user A progress")
         .expect("missing progress row for user A");
-    let b = progress_repo::get_progress(&pool, &media_id, Some(&user_b))
+    let b = progress_repo::get_progress(&pools.write, &media_id, Some(&user_b))
         .await
         .expect("failed to fetch user B progress")
         .expect("missing progress row for user B");
@@ -138,7 +138,7 @@ async fn progress_upsert_allows_distinct_rows_per_user_for_same_media() {
         "SELECT COUNT(*) FROM playback_progress WHERE media_item_id = ? AND user_id IS NOT NULL",
     )
     .bind(&media_id)
-    .fetch_one(&pool)
+    .fetch_one(&pools.write)
     .await
     .expect("failed to count playback progress rows");
 
@@ -147,22 +147,22 @@ async fn progress_upsert_allows_distinct_rows_per_user_for_same_media() {
 
 #[tokio::test]
 async fn movie_queries_join_progress_for_requesting_user_only() {
-    let pool = new_test_pool().await;
-    let (library_id, user_a, user_b) = seed_library_and_users(&pool).await;
-    let media_id = seed_movie_media(&pool, &library_id).await;
+    let pools = new_test_pool().await;
+    let (library_id, user_a, user_b) = seed_library_and_users(&pools.write).await;
+    let media_id = seed_movie_media(&pools.write, &library_id).await;
 
-    progress_repo::upsert_progress(&pool, &media_id, Some(&user_a), 30_000)
+    progress_repo::upsert_progress(&pools.write, &media_id, Some(&user_a), 30_000)
         .await
         .expect("failed to upsert user A movie progress");
-    progress_repo::upsert_progress(&pool, &media_id, Some(&user_b), 45_000)
+    progress_repo::upsert_progress(&pools.write, &media_id, Some(&user_b), 45_000)
         .await
         .expect("failed to upsert user B movie progress");
 
-    let row_a = movie_repo::get_movie_with_media(&pool, &media_id, Some(&user_a))
+    let row_a = movie_repo::get_movie_with_media(&pools.write, &media_id, Some(&user_a))
         .await
         .expect("movie query failed for user A")
         .expect("missing movie row for user A");
-    let row_b = movie_repo::get_movie_with_media(&pool, &media_id, Some(&user_b))
+    let row_b = movie_repo::get_movie_with_media(&pools.write, &media_id, Some(&user_b))
         .await
         .expect("movie query failed for user B")
         .expect("missing movie row for user B");
@@ -180,7 +180,7 @@ async fn movie_queries_join_progress_for_requesting_user_only() {
         per_page: 20,
     };
 
-    let listed = movie_repo::list_movies_with_media(&pool, &query, Some(&user_a))
+    let listed = movie_repo::list_movies_with_media(&pools.write, &query, Some(&user_a))
         .await
         .expect("failed to list movies");
 
@@ -190,21 +190,21 @@ async fn movie_queries_join_progress_for_requesting_user_only() {
 
 #[tokio::test]
 async fn episode_queries_join_progress_for_requesting_user_only() {
-    let pool = new_test_pool().await;
-    let (library_id, user_a, user_b) = seed_library_and_users(&pool).await;
-    let (season_id, episode_media_id) = seed_episode_media(&pool, &library_id).await;
+    let pools = new_test_pool().await;
+    let (library_id, user_a, user_b) = seed_library_and_users(&pools.write).await;
+    let (season_id, episode_media_id) = seed_episode_media(&pools.write, &library_id).await;
 
-    progress_repo::upsert_progress(&pool, &episode_media_id, Some(&user_a), 5_000)
+    progress_repo::upsert_progress(&pools.write, &episode_media_id, Some(&user_a), 5_000)
         .await
         .expect("failed to upsert episode progress for user A");
-    progress_repo::upsert_progress(&pool, &episode_media_id, Some(&user_b), 12_000)
+    progress_repo::upsert_progress(&pools.write, &episode_media_id, Some(&user_b), 12_000)
         .await
         .expect("failed to upsert episode progress for user B");
 
-    let rows_a = tv_repo::list_episodes(&pool, &season_id, Some(&user_a))
+    let rows_a = tv_repo::list_episodes(&pools.write, &season_id, Some(&user_a))
         .await
         .expect("failed to list episodes for user A");
-    let rows_b = tv_repo::list_episodes(&pool, &season_id, Some(&user_b))
+    let rows_b = tv_repo::list_episodes(&pools.write, &season_id, Some(&user_b))
         .await
         .expect("failed to list episodes for user B");
 

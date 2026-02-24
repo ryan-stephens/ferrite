@@ -130,7 +130,7 @@ async fn ensure_admin_if_present(
     auth_user: Option<&Extension<AuthUser>>,
 ) -> Result<(), ApiError> {
     if let Some(Extension(user)) = auth_user {
-        let caller = user_repo::get_user_by_id(&state.db, &user.user_id)
+        let caller = user_repo::get_user_by_id(&state.db.read, &user.user_id)
             .await?
             .ok_or_else(|| ApiError::unauthorized("User not found"))?;
         if caller.is_admin == 0 {

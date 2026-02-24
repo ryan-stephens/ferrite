@@ -12,7 +12,7 @@ pub async fn list_subtitles(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let subs = subtitle_repo::get_subtitles(&state.db, &id).await?;
+    let subs = subtitle_repo::get_subtitles(&state.db.read, &id).await?;
     Ok(Json(subs))
 }
 
@@ -23,7 +23,7 @@ pub async fn serve_subtitle(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let sub = subtitle_repo::get_subtitle_by_id(&state.db, id)
+    let sub = subtitle_repo::get_subtitle_by_id(&state.db.read, id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Subtitle {id} not found")))?;
 

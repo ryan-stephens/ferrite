@@ -13,7 +13,7 @@ pub async fn create_user(
     auth_user: Option<Extension<AuthUser>>,
     Json(req): Json<CreateUserRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let user_count = user_repo::count_users(&state.db).await?;
+    let user_count = user_repo::count_users(&state.db.read).await?;
 
     // If users already exist, only admins can create new users
     if user_count > 0 {
@@ -21,7 +21,7 @@ pub async fn create_user(
             .as_ref()
             .ok_or_else(|| ApiError::unauthorized("Authentication required"))?;
 
-        let caller_user = user_repo::get_user_by_id(&state.db, &caller.user_id)
+        let caller_user = user_repo::get_user_by_id(&state.db.read, &caller.user_id)
             .await?
             .ok_or_else(|| ApiError::unauthorized("User not found"))?;
 
@@ -31,13 +31,16 @@ pub async fn create_user(
     }
 
     let user = user_repo::create_user(
-        &state.db,
+        &state.db.write,
         &req.username,
         req.display_name.as_deref(),
         &req.password,
         req.is_admin.unwrap_or(user_count == 0), // First user is always admin
     )
     .await?;
+
+    // Update in-memory cache
+    state.user_cache.insert(user.id.clone());
 
     Ok(Json(user))
 }
@@ -57,7 +60,7 @@ pub async fn list_users(
 ) -> Result<impl IntoResponse, ApiError> {
     // Require admin if auth is configured
     if let Some(caller) = auth_user.as_ref() {
-        let caller_user = user_repo::get_user_by_id(&state.db, &caller.user_id)
+        let caller_user = user_repo::get_user_by_id(&state.db.read, &caller.user_id)
             .await?
             .ok_or_else(|| ApiError::unauthorized("User not found"))?;
 
@@ -66,7 +69,7 @@ pub async fn list_users(
         }
     }
 
-    let users = user_repo::list_users(&state.db).await?;
+    let users = user_repo::list_users(&state.db.read).await?;
     Ok(Json(users))
 }
 
@@ -79,7 +82,7 @@ pub async fn get_current_user(
         .as_ref()
         .ok_or_else(|| ApiError::unauthorized("Authentication required"))?;
 
-    let user = user_repo::get_user_by_id(&state.db, &caller.user_id)
+    let user = user_repo::get_user_by_id(&state.db.read, &caller.user_id)
         .await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
 
@@ -97,7 +100,7 @@ pub async fn change_password(
         .ok_or_else(|| ApiError::unauthorized("Authentication required"))?;
 
     // Verify current password
-    let user = user_repo::get_user_by_id(&state.db, &caller.user_id)
+    let user = user_repo::get_user_by_id(&state.db.read, &caller.user_id)
         .await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
 
@@ -105,7 +108,7 @@ pub async fn change_password(
         return Err(ApiError::unauthorized("Current password is incorrect"));
     }
 
-    user_repo::change_password(&state.db, &caller.user_id, &req.new_password).await?;
+    user_repo::change_password(&state.db.write, &caller.user_id, &req.new_password).await?;
 
     Ok(Json(
         serde_json::json!({ "message": "Password changed successfully" }),
@@ -128,7 +131,7 @@ pub async fn delete_user(
         .as_ref()
         .ok_or_else(|| ApiError::unauthorized("Authentication required"))?;
 
-    let caller_user = user_repo::get_user_by_id(&state.db, &caller.user_id)
+    let caller_user = user_repo::get_user_by_id(&state.db.read, &caller.user_id)
         .await?
         .ok_or_else(|| ApiError::unauthorized("User not found"))?;
 
@@ -140,7 +143,11 @@ pub async fn delete_user(
         return Err(ApiError::bad_request("Cannot delete your own account"));
     }
 
-    user_repo::delete_user(&state.db, &target_id).await?;
+    user_repo::delete_user(&state.db.write, &target_id).await?;
+
+    // Update in-memory cache
+    state.user_cache.remove(&target_id);
+
     Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
@@ -155,7 +162,7 @@ pub async fn admin_reset_password(
         .as_ref()
         .ok_or_else(|| ApiError::unauthorized("Authentication required"))?;
 
-    let caller_user = user_repo::get_user_by_id(&state.db, &caller.user_id)
+    let caller_user = user_repo::get_user_by_id(&state.db.read, &caller.user_id)
         .await?
         .ok_or_else(|| ApiError::unauthorized("User not found"))?;
 
@@ -163,7 +170,7 @@ pub async fn admin_reset_password(
         return Err(ApiError::forbidden("Only admins can reset passwords"));
     }
 
-    user_repo::change_password(&state.db, &target_id, &req.new_password).await?;
+    user_repo::change_password(&state.db.write, &target_id, &req.new_password).await?;
     Ok(Json(
         serde_json::json!({ "message": "Password reset successfully" }),
     ))
@@ -176,7 +183,7 @@ pub struct AdminResetPasswordRequest {
 
 /// GET /api/users/setup — check if initial setup is needed (no users exist)
 pub async fn setup_status(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
-    let count = user_repo::count_users(&state.db).await?;
+    let count = user_repo::count_users(&state.db.read).await?;
     Ok(Json(serde_json::json!({
         "setup_required": count == 0,
         "user_count": count,
@@ -193,7 +200,7 @@ pub async fn get_preferences(
         Some(u) => u.user_id.clone(),
         None => return Ok(Json(serde_json::json!({}))),
     };
-    let pairs = preference_repo::get_all_preferences(&state.db, &user_id).await?;
+    let pairs = preference_repo::get_all_preferences(&state.db.read, &user_id).await?;
     let map: serde_json::Map<String, serde_json::Value> = pairs
         .into_iter()
         .map(|(k, v)| (k, serde_json::Value::String(v)))
@@ -217,7 +224,7 @@ pub async fn set_preferences(
         None => return Ok(axum::http::StatusCode::NO_CONTENT),
     };
     for (key, value) in &req.preferences {
-        preference_repo::set_preference(&state.db, &user_id, key, value).await?;
+        preference_repo::set_preference(&state.db.write, &user_id, key, value).await?;
     }
     Ok(axum::http::StatusCode::NO_CONTENT)
 }

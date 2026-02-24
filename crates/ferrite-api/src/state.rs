@@ -1,6 +1,7 @@
 use crate::metrics::PlaybackMetrics;
 use crate::webhooks::WebhookDispatcher;
 use ferrite_core::config::AppConfig;
+use ferrite_db::Database;
 use ferrite_scanner::{ScanRegistry, WatcherHandle};
 use ferrite_stream::hls::HlsSessionManager;
 use ferrite_transcode::hwaccel::EncoderProfile;
@@ -8,7 +9,6 @@ use governor::clock::DefaultClock;
 use governor::state::{InMemoryState, NotKeyed};
 use governor::{Quota, RateLimiter};
 use serde::Serialize;
-use sqlx::SqlitePool;
 use std::num::NonZeroU32;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -21,7 +21,7 @@ pub type LoginRateLimiter = RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
 /// Shared application state injected into all Axum handlers.
 #[derive(Clone)]
 pub struct AppState {
-    pub db: SqlitePool,
+    pub db: Database,
     pub config: Arc<AppConfig>,
     pub hls_sessions: Arc<HlsSessionManager>,
     /// Limits the number of concurrent FFmpeg transcode processes.
@@ -42,6 +42,8 @@ pub struct AppState {
     pub playback_metrics: Arc<PlaybackMetrics>,
     /// Cached state for the self-update version check.
     pub update_state: Arc<UpdateState>,
+    /// In-memory cache of valid user IDs for zero-I/O authentication.
+    pub user_cache: Arc<dashmap::DashSet<String>>,
 }
 
 /// Cached result of a GitHub release version check.
