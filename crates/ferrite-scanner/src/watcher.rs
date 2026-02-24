@@ -61,6 +61,7 @@ pub struct LibraryWatcher {
 }
 
 impl LibraryWatcher {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pool: SqlitePool,
         ffprobe_path: String,

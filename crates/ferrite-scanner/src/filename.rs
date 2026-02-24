@@ -62,10 +62,7 @@ pub fn clean_title(raw: &str) -> String {
     let replaced = raw.replace(['.', '_'], " ");
     let collapsed: String = replaced.split_whitespace().collect::<Vec<_>>().join(" ");
     // Strip trailing " -" or " –" left after regex capture stops before " - S01E05"
-    let trimmed = collapsed
-        .trim()
-        .trim_end_matches(|c: char| c == '-' || c == '–' || c == '—')
-        .trim();
+    let trimmed = collapsed.trim().trim_end_matches(['-', '–', '—']).trim();
     trimmed.to_string()
 }
 

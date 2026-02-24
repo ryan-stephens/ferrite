@@ -121,7 +121,7 @@ pub async fn get_streams(pool: &SqlitePool, media_item_id: &str) -> Result<Vec<M
 }
 
 /// All video stream metadata needed for transcoding decisions, fetched in one query.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct VideoMeta {
     pub pixel_format: Option<String>,
     pub frame_rate: Option<String>,
@@ -134,13 +134,7 @@ pub struct VideoMeta {
 /// Replaces the three separate `get_video_pixel_format`, `get_video_frame_rate`,
 /// and `get_video_color_metadata` calls that were previously made sequentially.
 pub async fn get_video_meta(pool: &SqlitePool, media_item_id: &str) -> Result<Option<VideoMeta>> {
-    let row: Option<(
-        Option<String>,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-    )> = sqlx::query_as(
+    let row: Option<VideoMeta> = sqlx::query_as(
         "SELECT pixel_format, frame_rate, color_space, color_transfer, color_primaries \
              FROM media_streams \
              WHERE media_item_id = ? AND stream_type = 'video' \
@@ -149,13 +143,7 @@ pub async fn get_video_meta(pool: &SqlitePool, media_item_id: &str) -> Result<Op
     .bind(media_item_id)
     .fetch_optional(pool)
     .await?;
-    Ok(row.map(|r| VideoMeta {
-        pixel_format: r.0,
-        frame_rate: r.1,
-        color_space: r.2,
-        color_transfer: r.3,
-        color_primaries: r.4,
-    }))
+    Ok(row)
 }
 
 /// Get the pixel format of the first video stream for a media item.

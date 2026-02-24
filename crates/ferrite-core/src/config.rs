@@ -54,10 +54,11 @@ fn default_subtitle_cache_dir() -> PathBuf {
     PathBuf::from("cache/subtitles")
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum HlsSegmentMimeMode {
     /// Serve `.m4s` with `video/mp4` (recommended cross-client default).
+    #[default]
     VideoMp4,
     /// Serve `.m4s` with `video/iso.segment` for strict ISO segment typing.
     VideoIsoSegment,
@@ -69,12 +70,6 @@ impl HlsSegmentMimeMode {
             Self::VideoMp4 => "video-mp4",
             Self::VideoIsoSegment => "video-iso-segment",
         }
-    }
-}
-
-impl Default for HlsSegmentMimeMode {
-    fn default() -> Self {
-        Self::VideoMp4
     }
 }
 

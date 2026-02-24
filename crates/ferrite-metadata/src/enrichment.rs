@@ -731,7 +731,7 @@ pub async fn enrich_single_show(
             // Season was in the snapshot — use pre-fetched data
             for ep in &sd.episodes {
                 let _ = tv_repo::update_episode_metadata_tx(
-                    &mut *tx,
+                    &mut tx,
                     season_id,
                     ep.episode_number,
                     ep.ep_title.as_deref(),
