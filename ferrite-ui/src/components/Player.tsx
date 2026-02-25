@@ -871,7 +871,7 @@ export default function Player(props: PlayerProps) {
     setSelectedAudioTrack(trackIndex);
     setShowAudioMenu(false);
     savePrefs(item().library_id, { audioTrackIndex: trackIndex });
-    const pos = currentTime();
+    const pos = actualTime();
     if (isHls) {
       // For HLS: trigger a seek at the current position — the new audio_stream
       // index is picked up by the backend when it creates the new HLS session.
