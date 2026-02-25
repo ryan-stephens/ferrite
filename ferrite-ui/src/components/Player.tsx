@@ -984,7 +984,9 @@ export default function Player(props: PlayerProps) {
       // The server returns the actual start_secs (which is the time FFmpeg
       // was told to seek to). HLS.js normalizes currentTime to 0 relative to
       // the playlist start, so we add this offset to get absolute media time.
-      hlsStartOffset = seekRes.start_secs ?? targetTime;
+      // If the backend copied the video (-c:v copy), fmp4 segments retain their
+      // original file PTS, meaning videoRef.currentTime will be absolute.
+      hlsStartOffset = seekRes.video_copied ? 0 : (seekRes.start_secs ?? targetTime);
       hlsSessionId = seekRes.session_id;
       isHls = true;
 
