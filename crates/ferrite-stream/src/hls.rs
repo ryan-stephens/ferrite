@@ -193,7 +193,9 @@ impl HlsSession {
     /// Kill the FFmpeg process without destroying the session or its files.
     /// Called when the client stops consuming segments (paused) to free resources.
     pub async fn kill_ffmpeg(&self) {
+        info!("kill_ffmpeg called for session {}", self.session_id);
         if let Some(mut child) = self.ffmpeg_handle.lock().await.take() {
+            info!("kill_ffmpeg took child handle for session {}", self.session_id);
             // On Unix: send SIGTERM so FFmpeg can flush write buffers and close
             // the playlist cleanly, then wait up to 2 seconds for it to exit,
             // then send SIGKILL if it's still alive.
@@ -201,28 +203,32 @@ impl HlsSession {
             #[cfg(unix)]
             {
                 if let Some(pid) = child.id() {
+                    info!("kill_ffmpeg sending SIGTERM to pid {} for session {}", pid, self.session_id);
                     // SAFETY: pid is a valid process ID from a child we own.
                     unsafe { libc::kill(pid as libc::pid_t, libc::SIGTERM) };
-                    debug!("Sent SIGTERM to FFmpeg for session {}", self.session_id);
                     
                     // Wait up to 2 seconds for graceful exit
                     let wait_fut = child.wait();
-                    if let Ok(Ok(_)) = tokio::time::timeout(std::time::Duration::from_secs(2), wait_fut).await {
-                        debug!("FFmpeg exited gracefully for session {}", self.session_id);
+                    if let Ok(Ok(status)) = tokio::time::timeout(std::time::Duration::from_secs(2), wait_fut).await {
+                        info!("FFmpeg exited gracefully for session {} with status {}", self.session_id, status);
                         return;
                     }
                     
                     // Force kill if it didn't exit
+                    info!("FFmpeg did not exit gracefully, sending SIGKILL for session {}", self.session_id);
                     let _ = child.kill().await;
-                    debug!("Sent SIGKILL to FFmpeg for session {}", self.session_id);
                     let _ = child.wait().await;
                     return;
+                } else {
+                    info!("kill_ffmpeg child.id() was None, process already exited for session {}", self.session_id);
                 }
             }
             // Windows / no pid: kill immediately.
+            info!("kill_ffmpeg killing immediately for session {}", self.session_id);
             let _ = child.kill().await;
             let _ = child.wait().await;
-            debug!("Killed FFmpeg for session {} (immediate)", self.session_id);
+        } else {
+            info!("kill_ffmpeg handle was already None for session {}", self.session_id);
         }
     }
 
@@ -1156,11 +1162,9 @@ impl HlsSessionManager {
         let video_is_h264 = video_codec
             .map(|c| c.to_lowercase() == "h264")
             .unwrap_or(false);
-        // Video copy is only reliable for initial load (start=0). When seeking,
-        // -c:v copy starts from the nearest keyframe (up to 12s before target),
-        // causing subtitle desync and black screen. Re-encoding with precise
-        // post-input -ss gives exact frame-accurate positioning.
-        let can_copy_video = video_is_h264 && vf_parts.is_empty() && start_secs < 0.5;
+        // Video copy is now permitted on seek because we align the seek target
+        // to a keyframe in the API layer, removing the need for a precise post-input trim.
+        let can_copy_video = video_is_h264 && vf_parts.is_empty();
 
         // ---------------------------------------------------------------
         // Build FFmpeg args
@@ -1545,33 +1549,38 @@ impl HlsSessionManager {
                 !sids.is_empty()
             });
 
-            // Kill FFmpeg (SIGTERM → 2s → SIGKILL on Unix, immediate kill on Windows)
-            session.kill_ffmpeg().await;
+            info!("Initiated teardown for HLS session {}", session_id);
 
-            // Wait a moment for FFmpeg to actually flush its buffers and exit
-            // before we yank the directory out from under it. Otherwise, FFmpeg
-            // will complain about "No such file or directory" in its final log lines.
-            // On Windows, the kill is immediate, but on Unix, the process may need
-            // a brief window to process the SIGTERM cleanly.
-            for _ in 0..10 {
-                if !session.is_ffmpeg_alive().await {
-                    break;
+            let session_id_owned = session_id.to_string();
+            tokio::spawn(async move {
+                // Kill FFmpeg (SIGTERM → 2s → SIGKILL on Unix, immediate kill on Windows)
+                session.kill_ffmpeg().await;
+
+                // Wait a moment for FFmpeg to actually flush its buffers and exit
+                // before we yank the directory out from under it. Otherwise, FFmpeg
+                // will complain about "No such file or directory" in its final log lines.
+                // On Windows, the kill is immediate, but on Unix, the process may need
+                // a brief window to process the SIGTERM cleanly.
+                for _ in 0..10 {
+                    if !session.is_ffmpeg_alive().await {
+                        break;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
                 }
-                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-            }
 
-            // Remove output directory
-            if session.output_dir.exists() {
-                if let Err(e) = tokio::fs::remove_dir_all(&session.output_dir).await {
-                    warn!(
-                        "Failed to remove HLS output dir {}: {}",
-                        session.output_dir.display(),
-                        e
-                    );
+                // Remove output directory
+                if session.output_dir.exists() {
+                    if let Err(e) = tokio::fs::remove_dir_all(&session.output_dir).await {
+                        warn!(
+                            "Failed to remove HLS output dir {}: {}",
+                            session.output_dir.display(),
+                            e
+                        );
+                    }
                 }
-            }
 
-            info!("Destroyed HLS session {}", session_id);
+                debug!("Cleaned up HLS session files for {}", session_id_owned);
+            });
         }
     }
 
