@@ -473,11 +473,6 @@ export default function Player(props: PlayerProps) {
           if (ids) hlsSessionId = ids.split(',')[0];
           const startHdr = xhr.getResponseHeader('x-hls-start-secs');
           if (startHdr) hlsStartOffset = parseFloat(startHdr);
-          // When video is copied (-c:v copy), fmp4 segments retain original
-          // file PTS so videoRef.currentTime is already absolute. Setting
-          // hlsStartOffset to 0 avoids double-counting in actualTime().
-          const copiedHdr = xhr.getResponseHeader('x-hls-video-copied');
-          if (copiedHdr === '1') hlsStartOffset = 0;
         }
       });
 
@@ -984,9 +979,7 @@ export default function Player(props: PlayerProps) {
       // The server returns the actual start_secs (which is the time FFmpeg
       // was told to seek to). HLS.js normalizes currentTime to 0 relative to
       // the playlist start, so we add this offset to get absolute media time.
-      // If the backend copied the video (-c:v copy), fmp4 segments retain their
-      // original file PTS, meaning videoRef.currentTime will be absolute.
-      hlsStartOffset = seekRes.video_copied ? 0 : (seekRes.start_secs ?? targetTime);
+      hlsStartOffset = seekRes.start_secs ?? targetTime;
       hlsSessionId = seekRes.session_id;
       isHls = true;
 
@@ -1020,9 +1013,6 @@ export default function Player(props: PlayerProps) {
 
           const startHdr = xhr.getResponseHeader('x-hls-start-secs');
           if (startHdr) hlsStartOffset = parseFloat(startHdr);
-
-          const copiedHdr = xhr.getResponseHeader('x-hls-video-copied');
-          if (copiedHdr === '1') hlsStartOffset = 0;
         }
       });
 
