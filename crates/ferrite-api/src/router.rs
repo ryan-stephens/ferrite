@@ -210,6 +210,8 @@ pub fn build_router(state: AppState) -> Router {
                 "X-Content-Duration".parse().unwrap(),
                 "X-Total-Duration".parse().unwrap(),
                 "x-hls-start-secs".parse().unwrap(),
+                "x-hls-video-copied".parse().unwrap(),
+                "x-hls-session-ids".parse().unwrap(),
                 "Server-Timing".parse().unwrap(),
             ])
         // Note: allow_credentials(true) is incompatible with allow_origin(any()),
@@ -237,6 +239,8 @@ pub fn build_router(state: AppState) -> Router {
                 "X-Content-Duration".parse().unwrap(),
                 "X-Total-Duration".parse().unwrap(),
                 "x-hls-start-secs".parse().unwrap(),
+                "x-hls-video-copied".parse().unwrap(),
+                "x-hls-session-ids".parse().unwrap(),
                 "Server-Timing".parse().unwrap(),
             ])
             .allow_credentials(true)
