@@ -755,7 +755,11 @@ pub async fn hls_master_playlist(
     );
     resp_headers.insert(header::CACHE_CONTROL, "no-store".parse().unwrap());
     let video_copied = sessions.first().map(|s| s.video_copied).unwrap_or(false);
-    resp_headers.insert("x-hls-start-secs", format!("{:.3}", start).parse().unwrap()); resp_headers.insert("x-hls-requested-start", format!("{:.3}", requested_start).parse().unwrap());
+    resp_headers.insert("x-hls-start-secs", format!("{:.3}", start).parse().unwrap());
+    resp_headers.insert(
+        "x-hls-requested-start",
+        format!("{:.3}", requested_start).parse().unwrap(),
+    );
     resp_headers.insert(
         "x-hls-video-copied",
         if video_copied { "1" } else { "0" }.parse().unwrap(),

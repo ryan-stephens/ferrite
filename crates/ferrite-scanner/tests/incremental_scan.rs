@@ -1,4 +1,4 @@
-use ferrite_db::create_pool;
+use ferrite_db::create_pools;
 use ferrite_scanner::scan_library_incremental;
 use sqlx::SqlitePool;
 use std::path::Path;
@@ -8,9 +8,10 @@ use uuid::Uuid;
 async fn new_test_pool() -> SqlitePool {
     let db_path =
         std::env::temp_dir().join(format!("ferrite-scanner-test-{}.sqlite", Uuid::new_v4()));
-    create_pool(&db_path, 4)
+    let pools = create_pools(&db_path, 4)
         .await
-        .expect("failed to create test db pool")
+        .expect("failed to create test db pool");
+    pools.read
 }
 
 async fn seed_library(pool: &SqlitePool, library_path: &Path) -> String {

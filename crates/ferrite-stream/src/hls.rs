@@ -195,7 +195,10 @@ impl HlsSession {
     pub async fn kill_ffmpeg(&self) {
         info!("kill_ffmpeg called for session {}", self.session_id);
         if let Some(mut child) = self.ffmpeg_handle.lock().await.take() {
-            info!("kill_ffmpeg took child handle for session {}", self.session_id);
+            info!(
+                "kill_ffmpeg took child handle for session {}",
+                self.session_id
+            );
             // On Unix: send SIGTERM so FFmpeg can flush write buffers and close
             // the playlist cleanly, then wait up to 2 seconds for it to exit,
             // then send SIGKILL if it's still alive.
@@ -203,32 +206,52 @@ impl HlsSession {
             #[cfg(unix)]
             {
                 if let Some(pid) = child.id() {
-                    info!("kill_ffmpeg sending SIGTERM to pid {} for session {}", pid, self.session_id);
+                    info!(
+                        "kill_ffmpeg sending SIGTERM to pid {} for session {}",
+                        pid, self.session_id
+                    );
                     // SAFETY: pid is a valid process ID from a child we own.
                     unsafe { libc::kill(pid as libc::pid_t, libc::SIGTERM) };
-                    
+
                     // Wait up to 2 seconds for graceful exit
                     let wait_fut = child.wait();
-                    if let Ok(Ok(status)) = tokio::time::timeout(std::time::Duration::from_secs(2), wait_fut).await {
-                        info!("FFmpeg exited gracefully for session {} with status {}", self.session_id, status);
+                    if let Ok(Ok(status)) =
+                        tokio::time::timeout(std::time::Duration::from_secs(2), wait_fut).await
+                    {
+                        info!(
+                            "FFmpeg exited gracefully for session {} with status {}",
+                            self.session_id, status
+                        );
                         return;
                     }
-                    
+
                     // Force kill if it didn't exit
-                    info!("FFmpeg did not exit gracefully, sending SIGKILL for session {}", self.session_id);
+                    info!(
+                        "FFmpeg did not exit gracefully, sending SIGKILL for session {}",
+                        self.session_id
+                    );
                     let _ = child.kill().await;
                     let _ = child.wait().await;
                     return;
                 } else {
-                    info!("kill_ffmpeg child.id() was None, process already exited for session {}", self.session_id);
+                    info!(
+                        "kill_ffmpeg child.id() was None, process already exited for session {}",
+                        self.session_id
+                    );
                 }
             }
             // Windows / no pid: kill immediately.
-            info!("kill_ffmpeg killing immediately for session {}", self.session_id);
+            info!(
+                "kill_ffmpeg killing immediately for session {}",
+                self.session_id
+            );
             let _ = child.kill().await;
             let _ = child.wait().await;
         } else {
-            info!("kill_ffmpeg handle was already None for session {}", self.session_id);
+            info!(
+                "kill_ffmpeg handle was already None for session {}",
+                self.session_id
+            );
         }
     }
 
@@ -1180,7 +1203,12 @@ impl HlsSessionManager {
 
         // HW-accelerated decoding args (before -i).
         if needs_scaling && !needs_software {
-            args.extend(effective_encoder.hw_input_args(has_software_filters).iter().cloned());
+            args.extend(
+                effective_encoder
+                    .hw_input_args(has_software_filters)
+                    .iter()
+                    .cloned(),
+            );
         }
 
         // Seek before input for fast seeking (demuxer-level)
