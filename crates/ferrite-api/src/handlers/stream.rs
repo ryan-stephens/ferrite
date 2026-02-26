@@ -1014,7 +1014,7 @@ pub async fn hls_seek(
             );
             return Ok(Json(serde_json::json!({
                 "session_id": existing.session_id,
-                "start_secs": existing.start_secs,
+                "start_secs": existing.start_secs, "requested_start": requested_start,
                 "video_copied": existing.video_copied,
                 "reused": true,
                 "variant_count": 1,
@@ -1105,7 +1105,7 @@ pub async fn hls_seek(
     // Return the new session info so the frontend can switch to it
     Ok(Json(serde_json::json!({
         "session_id": first.session_id,
-        "start_secs": first.start_secs,
+        "start_secs": first.start_secs, "requested_start": requested_start,
         "video_copied": first.video_copied,
         "reused": false,
         "variant_count": sessions.len(),

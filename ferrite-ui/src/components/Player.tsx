@@ -471,7 +471,7 @@ export default function Player(props: PlayerProps) {
         if (xhr) {
           const ids = xhr.getResponseHeader('x-hls-session-ids');
           if (ids) hlsSessionId = ids.split(',')[0];
-          const startHdr = xhr.getResponseHeader('x-hls-start-secs');
+          const startHdr = xhr.getResponseHeader('x-hls-requested-start') ?? xhr.getResponseHeader('x-hls-start-secs');
           if (startHdr) hlsStartOffset = parseFloat(startHdr);
         }
       });
@@ -979,7 +979,7 @@ export default function Player(props: PlayerProps) {
       // The server returns the actual start_secs (which is the time FFmpeg
       // was told to seek to). HLS.js normalizes currentTime to 0 relative to
       // the playlist start, so we add this offset to get absolute media time.
-      hlsStartOffset = seekRes.start_secs ?? targetTime;
+      hlsStartOffset = seekRes.requested_start ?? seekRes.start_secs ?? targetTime;
       hlsSessionId = seekRes.session_id;
       isHls = true;
 
@@ -1011,7 +1011,7 @@ export default function Player(props: PlayerProps) {
           const ids = xhr.getResponseHeader('x-hls-session-ids');
           if (ids) hlsSessionId = ids.split(',')[0];
 
-          const startHdr = xhr.getResponseHeader('x-hls-start-secs');
+          const startHdr = xhr.getResponseHeader('x-hls-requested-start') ?? xhr.getResponseHeader('x-hls-start-secs');
           if (startHdr) hlsStartOffset = parseFloat(startHdr);
         }
       });

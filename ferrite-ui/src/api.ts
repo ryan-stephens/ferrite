@@ -137,6 +137,7 @@ export interface ActiveStream {
   media_id: string;
   variant_label: string | null;
   start_secs: number;
+        requested_start?: number;
   width: number | null;
   height: number | null;
   bitrate_kbps: number | null;
@@ -380,6 +381,7 @@ export const api = {
       session_id: string;
       master_url: string;
       start_secs: number;
+        requested_start?: number;
       variant_count: number;
       reused: boolean;
       video_copied?: boolean;
