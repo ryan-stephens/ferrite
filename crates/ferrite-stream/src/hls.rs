@@ -575,11 +575,13 @@ impl HlsSessionManager {
     }
 
     /// Wait for the first HLS segment to appear in a session's playlist.
-    /// Uses adaptive backoff: 50ms×20 (1s), 100ms×40 (4s), 250ms×40 (10s) ≈ 15s total.
+    /// Uses adaptive backoff: 20ms×25 (0.5s), 50ms×40 (2s), 250ms×40 (10s) ≈ 12.5s total.
+    /// The aggressive initial tier (20ms) minimizes latency for video-copy sessions
+    /// that typically produce the first segment in <300ms.
     async fn wait_for_first_segment(session: &HlsSession) {
         let playlist_path = session.output_dir.join("playlist.m3u8");
         let mut ready = false;
-        let poll_schedule: &[(u64, u32)] = &[(50, 20), (100, 40), (250, 40)];
+        let poll_schedule: &[(u64, u32)] = &[(20, 25), (50, 40), (250, 40)];
         'outer: for &(interval_ms, count) in poll_schedule {
             for _ in 0..count {
                 if playlist_path.exists() {

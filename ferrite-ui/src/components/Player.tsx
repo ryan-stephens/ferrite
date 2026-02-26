@@ -309,7 +309,6 @@ export default function Player(props: PlayerProps) {
 
     if (playbackSessionId) {
       api.hlsSessionStop(mediaId, playbackSessionId);
-      api.hlsStopMedia(mediaId, playbackSessionId);
       playbackSessionId = null;
       hlsSessionId = null;
       return;
@@ -471,8 +470,15 @@ export default function Player(props: PlayerProps) {
         if (xhr) {
           const ids = xhr.getResponseHeader('x-hls-session-ids');
           if (ids) hlsSessionId = ids.split(',')[0];
-          const startHdr = xhr.getResponseHeader('x-hls-requested-start') ?? xhr.getResponseHeader('x-hls-start-secs');
-          if (startHdr) hlsStartOffset = parseFloat(startHdr);
+          // In video copy mode, fMP4 segments retain original PTS so
+          // videoRef.currentTime is already absolute — hlsStartOffset must be 0.
+          const videoCopied = xhr.getResponseHeader('x-hls-video-copied') === '1';
+          if (videoCopied) {
+            hlsStartOffset = 0;
+          } else {
+            const startHdr = xhr.getResponseHeader('x-hls-requested-start') ?? xhr.getResponseHeader('x-hls-start-secs');
+            if (startHdr) hlsStartOffset = parseFloat(startHdr);
+          }
         }
       });
 
@@ -1009,8 +1015,15 @@ export default function Player(props: PlayerProps) {
           const ids = xhr.getResponseHeader('x-hls-session-ids');
           if (ids) hlsSessionId = ids.split(',')[0];
 
-          const startHdr = xhr.getResponseHeader('x-hls-requested-start') ?? xhr.getResponseHeader('x-hls-start-secs');
-          if (startHdr) hlsStartOffset = parseFloat(startHdr);
+          // In video copy mode, fMP4 segments retain original PTS so
+          // videoRef.currentTime is already absolute — hlsStartOffset must be 0.
+          const videoCopied = xhr.getResponseHeader('x-hls-video-copied') === '1';
+          if (videoCopied) {
+            hlsStartOffset = 0;
+          } else {
+            const startHdr = xhr.getResponseHeader('x-hls-requested-start') ?? xhr.getResponseHeader('x-hls-start-secs');
+            if (startHdr) hlsStartOffset = parseFloat(startHdr);
+          }
         }
       });
 
@@ -1023,7 +1036,7 @@ export default function Player(props: PlayerProps) {
         // Re-apply subtitle now that HLS.js has finished resetting the video element.
         // Doing this earlier (before attachMedia) causes stale cues to flash because
         // HLS.js calls videoRef.load() internally during attachment.
-        if (activeSub !== null) applySubtitle(activeSub, hlsStartOffset);
+        if (activeSub !== null) applySubtitle(activeSub);
 
         // Re-populate quality levels and re-apply user's quality preference
         if (hls.levels && hls.levels.length > 0) {
@@ -1169,7 +1182,7 @@ export default function Player(props: PlayerProps) {
 
       // Re-apply subtitle with updated offset so cues stay in sync
       const activeSub = selectedSubtitle();
-      if (activeSub !== null) applySubtitle(activeSub, seekOffset);
+      if (activeSub !== null) applySubtitle(activeSub);
 
       perf.startSpan('seek/stream-load', 'network');
       const audioParam = selectedAudioTrack() > 0 ? `&audio_stream=${selectedAudioTrack()}` : '';

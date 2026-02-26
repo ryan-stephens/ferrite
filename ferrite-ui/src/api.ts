@@ -353,10 +353,11 @@ export const api = {
     apiQuiet('DELETE', `/api/progress/${mediaId}`),
 
   // HLS
-  hlsSessionStart: (id: string, start?: number, playbackSessionId?: string) => {
+  hlsSessionStart: (id: string, start?: number, playbackSessionId?: string, subtitleId?: number) => {
     const params = new URLSearchParams();
     if (start != null) params.set('start', start.toFixed(3));
     if (playbackSessionId) params.set('playback_session_id', playbackSessionId);
+    if (subtitleId != null) params.set('subtitle_id', String(subtitleId));
     const suffix = params.toString();
     return apiFetch<HlsSessionStartResponse>(
       'POST',
@@ -373,10 +374,11 @@ export const api = {
       'DELETE',
       `/api/stream/${id}/hls/session/stop?playback_session_id=${encodeURIComponent(playbackSessionId)}`,
     ),
-  hlsSeek: (id: string, start: number, audioStream?: number, playbackSessionId?: string) => {
+  hlsSeek: (id: string, start: number, audioStream?: number, playbackSessionId?: string, subtitleId?: number) => {
     const params = new URLSearchParams({ start: start.toFixed(3) });
     if (audioStream != null) params.set('audio_stream', String(audioStream));
     if (playbackSessionId) params.set('playback_session_id', playbackSessionId);
+    if (subtitleId != null) params.set('subtitle_id', String(subtitleId));
     return apiFetch<{
       session_id: string;
       master_url: string;
