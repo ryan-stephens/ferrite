@@ -1166,6 +1166,8 @@ impl HlsSessionManager {
         // to a keyframe in the API layer, removing the need for a precise post-input trim.
         let can_copy_video = video_is_h264 && vf_parts.is_empty();
 
+        let has_software_filters = !vf_parts.is_empty();
+
         // ---------------------------------------------------------------
         // Build FFmpeg args
         // ---------------------------------------------------------------
@@ -1178,7 +1180,7 @@ impl HlsSessionManager {
 
         // HW-accelerated decoding args (before -i).
         if needs_scaling && !needs_software {
-            args.extend(effective_encoder.hw_input_args().iter().cloned());
+            args.extend(effective_encoder.hw_input_args(has_software_filters).iter().cloned());
         }
 
         // Seek before input for fast seeking (demuxer-level)

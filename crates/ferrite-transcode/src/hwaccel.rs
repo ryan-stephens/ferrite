@@ -176,9 +176,27 @@ impl EncoderProfile {
     }
 
     /// Get the FFmpeg args for hardware-accelerated decoding (placed before -i).
-    /// Returns a slice — no allocation.
-    pub fn hw_input_args(&self) -> &[String] {
-        &self.hw_decode_args
+    /// If `has_software_filters` is true, we strip `-hwaccel_output_format` so that
+    /// the hardware decoder automatically downloads frames to CPU memory for filtering.
+    pub fn hw_input_args(&self, has_software_filters: bool) -> Vec<String> {
+        if has_software_filters {
+            let mut args = Vec::new();
+            let mut skip_next = false;
+            for arg in &self.hw_decode_args {
+                if skip_next {
+                    skip_next = false;
+                    continue;
+                }
+                if arg == "-hwaccel_output_format" {
+                    skip_next = true;
+                    continue;
+                }
+                args.push(arg.clone());
+            }
+            args
+        } else {
+            self.hw_decode_args.clone()
+        }
     }
 
     /// Whether this profile uses hardware acceleration.
@@ -317,7 +335,7 @@ mod tests {
         assert_eq!(args[0], "-c:v");
         assert_eq!(args[1], "h264_nvenc");
         assert!(profile.is_hardware());
-        assert!(!profile.hw_input_args().is_empty());
+        assert!(!profile.hw_input_args(false).is_empty());
     }
 
     #[test]

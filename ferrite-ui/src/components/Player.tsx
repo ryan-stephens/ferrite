@@ -395,14 +395,14 @@ export default function Player(props: PlayerProps) {
         const match = subs.find(s => s.id === prefs.subtitleTrackId);
         if (match) {
           setSelectedSubtitle(match.id);
-          setTimeout(() => applySubtitle(match.id, currentSubtitleOffset()), 500);
+          setTimeout(() => applySubtitle(match.id), 500);
         }
       } else if (serverPrefs.default_subtitle_language) {
         const lang = serverPrefs.default_subtitle_language;
         const match = subs.find(s => s.language?.toLowerCase().startsWith(lang));
         if (match) {
           setSelectedSubtitle(match.id);
-          setTimeout(() => applySubtitle(match.id, currentSubtitleOffset()), 500);
+          setTimeout(() => applySubtitle(match.id), 500);
         }
       }
     }).catch(() => {});
@@ -822,10 +822,9 @@ export default function Player(props: PlayerProps) {
    * Fetch a subtitle track and parse its cues into subtitleCues[].
    * Active cue selection is driven by onTimeUpdate() using actualTime(),
    * so there is no native <track> element and no browser cue accumulation.
-   * The offsetSecs parameter is kept for API compatibility but is no longer used.
    */
-  async function applySubtitle(subtitleId: number, _offsetSecs: number) {
-    // Abort any in-flight subtitle fetch from a previous call (rapid seeks)
+  async function applySubtitle(subtitleId: number) {
+    // Abort any in-flight subtitle fetch from a previous call (rapid track changes)
     if (subtitleFetchController) {
       subtitleFetchController.abort();
     }
@@ -845,10 +844,6 @@ export default function Player(props: PlayerProps) {
     }
   }
 
-  function currentSubtitleOffset(): number {
-    return isHls ? hlsStartOffset : seekOffset;
-  }
-
   function changeSubtitle(subtitleId: number | null) {
     setSelectedSubtitle(subtitleId);
     setShowSubtitleMenu(false);
@@ -858,7 +853,7 @@ export default function Player(props: PlayerProps) {
       setActiveCue(null);
       return;
     }
-    applySubtitle(subtitleId, currentSubtitleOffset());
+    applySubtitle(subtitleId);
   }
 
   function changeAudioTrack(trackIndex: number) {
@@ -979,7 +974,10 @@ export default function Player(props: PlayerProps) {
       // The server returns the actual start_secs (which is the time FFmpeg
       // was told to seek to). HLS.js normalizes currentTime to 0 relative to
       // the playlist start, so we add this offset to get absolute media time.
-      hlsStartOffset = seekRes.requested_start ?? seekRes.start_secs ?? targetTime;
+      // However, if the video is copied, fmp4 segments retain their original PTS
+      // and videoRef.currentTime is ALREADY absolute. In this case, we set
+      // hlsStartOffset to 0 so we don't double-count the time offset.
+      hlsStartOffset = seekRes.video_copied ? 0 : (seekRes.requested_start ?? seekRes.start_secs ?? targetTime);
       hlsSessionId = seekRes.session_id;
       isHls = true;
 

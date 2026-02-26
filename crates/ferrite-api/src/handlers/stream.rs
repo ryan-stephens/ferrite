@@ -186,8 +186,10 @@ async fn resolve_seek_start(
             {
                 Ok(Some(kf)) => (kf, "index"),
                 Ok(None) => {
-                    // No keyframes cached yet — spawn background probe so future seeks are fast,
-                    // and use precise ffprobe fallback for this immediate request to avoid blocking.
+                    // No keyframes cached yet — spawn background probe so future seeks are fast.
+                    // Fall back to requested_start for this immediate request to avoid blocking.
+                    // FFmpeg will still seek to the nearest keyframe, but the reported start_secs
+                    // might be slightly inaccurate until the index is built.
                     let state_clone = state.clone();
                     let media_id_clone = media_id.to_string();
                     let file_path_clone = file_path.to_path_buf();
@@ -195,11 +197,7 @@ async fn resolve_seek_start(
                         lazy_probe_keyframes(&state_clone, &media_id_clone, &file_path_clone).await;
                     });
 
-                    let ffprobe_path = &state.config.transcode.ffprobe_path;
-                    let kf = transcode::find_keyframe_before(ffprobe_path, file_path, requested_start)
-                        .await
-                        .unwrap_or(requested_start);
-                    (kf, "ffprobe-fallback")
+                    (requested_start, "requested-fallback")
                 }
                 Err(e) => {
                     warn!(

@@ -530,7 +530,8 @@ pub async fn serve_full_transcode(
     );
 
     // Subtitle burn-in requires CPU-side frame access, so fall back to software.
-    let effective_encoder = if subtitle_path.is_some() && encoder.is_hardware() {
+    let needs_full_software = subtitle_path.is_some() && encoder.is_hardware();
+    let effective_encoder = if needs_full_software {
         info!("Subtitle burn-in active — falling back to software encoder");
         EncoderProfile::software()
     } else {
@@ -539,9 +540,17 @@ pub async fn serve_full_transcode(
 
     let mut args: Vec<String> = vec!["-hide_banner".into(), "-nostdin".into()];
 
+    let is_high_bit = pixel_format
+        .map(ferrite_transcode::tonemap::is_high_bit_depth)
+        .unwrap_or(false);
+    let needs_tonemap =
+        is_high_bit && ferrite_transcode::tonemap::is_true_hdr(color_transfer, color_primaries);
+
+    let has_software_filters = subtitle_path.is_some() || is_high_bit || needs_tonemap;
+
     // HW-accelerated decoding args (before -i)
-    if subtitle_path.is_none() {
-        args.extend(effective_encoder.hw_input_args().iter().cloned());
+    if !needs_full_software {
+        args.extend(effective_encoder.hw_input_args(has_software_filters));
     }
 
     // Fast-seek before input

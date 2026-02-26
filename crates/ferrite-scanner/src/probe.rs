@@ -274,7 +274,6 @@ pub async fn probe_keyframe_index(ffprobe_path: &str, file_path: &Path) -> Optio
     }
 
     let mut keyframes_ms = Vec::new();
-    let mut last_kept_ms: Option<u64> = None;
     let text = String::from_utf8_lossy(&output.stdout);
 
     for line in text.lines() {
@@ -283,16 +282,25 @@ pub async fn probe_keyframe_index(ffprobe_path: &str, file_path: &Path) -> Optio
             None => continue,
         };
         let pts_ms = (pts_secs * 1000.0).round() as u64;
+        keyframes_ms.push(pts_ms);
+    }
+
+    keyframes_ms.sort_unstable();
+
+    let mut filtered_keyframes = Vec::new();
+    let mut last_kept_ms: Option<u64> = None;
+
+    for pts_ms in keyframes_ms {
         let keep = last_kept_ms
             .map(|last| pts_ms >= last + KEYFRAME_INDEX_MIN_GAP_MS)
             .unwrap_or(true);
         if keep {
-            keyframes_ms.push(pts_ms);
+            filtered_keyframes.push(pts_ms);
             last_kept_ms = Some(pts_ms);
         }
     }
 
-    Some(keyframes_ms)
+    Some(filtered_keyframes)
 }
 
 fn parse_pts_time(line: &str) -> Option<f64> {
